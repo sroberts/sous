@@ -1,0 +1,3 @@
+# One-time Mela export: personal data, too large for GitHub
+*.melarecipes
+.DS_Store
