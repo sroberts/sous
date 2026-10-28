@@ -47,7 +47,10 @@ app itself carries no Mela code. The export is not committed.
 
 ## Open questions
 
-- **Identity:** per-person data needs the caller's identity. Confirm whether
-  Outpost's tsnet proxy forwards Tailscale identity headers
-  (`Tailscale-User-Login`). If not, fall back to choosing a person on each
-  device.
+- **Identity:** per-person data needs the caller's identity. Outpost's login
+  gateway supplies it: with `OUTPOST_AUTH=gateway` set, the user arrives in
+  `X-Outpost-*` headers, and `OUTPOST_ISSUER` / `OUTPOST_JWKS_URL` are set.
+  Trust those headers only when `OUTPOST_AUTH=gateway`. Without the gateway,
+  fall back to choosing a person on each device. Still to confirm from
+  Outpost's docs: the exact header names, and whether a signed token comes
+  with them to verify against the JWKS.
