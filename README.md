@@ -3,7 +3,8 @@
 A household recipe manager, run as a service under [Outpost](outpost-spec.md).
 Web UI, REST API, and MCP from one Go binary.
 
-Status: design. No code yet.
+Status: design. No code yet. The foundation is specified in
+[`spec.md`](spec.md).
 
 ## Shape
 
@@ -45,12 +46,8 @@ Status: design. No code yet.
 A one-time, throwaway script loads the Mela export through the REST API. The
 app itself carries no Mela code. The export is not committed.
 
-## Open questions
+## Identity
 
-- **Identity:** per-person data needs the caller's identity. Outpost's login
-  gateway supplies it: with `OUTPOST_AUTH=gateway` set, the user arrives in
-  `X-Outpost-*` headers, and `OUTPOST_ISSUER` / `OUTPOST_JWKS_URL` are set.
-  Trust those headers only when `OUTPOST_AUTH=gateway`. Without the gateway,
-  fall back to choosing a person on each device. Still to confirm from
-  Outpost's docs: the exact header names, and whether a signed token comes
-  with them to verify against the JWKS.
+Outpost's login gateway supplies the caller as a signed `X-Outpost-Identity`
+token, verified against `OUTPOST_JWKS_URL`. Without the gateway, a person is
+chosen on each device. Details are in [`spec.md`](spec.md) §5.
