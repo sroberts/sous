@@ -3,11 +3,11 @@
   // a bookmarklet for desktop browsers and a Shortcut for the iOS Share sheet.
   import { Bookmark } from '@lucide/svelte';
 
-  const host = location.host;
+  const origin = location.origin;
 
   // Svelte refuses javascript: URLs in markup, so the href is set here.
   function bookmarklet(node) {
-    node.setAttribute('href', `javascript:location.href='${location.origin}/import?url='+encodeURIComponent(location.href)`);
+    node.setAttribute('href', `javascript:location.href='${origin}/import?url='+encodeURIComponent(location.href)`);
   }
 </script>
 
@@ -32,7 +32,7 @@
         <li><span class="n fig" aria-hidden="true">1</span><span>New shortcut. In its details, turn on <b>Show in Share Sheet</b> and have it receive <b>URLs</b> and <b>Safari web pages</b>.</span></li>
         <li><span class="n fig" aria-hidden="true">2</span><span>Add <b>Get URLs from Input</b>.</span></li>
         <li><span class="n fig" aria-hidden="true">3</span><span>Add <b>URL Encode</b>, set to encode the URLs.</span></li>
-        <li><span class="n fig" aria-hidden="true">4</span><span>Add <b>Text</b>: <code>https://{host}/import?url=</code> followed by the <b>URL Encoded Text</b> variable.</span></li>
+        <li><span class="n fig" aria-hidden="true">4</span><span>Add <b>Text</b>: <code>{origin}/import?url=</code> followed by the <b>URL Encoded Text</b> variable.</span></li>
         <li><span class="n fig" aria-hidden="true">5</span><span>Add <b>Open URLs</b>, and name the shortcut “Send to Sous”.</span></li>
       </ol>
       <p class="hint">Tailscale has to be connected, and Safari signed in to Sous through the gateway.</p>

@@ -16,8 +16,10 @@ import (
 	"github.com/sroberts/sous/internal/api"
 	"github.com/sroberts/sous/internal/config"
 	"github.com/sroberts/sous/internal/identity"
+	"github.com/sroberts/sous/internal/importer"
 	"github.com/sroberts/sous/internal/mcp"
 	"github.com/sroberts/sous/internal/recipes"
+	"github.com/sroberts/sous/internal/safefetch"
 	"github.com/sroberts/sous/internal/storage"
 	"github.com/sroberts/sous/internal/ui"
 )
@@ -128,6 +130,8 @@ func run(args []string, getenv func(string) string, stdout io.Writer) int {
 		JWKS:           jwks,
 		Directory:      svc,
 	})
+	fetcher := safefetch.New(safefetch.Options{UserAgent: "Sous/" + version + " (+https://github.com/sroberts/sous)"})
+	im := importer.New(svc, fetcher, log)
 	app := http.NewServeMux()
 	app.Handle("/v1/", api.New(api.Deps{
 		Service:  svc,
@@ -136,8 +140,9 @@ func run(args []string, getenv func(string) string, stdout io.Writer) int {
 		Log:      log,
 		Version:  version,
 		Auth:     auth,
+		Importer: im,
 	}))
-	app.Handle("/mcp", api.WithIdentity(resolver, identity.ViaMCP, mcp.New(svc, log, version)))
+	app.Handle("/mcp", api.WithIdentity(resolver, identity.ViaMCP, mcp.New(svc, log, version, mcp.WithImporter(im))))
 	app.Handle("/", ui.Handler(log))
 	s.setApp(app)
 	s.ready.Store(true)

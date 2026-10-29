@@ -95,8 +95,9 @@
     go(`/import?url=${encodeURIComponent(u)}`);
   }
 
-  // Pasted text is split server-side. The text request carries no link, so
-  // the failed page's link is put back on the draft here.
+  // Pasted text is split server-side. After a failed link, the link goes
+  // along so the server credits it and checks for duplicates; it isn't
+  // fetched again.
   async function readPaste(e, text = paste, title = pasteTitle) {
     e?.preventDefault();
     if (!text.trim()) {
@@ -106,13 +107,13 @@
     reading = true;
     pasteError = '';
     try {
-      const p = await asPerson(() => api.importPreview({ text, ...(title.trim() ? { title: title.trim() } : {}) }));
+      const source = failure?.page?.source_url || failure?.url;
+      const req = { text, ...(/^https?:\/\//i.test(source ?? '') ? { url: source } : {}), ...(title.trim() ? { title: title.trim() } : {}) };
+      const p = await asPerson(() => api.importPreview(req));
       if (!alive || !p) {
         if (phase === 'loading') phase = 'form';
         return;
       }
-      const source = failure?.page?.source_url ?? failure?.url;
-      if (source && !p.draft.source_url) p.draft.source_url = source;
       show(p);
     } catch (err) {
       if (!alive) return;

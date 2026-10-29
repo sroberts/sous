@@ -38,7 +38,7 @@ func Classify(status int, header http.Header, p Page, extracted bool) (code stri
 	case status == http.StatusUnauthorized || status == http.StatusForbidden ||
 		status == http.StatusTooManyRequests || status == http.StatusUnavailableForLegalReasons:
 		return recipes.CodeBlocked
-	case status == http.StatusServiceUnavailable && (cfMitigated || p.botWall()):
+	case status == http.StatusServiceUnavailable && (cfMitigated || p.botWall(status, extracted)):
 		return recipes.CodeBlocked
 	case status >= 500:
 		return recipes.CodeSiteError
@@ -55,7 +55,7 @@ func Classify(status int, header http.Header, p Page, extracted bool) (code stri
 		return ""
 	}
 	switch {
-	case cfMitigated || p.botWall():
+	case cfMitigated || p.botWall(status, extracted):
 		return recipes.CodeBlocked
 	case p.has(MarkerNotFree):
 		return recipes.CodePaywalled

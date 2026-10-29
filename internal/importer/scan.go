@@ -25,6 +25,9 @@ type Page struct {
 	Status      int    `json:"status,omitempty"`
 	Server      string `json:"server,omitempty"`
 	CFMitigated string `json:"cf_mitigated,omitempty"`
+	// Size is the length of the fetched body. The caller sets it; 0 means
+	// unknown and counts as small.
+	Size int `json:"size,omitempty"`
 
 	Title         string `json:"title,omitempty"`
 	OGTitle       string `json:"og_title,omitempty"`
@@ -54,6 +57,11 @@ const MarkerNotFree = "not-free"
 // is only checked on small pages with no recipe.
 var botMarkers = []string{"just a moment", "cf-chl", "captcha", "px-captcha", "datadome", "enable javascript"}
 
+// strongMarkers name a bot wall outright. The others ("captcha", "enable
+// javascript", "challenge") also turn up in ordinary recipe pages: a
+// comment form's captcha, a noscript notice.
+var strongMarkers = map[string]bool{"just a moment": true, "cf-chl": true, "px-captcha": true, "datadome": true}
+
 const challengeMaxBytes = 50 << 10
 
 func (p Page) has(marker string) bool {
@@ -65,9 +73,17 @@ func (p Page) has(marker string) bool {
 	return false
 }
 
-func (p Page) botWall() bool {
+// botWall reports whether the markers say the page is a bot challenge.
+// Generic markers count only when no recipe was read and the page is small
+// or wasn't a plain 200.
+func (p Page) botWall(status int, extracted bool) bool {
+	generic := !extracted && (p.Size < challengeMaxBytes || (status != 0 && status != 200))
 	for _, m := range p.Markers {
-		if m != MarkerNotFree {
+		switch {
+		case m == MarkerNotFree:
+		case strongMarkers[m]:
+			return true
+		case generic:
 			return true
 		}
 	}

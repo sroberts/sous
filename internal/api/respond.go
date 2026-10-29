@@ -23,6 +23,13 @@ type errorDetail struct {
 	Message string `json:"message" jsonschema:"for people; may change"`
 }
 
+// importErrorBody is a 422: the error plus what the page still offered, to
+// start a pasted recipe from.
+type importErrorBody struct {
+	Error errorDetail         `json:"error"`
+	Page  *recipes.ImportPage `json:"page" jsonschema:"the page's link, title and photo, when it was reached"`
+}
+
 // staleBody is a 412: the error plus the recipe as it now stands.
 type staleBody struct {
 	Error   errorDetail    `json:"error"`
@@ -72,8 +79,13 @@ func etag(version int) string { return `"` + strconv.Itoa(version) + `"` }
 // storage failure: logged, and reported as 503 (spec §4.1) without its cause.
 func (a *api) fail(w http.ResponseWriter, r *http.Request, err error) {
 	var re *recipes.Error
+	var ie *recipes.ImportError
 	var tooBig *http.MaxBytesError
 	switch {
+	case errors.As(err, &ie):
+		w.Header().Set("Cache-Control", "no-store")
+		writeJSON(w, http.StatusUnprocessableEntity, importErrorBody{errorDetail{ie.Code, ie.Message}, ie.Page})
+		return
 	case errors.As(err, &re):
 		status, ok := statusOf[re.Code]
 		if !ok {

@@ -3,10 +3,11 @@ package recipes
 // Wire types for importing a recipe from a link (issue #7). A preview is a
 // draft for a person to review; saving it goes through POST /v1/recipes.
 
-// ImportRequest is the body of POST /v1/recipes/import/preview. Exactly one of
-// URL or Text is set.
+// ImportRequest is the body of POST /v1/recipes/import/preview. URL alone
+// reads that page. Text is split without fetching anything; a URL sent with
+// it is only the link the recipe is credited to, and is never fetched.
 type ImportRequest struct {
-	URL   string `json:"url,omitempty" jsonschema:"the recipe page to read"`
+	URL   string `json:"url,omitempty" jsonschema:"the recipe page to read; with text, only the link the recipe is credited to, never fetched"`
 	Text  string `json:"text,omitempty" jsonschema:"recipe text pasted by a person; split into ingredients and steps without fetching anything"`
 	Title string `json:"title,omitempty" jsonschema:"with text: a title carried over from a page that had no recipe data"`
 }

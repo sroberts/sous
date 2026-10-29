@@ -13,6 +13,7 @@ import (
 	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/sroberts/sous/internal/identity"
+	"github.com/sroberts/sous/internal/importer"
 	"github.com/sroberts/sous/internal/recipes"
 )
 
@@ -26,16 +27,43 @@ Every write is attributed to the person this connection names (the X-Sous-Person
 To edit or delete a recipe, first call get_recipe and pass its version back; if someone changed it since, you get a stale error with the current recipe to retry against.
 Deletes are soft: a deleted recipe goes to the trash and restore_recipe brings it back.`
 
+const importInstructions = `
+To add a recipe from a web page, call import_recipe with its link; check the draft it returns, then save it with create_recipe, or pass save=true to save it as read.`
+
+// Option configures New.
+type Option func(*options)
+
+type options struct {
+	importer *importer.Importer
+}
+
+// WithImporter registers import_recipe, which reads recipes from links.
+func WithImporter(im *importer.Importer) Option {
+	return func(o *options) { o.importer = im }
+}
+
 // New returns the /mcp handler with the tools from spec.md §9 registered.
 // It expects to be wrapped by api.WithIdentity, which resolves the caller.
-func New(svc *recipes.Service, log *slog.Logger, version string) http.Handler {
+func New(svc *recipes.Service, log *slog.Logger, version string, opts ...Option) http.Handler {
+	var o options
+	for _, opt := range opts {
+		opt(&o)
+	}
+	instr := instructions
+	if o.importer != nil {
+		instr += importInstructions
+	}
 	server := sdk.NewServer(&sdk.Implementation{Name: "sous", Title: "Sous", Version: version}, &sdk.ServerOptions{
-		Instructions: instructions,
+		Instructions: instr,
 		// Stateless mode connects a session per request, and the SDK logs
 		// each at Info.
 		Logger: slog.New(warnAndAbove{log.Handler()}),
 	})
-	register(server, &tools{svc: svc, log: log})
+	t := &tools{svc: svc, log: log, importer: o.importer}
+	register(server, t)
+	if t.importer != nil {
+		registerImport(server, t)
+	}
 
 	h := sdk.NewStreamableHTTPHandler(func(*http.Request) *sdk.Server { return server }, &sdk.StreamableHTTPOptions{
 		// No sessions to lose on restart.
@@ -56,8 +84,9 @@ func New(svc *recipes.Service, log *slog.Logger, version string) http.Handler {
 }
 
 type tools struct {
-	svc *recipes.Service
-	log *slog.Logger
+	svc      *recipes.Service
+	log      *slog.Logger
+	importer *importer.Importer
 }
 
 // caller prefers the Caller api.WithIdentity put on the request context,
@@ -90,6 +119,14 @@ func (t *tools) caller(ctx context.Context, req *sdk.CallToolRequest) (identity.
 // toolError turns a failure into the text of an IsError tool result:
 // "<code>: <message>", which the SDK sets when a handler returns an error.
 func (t *tools) toolError(tool string, err error) error {
+	var ie *recipes.ImportError
+	if errors.As(err, &ie) {
+		msg := ie.Code + ": " + ie.Message
+		if ie.Page != nil && ie.Page.Title != nil {
+			msg += fmt.Sprintf(" (the page is titled %q)", *ie.Page.Title)
+		}
+		return errors.New(msg)
+	}
 	var e *recipes.Error
 	if !errors.As(err, &e) {
 		t.log.Error("mcp tool failed", "tool", tool, "error", err.Error())

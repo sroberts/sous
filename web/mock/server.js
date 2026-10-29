@@ -169,7 +169,8 @@ async function importPreview(req, res) {
   const body = JSON.parse((await readBody(req)).toString() || '{}');
   const url = String(body.url ?? '').trim();
   const text = String(body.text ?? '').trim();
-  if (!url === !text) return fail(res, 400, 'invalid', 'Send either a url or some text, not both.');
+  // Text may carry the link it came from; that link is credited, never fetched.
+  if (!url && !text) return fail(res, 400, 'invalid', 'Send a url or some text.');
   const preview = (draft, report, images = []) =>
     send(res, 200, {
       draft,
@@ -183,9 +184,9 @@ async function importPreview(req, res) {
     const split = splitText(text);
     const title = String(body.title ?? '').trim() || split.title || '';
     if (!split.ingredients.length && !split.steps.length) return importFail(res, 'no_recipe_found', 'Sous found no ingredients or steps in that text.');
-    const draft = { title, ingredients: split.ingredients, steps: split.steps };
+    const draft = { title, ingredients: split.ingredients, steps: split.steps, ...(url ? { source_url: url } : {}) };
     const missing = [!title && 'title', !split.ingredients.length && 'ingredients', !split.steps.length && 'steps'].filter(Boolean);
-    return preview(draft, { method: 'text', source_url: '', found: ['ingredients', 'steps'].filter((f) => !missing.includes(f)), missing: [...missing, 'times', 'photo'] });
+    return preview(draft, { method: 'text', source_url: url, found: ['ingredients', 'steps'].filter((f) => !missing.includes(f)), missing: [...missing, 'times', 'photo'] });
   }
 
   const key = normalizeSource(url);
