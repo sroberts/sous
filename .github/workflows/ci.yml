@@ -35,11 +35,10 @@ jobs:
       - name: go vet
         run: go vet ./...
 
-      # ADJUST: the flags for gen.mjs are not settled yet. The step fails if
-      # the committed golden file differs from what parse.js produces.
+      # Fails if the committed golden file differs from what parse.js produces.
       - name: Parser golden drift check
         run: |
-          node scripts/parser-golden/gen.mjs
+          node scripts/parser-golden/gen.mjs > internal/recipes/testdata/parse_golden.json
           git diff --exit-code -- internal/recipes/testdata/parse_golden.json
 
       - name: Test
