@@ -456,19 +456,28 @@ can be deleted after use.
 
 It reads the `.melarecipes` zip, and for each recipe:
 
-- uploads its base64 images to `POST /v1/images`;
+- uploads its base64 images to `POST /v1/images`. Images Sous refuses (Mela
+  holds the odd TIFF or GIF under a `.jpg` name) are converted to JPEG, or to
+  PNG when they have transparency, and uploaded again;
 - maps the fields and `POST`s to `/v1/recipes`:
-  - `title`, `link` → `source_url`, `notes`, `nutrition`;
+  - `title`, `link` → `source_url`, `text` → `description`, `notes`,
+    `nutrition`;
   - `yield` → `yield_text`;
-  - times → minutes where they parse, else `time_text`;
-  - `ingredients` and `instructions` split on newlines;
+  - times → minutes where they are a plain duration (`1 hour 15 minutes`,
+    `1h`, `1:10`, `45`); anything with more meaning (ranges, "plus overnight
+    soaking", "at least") keeps its wording in `time_text`;
+  - `ingredients` and `instructions` split on newlines. `#` headings pass
+    through as sections. Steps numbered `1 …`, `2 …` in order lose the
+    numbers, since Sous numbers steps itself;
   - `categories` → tags;
 - sets `favorite` and `wantToCook` via `PUT …/mine` for the person running the
   import.
 
 It sends `X-Sous-Person`, so the import is attributed to that person like
-any other API client. It is idempotent by `source_url` plus title: a re-run
-skips recipes already present, so an interrupted import can be resumed.
+any other API client; `--name` adds them to the household first if needed.
+It is idempotent by `source_url` plus title: a re-run skips recipes already
+present, so an interrupted import can be resumed. A recipe that appears
+twice in the export is imported once, and the second copy is reported.
 
 ---
 

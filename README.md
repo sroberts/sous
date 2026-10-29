@@ -83,6 +83,15 @@ uv run --no-project scripts/mela-sample/sample.py Recipes.melarecipes web/mock-l
 A one-time, throwaway script loads the Mela export through the REST API. The
 app itself carries no Mela code. The export is not committed.
 
+```sh
+uv run scripts/mela-import/mela_import.py Recipes.melarecipes \
+    --url http://127.0.0.1:8099 --person scott --name Scott
+```
+
+`--dry-run` reads and maps the export without sending anything. Re-running
+skips what's already there, so an interrupted import can just be run again.
+Details are in [`spec.md`](spec.md) §11.
+
 ## Identity
 
 Outpost's login gateway supplies the caller as a signed `X-Outpost-Identity`

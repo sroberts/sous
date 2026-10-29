@@ -16,3 +16,6 @@ internal/ui/dist/
 /sous
 /dist/
 internal/recipes/testdata/*.local.json
+
+# Python
+__pycache__/
