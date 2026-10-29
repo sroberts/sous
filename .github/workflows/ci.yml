@@ -1,0 +1,53 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Build and check the UI
+        working-directory: web
+        run: npm ci && npm run build && npm run check
+
+      - name: gofmt
+        run: test -z "$(gofmt -l .)"
+
+      - name: go vet
+        run: go vet ./...
+
+      # ADJUST: the flags for gen.mjs are not settled yet. The step fails if
+      # the committed golden file differs from what parse.js produces.
+      - name: Parser golden drift check
+        run: |
+          node scripts/parser-golden/gen.mjs
+          git diff --exit-code -- internal/recipes/testdata/parse_golden.json
+
+      - name: Test
+        env:
+          SOUS_REQUIRE_UI: "1"
+        run: go test -race ./...
+
+      - name: Build without cgo
+        env:
+          CGO_ENABLED: "0"
+        run: go build ./cmd/sous
