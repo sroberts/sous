@@ -49,3 +49,15 @@ export function ago(iso) {
   if (s < 86400 * 30) return `${Math.round(s / 86400)} days ago`;
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
+
+/** A time as a ticket prints it: 45 → { fig: '45', unit: 'min' },
+ *  165 → { fig: '2:45', unit: 'hr' }. Wording that never parsed comes back
+ *  as { text }; no time at all as null. */
+export function ticketTime(min, text) {
+  if (min) {
+    if (min < 60) return { fig: String(min), unit: 'min' };
+    const m = min % 60;
+    return { fig: `${Math.floor(min / 60)}:${String(m).padStart(2, '0')}`, unit: 'hr' };
+  }
+  return text ? { text } : null;
+}

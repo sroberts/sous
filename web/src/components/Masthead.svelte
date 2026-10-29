@@ -13,7 +13,7 @@
     const params = new URLSearchParams(route.name === 'library' ? route.search : '');
     const value = e.currentTarget.value;
     value ? params.set('q', value) : params.delete('q');
-    // Typing refines the menu in place; from elsewhere it opens the menu.
+    // Typing refines the library in place; from elsewhere it opens the library.
     go(`/${params.size ? `?${params}` : ''}`, { replace: route.name === 'library' });
   }
 
@@ -22,114 +22,116 @@
       e.preventDefault();
       field?.focus();
       field?.select();
+    } else if (e.key === 'Escape') {
+      menuOpen = false;
     }
   }
 </script>
 
 <svelte:window onkeydown={onkey} />
 
-<header class="masthead">
-  <div class="inner">
-    <a class="mark" href="/" use:link aria-label="Sous, the menu">Sous</a>
-    <nav aria-label="Library">
-      <a href="/" use:link class:on={route.name === 'library' && !show}>Menu</a>
-      <a href="/?show=want" use:link class:on={show === 'want'}>Want to cook</a>
-      <a href="/?show=fav" use:link class:on={show === 'fav'}>Favorites</a>
-    </nav>
-    <label class="search">
-      <Search size={16} aria-hidden="true" />
-      <span class="visually-hidden">Search recipes</span>
-      <input bind:this={field} type="search" placeholder="Search the menu" value={q} oninput={search} autocomplete="off" />
-      <kbd>⌘K</kbd>
-    </label>
-    <a class="btn quiet new" href="/new" use:link><Plus aria-hidden="true" />New recipe</a>
-    <div class="who">
-      <button class="who-btn" aria-haspopup="menu" aria-expanded={menuOpen} onclick={() => (menuOpen = !menuOpen)}>
-        <span class="caps" class:as={session.person}>{session.person ? 'Cooking as' : 'Who’s cooking?'}</span>
-        {#if session.person}<span class="name">{session.person.name}</span>{/if}
-        <ChevronDown size={14} aria-hidden="true" />
-      </button>
-      {#if menuOpen}
-        <ul class="menu" role="menu">
-          {#each session.people as p (p.username)}
-            <li role="none">
-              <button role="menuitemradio" aria-checked={session.person?.username === p.username} onclick={() => (choosePerson(p), (menuOpen = false))}>
-                {p.name}
-                {#if session.person?.username === p.username}<Check size={14} aria-hidden="true" />{/if}
-              </button>
-            </li>
-          {/each}
-          <li role="none"><button role="menuitem" onclick={() => ((session.asking = true), (menuOpen = false))}>Someone else…</button></li>
-        </ul>
+<header class="bar">
+  <a class="mark" href="/" use:link aria-label="Sous, the library">Sous</a>
+  <nav aria-label="Library">
+    <a href="/" use:link class:on={route.name === 'library' && !show} aria-current={route.name === 'library' && !show ? 'page' : undefined}>Library</a>
+    <a href="/?show=want" use:link class:on={show === 'want'} aria-current={show === 'want' ? 'page' : undefined}>Want to cook</a>
+    <a href="/?show=fav" use:link class:on={show === 'fav'} aria-current={show === 'fav' ? 'page' : undefined}>Favorites</a>
+  </nav>
+  <label class="search">
+    <Search size={17} aria-hidden="true" />
+    <span class="visually-hidden">Search recipes</span>
+    <input bind:this={field} type="search" placeholder="Search recipes, tags, ingredients" value={q} oninput={search} autocomplete="off" />
+    <kbd>⌘K</kbd>
+  </label>
+  <a class="btn primary new" href="/new" use:link><Plus aria-hidden="true" />New recipe</a>
+  <div class="who">
+    <button class="who-btn" aria-haspopup="menu" aria-expanded={menuOpen} onclick={() => (menuOpen = !menuOpen)}>
+      {#if session.person}
+        <span class="avatar fig" aria-hidden="true">{session.person.name.slice(0, 1)}</span>
+        <span class="name">{session.person.name}</span>
+      {:else}
+        <span class="name">Who’s cooking?</span>
       {/if}
-    </div>
+      <ChevronDown size={15} aria-hidden="true" />
+    </button>
+    {#if menuOpen}
+      <ul class="menu" role="menu">
+        {#each session.people as p (p.username)}
+          <li role="none">
+            <button role="menuitemradio" aria-checked={session.person?.username === p.username} onclick={() => (choosePerson(p), (menuOpen = false))}>
+              {p.name}
+              {#if session.person?.username === p.username}<Check size={16} aria-hidden="true" />{/if}
+            </button>
+          </li>
+        {/each}
+        <li role="none"><button role="menuitem" onclick={() => ((session.asking = true), (menuOpen = false))}>Someone else…</button></li>
+      </ul>
+    {/if}
   </div>
-  <hr class="double-rule" />
 </header>
 
 <style>
-  .masthead {
+  .bar {
     position: sticky;
     top: 0;
     z-index: 10;
-    background: var(--paper);
-  }
-  .inner {
-    height: var(--masthead);
+    height: var(--bar);
     display: flex;
     align-items: center;
-    gap: var(--space-6);
+    gap: var(--space-5);
     padding: 0 var(--gutter);
+    background: var(--ticket);
+    border-bottom: 1px solid var(--perf);
   }
   .mark {
-    font-family: var(--serif);
-    font-weight: 700;
-    font-size: 2rem;
+    font-size: 1.5rem;
+    font-weight: 850;
+    font-stretch: 112%;
+    letter-spacing: -0.03em;
     line-height: 1;
-    letter-spacing: 0.01em;
     text-decoration: none;
   }
   nav {
     display: flex;
-    gap: var(--space-5);
+    gap: var(--space-1);
   }
   nav a {
-    font-family: var(--sans);
-    font-size: var(--caps);
+    padding: 7px 12px;
+    border-radius: 3px;
+    font-size: var(--ui);
     font-weight: 600;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
+    color: var(--ink-2);
     text-decoration: none;
-    color: var(--ink-soft);
-    padding: 6px 0 4px;
-    border-bottom: 2px solid transparent;
   }
   nav a:hover {
     color: var(--ink);
+    background: var(--ticket-press);
   }
   nav a.on {
     color: var(--ink);
-    border-bottom-color: var(--brick);
+    background: var(--pass);
   }
   .search {
     margin-left: auto;
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    width: min(360px, 32vw);
-    border-bottom: 1.5px solid var(--ink);
-    padding: 4px 2px;
-    color: var(--ink-soft);
+    width: min(440px, 34vw);
+    height: 40px;
+    padding: 0 var(--space-3);
+    border: 2px solid var(--ink);
+    border-radius: 3px;
+    background: var(--ticket);
+    color: var(--ink-2);
   }
   .search:focus-within {
-    border-bottom-color: var(--brick);
+    border-color: var(--red);
   }
   .search input {
     flex: 1;
     min-width: 0;
     border: 0;
     background: none;
-    font-family: var(--sans);
     font-size: var(--ui);
     color: var(--ink);
     outline: none;
@@ -138,13 +140,14 @@
     display: none;
   }
   kbd {
-    font-family: var(--sans);
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--ink-soft);
-    border: 1px solid var(--rule);
+    font: 600 0.75rem var(--sans);
+    color: var(--ink-3);
+    border: 1px solid var(--perf);
     border-radius: 3px;
     padding: 1px 5px;
+  }
+  .new {
+    min-height: 40px;
   }
   .who {
     position: relative;
@@ -153,68 +156,72 @@
     display: flex;
     align-items: center;
     gap: var(--space-2);
+    min-height: 40px;
     border: 0;
     background: none;
-    padding: var(--space-2) 0;
-    color: var(--ink-soft);
+    padding: 0 var(--space-1);
+    font-size: var(--ui);
+    font-weight: 600;
   }
-  .who-btn .name {
-    font-family: var(--serif);
+  .avatar {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: var(--ticket);
     font-size: 1rem;
-    color: var(--ink);
   }
   .menu {
     position: absolute;
     right: 0;
-    top: calc(100% + 4px);
-    min-width: 200px;
-    background: var(--paper);
-    border: 1.5px solid var(--ink);
+    top: calc(100% + 6px);
+    min-width: 220px;
     padding: var(--space-1) 0;
+    background: var(--ticket);
+    border: 2px solid var(--ink);
+    border-radius: 3px;
   }
   .menu button {
     width: 100%;
+    min-height: 44px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     border: 0;
     background: none;
     text-align: left;
-    padding: var(--space-2) var(--space-4);
-    font-size: 1rem;
+    padding: 0 var(--space-4);
+    font-size: var(--ui);
   }
   .menu button:hover {
-    background: var(--paper-press);
+    background: var(--ticket-press);
   }
   .menu :global(svg) {
-    color: var(--brick);
+    color: var(--red);
   }
 
-  @media (max-width: 960px) {
+  @media (max-width: 1080px) {
     .new {
       display: none;
     }
   }
   @media (max-width: 760px) {
-    .inner {
+    .bar {
       height: auto;
       flex-wrap: wrap;
-      gap: var(--space-3) var(--space-5);
-      padding-top: var(--space-3);
+      gap: var(--space-2) var(--space-4);
+      padding-top: var(--space-2);
       padding-bottom: var(--space-3);
-    }
-    .mark {
-      font-size: 1.75rem;
     }
     .who {
       margin-left: auto;
     }
-    .who-btn .caps.as {
-      display: none;
-    }
     nav {
       order: 3;
       width: 100%;
+      margin: 0 calc(var(--space-3) * -1);
     }
     .search {
       order: 4;

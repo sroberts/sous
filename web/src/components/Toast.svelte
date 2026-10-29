@@ -34,19 +34,22 @@
     gap: var(--space-4);
     padding: var(--space-3) var(--space-3) var(--space-3) var(--space-5);
     background: var(--ink);
-    color: var(--paper);
+    color: var(--ticket);
+    border-radius: 3px;
     animation: rise 320ms var(--ease-out);
   }
   p {
     flex: 1;
-    font-size: 1rem;
+    font-size: var(--ui);
+    font-weight: 500;
   }
   .btn {
-    border-color: var(--paper);
-    color: var(--paper);
+    background: var(--ink);
+    border-color: var(--ticket);
+    color: var(--ticket);
   }
   .btn:hover {
-    background: rgb(244 239 230 / 0.12);
+    background: var(--ink-2);
   }
   @keyframes rise {
     from {

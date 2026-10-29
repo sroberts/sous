@@ -1,7 +1,8 @@
 <script>
   import { link } from '../lib/router.svelte.js';
   import { api } from '../lib/api.js';
-  import { amount, duration } from '../lib/format.js';
+  import { amount } from '../lib/format.js';
+  import Facts from './Facts.svelte';
   import Plate from './Plate.svelte';
 
   let { summary, using = [] } = $props();
@@ -24,30 +25,23 @@
 </script>
 
 <article class="pv">
-  <Plate hash={summary.cover} title={summary.title} />
+  <Plate hash={summary.cover} title={summary.title} ratio="16 / 10" />
   <div class="body">
     <h2>{summary.title}</h2>
     {#if summary.source_host}<p class="src">{summary.source_host}</p>{/if}
-    {#if recipe}
-      <dl class="facts">
-        {#if recipe.yield_text}<div><dt class="caps">Yield</dt><dd>{recipe.yield_text.replace(/^yield:?\s*/i, '')}</dd></div>{/if}
-        {#if recipe.prep_minutes}<div><dt class="caps">Prep</dt><dd>{duration(recipe.prep_minutes)}</dd></div>{/if}
-        {#if recipe.cook_minutes}<div><dt class="caps">Cook</dt><dd>{duration(recipe.cook_minutes)}</dd></div>{/if}
-        {#if !recipe.prep_minutes && !recipe.cook_minutes && (recipe.total_minutes || recipe.time_text)}
-          <div><dt class="caps">Time</dt><dd>{duration(recipe.total_minutes) || recipe.time_text}</dd></div>
-        {/if}
-      </dl>
-    {/if}
+    <div class="facts">
+      {#if recipe}<Facts {recipe} />{:else}<div class="ghost"></div>{/if}
+    </div>
     <div class="acts">
       <a class="btn primary" href="/r/{summary.id}/cook" use:link>Begin cooking</a>
       <a class="btn" href="/r/{summary.id}" use:link>Open</a>
       <a class="btn quiet" href="/r/{summary.id}/edit" use:link>Edit</a>
     </div>
     {#if recipe}
-      <h3 class="caps">Ingredients</h3>
+      <h3 class="label">Ingredients</h3>
       <ul class="ing">
-        {#each recipe.ingredients.slice(0, LIMIT) as i}
-          <li class:have={onHand(i)}><span class="amt">{amount(i)}</span><span>{i.item}</span></li>
+        {#each recipe.ingredients.filter((i) => i.item).slice(0, LIMIT) as i}
+          <li class:have={onHand(i)}><span class="amt fig">{amount(i)}</span><span>{i.item}</span></li>
         {/each}
       </ul>
       {#if recipe.ingredients.length > LIMIT}
@@ -59,69 +53,63 @@
 
 <style>
   .pv {
-    padding: var(--space-6) var(--space-6) var(--space-7);
+    padding: var(--space-5) var(--space-5) var(--space-7);
   }
   .body {
-    margin-top: var(--space-5);
+    margin-top: var(--space-4);
   }
   h2 {
     font-size: var(--title-l);
+    font-weight: 800;
+    line-height: 1.1;
   }
   .src {
     margin-top: var(--space-1);
-    font-style: italic;
-    color: var(--ink-soft);
-    font-size: 1rem;
+    color: var(--ink-3);
+    font-size: 0.875rem;
   }
   .facts {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2) var(--space-5);
-    margin: var(--space-4) 0 0;
+    margin-top: var(--space-4);
   }
-  .facts dt {
-    color: var(--ink-soft);
-    font-size: 0.6875rem;
-  }
-  .facts dd {
-    margin: 0;
-    font-family: var(--sans);
-    font-size: 0.9375rem;
+  .ghost {
+    height: 76px;
+    border-top: 3px solid var(--ink);
   }
   .acts {
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-2);
-    margin: var(--space-5) 0 var(--space-6);
+    margin: var(--space-4) 0 var(--space-6);
+  }
+  .acts .primary {
+    flex: 1;
+    min-height: 48px;
   }
   h3 {
-    color: var(--ink);
+    color: var(--ink-3);
     padding-bottom: var(--space-2);
-    border-bottom: 1px solid var(--ink);
   }
   .ing li {
     display: grid;
-    grid-template-columns: 5.5em 1fr;
+    grid-template-columns: 5rem 1fr;
     gap: var(--space-3);
-    padding: 5px 0;
-    border-bottom: 1px solid var(--rule);
-    font-size: 1rem;
-    line-height: 1.4;
+    padding: 6px 0;
+    border-top: 1px solid var(--ticket-press);
+    font-size: 0.9375rem;
+    line-height: 1.35;
   }
   .amt {
-    font-family: var(--sans);
-    font-size: 0.875rem;
-    padding-top: 2px;
-    color: var(--ink-soft);
+    font-size: 1.0625rem;
+    color: var(--ink-2);
   }
-  .have .amt,
-  .have span:last-child {
-    color: var(--brick);
+  .have,
+  .have .amt {
+    color: var(--red);
+    font-weight: 700;
   }
   .more {
     margin-top: var(--space-2);
-    font-style: italic;
-    color: var(--ink-soft);
-    font-size: 0.9375rem;
+    color: var(--ink-3);
+    font-size: 0.875rem;
   }
 </style>

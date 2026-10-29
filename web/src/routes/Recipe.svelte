@@ -3,8 +3,9 @@
   import { link } from '../lib/router.svelte.js';
   import { api } from '../lib/api.js';
   import { session, asPerson, patchSummary } from '../lib/session.svelte.js';
-  import { amount, duration, ago } from '../lib/format.js';
+  import { amount, ago } from '../lib/format.js';
   import Plate from '../components/Plate.svelte';
+  import Facts from '../components/Facts.svelte';
 
   let { id } = $props();
   let recipe = $state(null);
@@ -41,34 +42,32 @@
 
 {#if error}
   <main class="missing">
-    <h1>{error.status === 404 ? 'That recipe isn’t on the menu.' : 'This recipe didn’t load.'}</h1>
+    <h1>{error.status === 404 ? 'That recipe isn’t in the library.' : 'This recipe didn’t load.'}</h1>
     <p>{error.message}</p>
-    <a class="btn" href="/" use:link>Back to the menu</a>
+    <a class="btn" href="/" use:link>Back to the library</a>
   </main>
 {:else if !recipe}
   <main class="page loading" aria-busy="true"><span class="visually-hidden">Loading recipe</span></main>
 {:else}
   <main class="page">
     <div class="crumbs">
-      <a class="back caps" href="/" use:link><ArrowLeft size={14} aria-hidden="true" />The menu</a>
-      <a class="back caps" href="/r/{id}/edit" use:link><Pencil size={14} aria-hidden="true" />Edit recipe</a>
+      <a class="back" href="/" use:link><ArrowLeft size={16} aria-hidden="true" />Library</a>
+      <a class="back" href="/r/{id}/edit" use:link><Pencil size={16} aria-hidden="true" />Edit recipe</a>
     </div>
 
-    <header class="top">
-      <div class="plate"><Plate hash={recipe.images[0]} title={recipe.title} /></div>
-      <div class="title">
+    <div class="rail" aria-hidden="true"></div>
+    <header class="top ticket">
+      <span class="clip" aria-hidden="true"></span>
+      <div class="head">
         <h1>{recipe.title}</h1>
-        {#if recipe.source_url}
-          <p class="src">from <a href={recipe.source_url} target="_blank" rel="noreferrer">{recipe.source_host}<ExternalLink size={12} aria-hidden="true" /></a></p>
+        {#if recipe.source_url || recipe.tags.length}
+          <p class="src">
+            {#if recipe.tags.length}<span>{recipe.tags.join(', ')}</span>{#if recipe.source_url}<span class="dot" aria-hidden="true">·</span>{/if}{/if}
+            {#if recipe.source_url}<a href={recipe.source_url} target="_blank" rel="noreferrer">{recipe.source_host ?? recipe.source_url}<ExternalLink size={13} aria-hidden="true" /></a>{/if}
+          </p>
         {/if}
+        <div class="facts"><Facts {recipe} size="l" /></div>
         {#if recipe.description}<p class="desc">{recipe.description}</p>{/if}
-        <dl class="facts">
-          {#if recipe.yield_text}<div><dt class="caps">Yield</dt><dd>{recipe.yield_text.replace(/^yield:?\s*/i, '')}</dd></div>{/if}
-          {#if recipe.prep_minutes}<div><dt class="caps">Prep</dt><dd>{duration(recipe.prep_minutes)}</dd></div>{/if}
-          {#if recipe.cook_minutes}<div><dt class="caps">Cook</dt><dd>{duration(recipe.cook_minutes)}</dd></div>{/if}
-          {#if recipe.total_minutes}<div><dt class="caps">Total</dt><dd>{duration(recipe.total_minutes)}</dd></div>{/if}
-          {#if recipe.time_text && !recipe.total_minutes}<div><dt class="caps">Time</dt><dd>{recipe.time_text}</dd></div>{/if}
-        </dl>
         <div class="acts">
           <a class="btn primary cook" href="/r/{id}/cook" use:link>Begin cooking</a>
           <button class="btn" aria-pressed={recipe.mine.favorite} onclick={() => toggle('favorite')}>
@@ -79,14 +78,13 @@
           </button>
         </div>
       </div>
+      <div class="photo"><Plate hash={recipe.images[0]} title={recipe.title} /></div>
     </header>
 
-    <hr class="double-rule" />
-
     <div class="body">
-      <section class="ingredients" aria-labelledby="ing-h">
+      <section class="ingredients sheet" aria-labelledby="ing-h">
         <div class="col-head">
-          <h2 id="ing-h" class="caps">Ingredients</h2>
+          <h2 id="ing-h" class="label">Ingredients</h2>
           <button class="as-written" aria-pressed={asWritten} onclick={() => (asWritten = !asWritten)}>
             {asWritten ? 'Show measured' : 'Show as written'}
           </button>
@@ -99,7 +97,7 @@
                 <li class="raw">{i.raw}</li>
               {:else}
                 <li>
-                  <span class="amt">{amount(i)}</span>
+                  <span class="amt fig">{amount(i)}</span>
                   <span class="item">{i.item}{#if i.note}<span class="note">, {i.note}</span>{/if}</span>
                 </li>
               {/if}
@@ -108,23 +106,23 @@
         {/each}
       </section>
 
-      <section class="method" aria-labelledby="method-h">
-        <div class="col-head"><h2 id="method-h" class="caps">Method</h2></div>
+      <section class="method sheet" aria-labelledby="method-h">
+        <div class="col-head"><h2 id="method-h" class="label">Method</h2><span class="label steps">{recipe.steps.length} steps</span></div>
         {#each groups(recipe.steps) as g}
           {#if g.section}<h3 class="sect">{g.section}</h3>{/if}
           <ol>
             {#each g.rows as s}
-              <li><span class="n" aria-hidden="true">{recipe.steps.indexOf(s) + 1}</span><p>{s.text}</p></li>
+              <li><span class="n fig" aria-hidden="true">{recipe.steps.indexOf(s) + 1}</span><p>{s.text}</p></li>
             {/each}
           </ol>
         {/each}
 
         {#if recipe.notes}
-          <h2 class="caps aside-h">Notes</h2>
+          <h2 class="label aside-h">Notes</h2>
           <p class="notes">{recipe.notes}</p>
         {/if}
         {#if recipe.nutrition_text}
-          <h2 class="caps aside-h">Nutrition</h2>
+          <h2 class="label aside-h">Nutrition</h2>
           <p class="notes">{recipe.nutrition_text}</p>
         {/if}
 
@@ -138,9 +136,9 @@
 
 <style>
   .page {
-    max-width: 76rem;
+    max-width: 80rem;
     margin: 0 auto;
-    padding: var(--space-5) var(--gutter) var(--space-8);
+    padding: var(--space-3) var(--gutter) var(--space-8);
   }
   .loading {
     min-height: 60vh;
@@ -148,177 +146,187 @@
   .crumbs {
     display: flex;
     justify-content: space-between;
+    margin-bottom: var(--space-3);
   }
   .back {
     display: inline-flex;
     align-items: center;
     gap: var(--space-2);
+    min-height: 40px;
+    font-size: var(--ui);
+    font-weight: 600;
     text-decoration: none;
-    color: var(--ink-soft);
-    padding: var(--space-2) 0;
+    color: var(--ink-2);
   }
   .back:hover {
-    color: var(--brick);
+    color: var(--red);
+  }
+
+  .page > .rail {
+    position: relative;
+    z-index: 1;
+  }
+  .clip {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 44px;
+    height: 10px;
+    margin-left: -22px;
+    border-radius: 0 0 3px 3px;
+    background: linear-gradient(var(--steel), var(--steel-lo));
   }
   .top {
+    position: relative;
+    margin: -4px var(--space-4) 0;
     display: grid;
-    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-    gap: var(--space-7);
-    align-items: start;
-    margin: var(--space-4) 0 var(--space-6);
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    gap: var(--space-6);
+    padding: var(--space-7) var(--space-6) calc(var(--space-6) + var(--tear));
   }
   h1 {
     font-size: var(--title-xl);
-    line-height: 1.08;
+    font-weight: 800;
+    line-height: 1.04;
+    letter-spacing: -0.025em;
   }
   .src {
-    margin-top: var(--space-3);
-    font-style: italic;
-    color: var(--ink-soft);
+    margin-top: var(--space-2);
+    font-size: var(--ui);
+    color: var(--ink-2);
+  }
+  .src {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--space-3);
+  }
+  .dot {
+    color: var(--ink-3);
   }
   .src a {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
+  }
+  .facts {
+    margin-top: var(--space-5);
   }
   .desc {
     margin-top: var(--space-4);
-    max-width: 60ch;
-  }
-  .facts {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-3) var(--space-6);
-    margin: var(--space-5) 0 0;
-  }
-  .facts dt {
-    color: var(--ink-soft);
-    font-size: 0.6875rem;
-  }
-  .facts dd {
-    margin: 2px 0 0;
-    font-family: var(--sans);
-    font-size: 1.0625rem;
-    font-weight: 500;
+    max-width: 65ch;
+    color: var(--ink-2);
   }
   .acts {
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-2);
-    margin-top: var(--space-6);
+    margin-top: var(--space-5);
   }
   .cook {
     min-height: 52px;
     padding: 0 var(--space-6);
-    font-size: 0.875rem;
+    font-size: 1.0625rem;
   }
-  .acts button[aria-pressed='true'] {
-    color: var(--brick);
-    border-color: var(--brick);
+  .acts .btn:not(.cook) {
+    min-height: 52px;
+  }
+  .photo {
+    align-self: start;
   }
 
   .body {
     display: grid;
-    grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr);
-    gap: var(--space-8);
-    margin-top: var(--space-6);
+    grid-template-columns: minmax(17rem, 23rem) minmax(0, 1fr);
+    gap: var(--space-4);
+    margin-top: var(--space-4);
+    align-items: start;
+  }
+  .sheet {
+    background: var(--ticket);
+    padding: var(--space-4) var(--space-5) var(--space-6);
   }
   .ingredients {
     position: sticky;
-    top: calc(var(--masthead) + var(--space-5));
-    align-self: start;
-    max-height: calc(100dvh - var(--masthead) - var(--space-6));
+    top: calc(var(--bar) + var(--space-4));
+    max-height: calc(100dvh - var(--bar) - var(--space-6));
     overflow-y: auto;
     scrollbar-width: thin;
   }
-  /* Both column heads share one height, so their rules sit level. */
   .col-head {
     display: flex;
     justify-content: space-between;
-    align-items: flex-end;
+    align-items: center;
     min-height: 2.25rem;
     padding-bottom: var(--space-2);
-    border-bottom: 1px solid var(--ink);
+    border-bottom: 3px solid var(--ink);
   }
-  .col-head h2 {
-    line-height: 1.2;
+  .steps {
+    color: var(--ink-3);
   }
   .as-written {
-    line-height: 1.2;
     border: 0;
     background: none;
-    font-family: var(--sans);
     font-size: 0.8125rem;
-    color: var(--ink-soft);
+    font-weight: 600;
+    color: var(--ink-2);
     text-decoration: underline;
-    text-decoration-color: var(--ink-faint);
+    text-decoration-color: var(--perf);
     text-underline-offset: 0.2em;
     padding: var(--space-1) 0;
   }
   .as-written:hover {
-    color: var(--ink);
+    color: var(--red);
   }
   .sect {
-    font-family: var(--serif);
-    font-style: italic;
-    font-size: 1.0625rem;
-    margin: var(--space-5) 0 var(--space-1);
+    font-size: var(--ui);
+    font-weight: 800;
+    margin: var(--space-5) 0 0;
+    padding-bottom: var(--space-1);
   }
   .ingredients li {
     display: grid;
-    grid-template-columns: 5.5em 1fr;
+    grid-template-columns: 5.25rem 1fr;
     gap: var(--space-3);
     padding: var(--space-2) 0;
-    border-bottom: 1px solid var(--rule);
-    font-size: 1.0625rem;
+    border-bottom: 1.5px dashed var(--ticket-press);
     line-height: 1.4;
   }
   .ingredients li.raw {
     display: block;
   }
   .amt {
-    font-family: var(--sans);
-    font-size: 0.9375rem;
-    font-weight: 500;
+    font-size: 1.1875rem;
     padding-top: 1px;
   }
   .note {
-    font-style: italic;
-    color: var(--ink-soft);
+    color: var(--ink-3);
   }
 
-  .method ol {
-    margin-top: var(--space-2);
-  }
   .method li {
     display: grid;
-    grid-template-columns: 2.5rem minmax(0, 65ch);
+    grid-template-columns: 3rem minmax(0, 65ch);
     gap: var(--space-3);
     padding: var(--space-4) 0;
-    border-bottom: 1px solid var(--rule);
+    border-bottom: 1.5px dashed var(--ticket-press);
   }
   .n {
-    font-family: var(--sans);
-    font-weight: 650;
-    font-size: 1.25rem;
-    line-height: 1.3;
+    font-size: 2rem;
   }
   .aside-h {
     margin-top: var(--space-7);
     padding-bottom: var(--space-2);
-    border-bottom: 1px solid var(--ink);
-    max-width: calc(65ch + 2.5rem + var(--space-3));
+    border-bottom: 3px solid var(--ink);
+    max-width: calc(65ch + 3rem + var(--space-3));
   }
   .notes {
     margin-top: var(--space-3);
-    max-width: calc(65ch + 2.5rem + var(--space-3));
+    max-width: calc(65ch + 3rem + var(--space-3));
     white-space: pre-line;
   }
   .colophon {
     margin-top: var(--space-7);
-    font-style: italic;
-    font-size: 0.9375rem;
-    color: var(--ink-soft);
+    font-size: 0.875rem;
+    color: var(--ink-3);
   }
   .missing {
     max-width: 36rem;
@@ -335,18 +343,26 @@
   @media (max-width: 900px) {
     .top {
       grid-template-columns: 1fr;
-      gap: var(--space-5);
+      margin: -4px var(--space-2) 0;
+      padding: var(--space-5) var(--space-4) calc(var(--space-5) + var(--tear));
+    }
+    .photo {
+      order: -1;
     }
     .body {
       grid-template-columns: 1fr;
-      gap: var(--space-7);
     }
     .ingredients {
       position: static;
       max-height: none;
     }
+    .ingredients,
+    .method {
+      padding-left: var(--space-4);
+      padding-right: var(--space-4);
+    }
     .method li {
-      grid-template-columns: 2rem minmax(0, 1fr);
+      grid-template-columns: 2.25rem minmax(0, 1fr);
     }
   }
   @media (max-width: 760px) {

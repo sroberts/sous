@@ -1,28 +1,31 @@
-/* Sous: two-colour letterpress. Every light value is a tint of the ink on
-   paper; brick is the second ink and marks only what is active or
-   actionable. */
+/* Sous: the pass in a working kitchen. Thermal-white tickets on a cool grey
+   pass, printed in black with one red second ink. Red marks only what is
+   live, selected or actionable. */
 :root {
-  --paper: #f4efe6;
-  --paper-press: #ebe4d6; /* ink at ~6% on paper: selected, pressed */
-  --paper-deep: #e2d9c8; /* ink at ~11%: hover on pressed, wells */
-  --ink: #2a2420;
-  --ink-soft: #5c534c; /* secondary text, 6.4:1 on paper */
-  --ink-faint: #8f857c; /* leaders, rules, disabled; never body text */
-  --rule: #d4c9b7;
-  --brick: #a83b27; /* 5.6:1 on paper */
-  --brick-press: #8e2f1e;
-  --brick-wash: #f1ddd3; /* brick at ~12% on paper */
+  --pass: #dfe3e6; /* the counter tickets sit on */
+  --pass-deep: #d0d6da; /* hover on the pass, wells, empty photo */
+  --ticket: #fafbfc; /* thermal paper */
+  --ticket-press: #eef1f3; /* hover and pressed on a ticket */
+  --ink: #141516;
+  --ink-2: #404447; /* secondary text: 7.6:1 on pass */
+  --ink-3: #5f6367; /* tertiary text: 5.9:1 on ticket, 4.7:1 on pass */
+  --perf: #adb4ba; /* perforations and hairlines; never text */
+  --steel-hi: #d2d6d9;
+  --steel: #959ba0;
+  --steel-lo: #5d6368;
+  --red: #bb1c14; /* 6.2:1 on ticket, 5.0:1 on pass */
+  --red-press: #981610;
+  --red-wash: #fbe5e2;
 
-  --serif: 'Libre Caslon Text', 'Iowan Old Style', Georgia, serif;
-  --sans: 'Libre Franklin Variable', 'Libre Franklin', system-ui, sans-serif;
+  --sans: 'Archivo Variable', 'Archivo', system-ui, sans-serif;
 
   /* One reading size does the work for recipe text. */
-  --read: 1.1875rem; /* 19px */
-  --read-lh: 1.6;
-  --title-xl: clamp(2.125rem, 1.6rem + 1.6vw, 3rem);
-  --title-l: 1.875rem;
-  --dish: 1.25rem;
-  --caps: 0.75rem; /* small-caps labels, tracked */
+  --read: 1.0625rem; /* 17px */
+  --read-lh: 1.55;
+  --title-xl: clamp(2rem, 1.4rem + 1.8vw, 3rem);
+  --title-l: 1.625rem;
+  --title-m: 1.1875rem;
+  --label: 0.6875rem; /* tracked ticket headers */
   --ui: 0.9375rem;
 
   --space-1: 4px;
@@ -34,7 +37,8 @@
   --space-7: 48px;
   --space-8: 64px;
 
-  --gutter: clamp(16px, 4vw, 56px);
-  --masthead: 72px;
+  --gutter: clamp(16px, 2.5vw, 32px);
+  --bar: 56px;
+  --tear: 7px; /* depth of a ticket's torn edge */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }

@@ -218,10 +218,10 @@
 
 <form class="editor" onsubmit={save} oninput={touch} novalidate>
   <div class="toolbar">
-    <a class="back caps" href={id ? `/r/${id}` : '/'} use:link><ArrowLeft size={14} aria-hidden="true" />{id ? 'Back to the recipe' : 'The menu'}</a>
-    <span class="state caps" aria-live="polite">{saving ? 'Saving…' : dirty ? 'Unsaved changes' : ''}</span>
+    <a class="back" href={id ? `/r/${id}` : '/'} use:link><ArrowLeft size={16} aria-hidden="true" />{id ? 'Recipe' : 'Library'}</a>
+    <span class="state label" aria-live="polite">{saving ? 'Saving…' : dirty ? 'Unsaved changes' : ''}</span>
     <a class="btn quiet" href={id ? `/r/${id}` : '/'} use:link>Cancel</a>
-    <button class="btn primary" disabled={saving || !loaded}>{id ? 'Save recipe' : 'Add to the menu'}</button>
+    <button class="btn primary" disabled={saving || !loaded}>{id ? 'Save recipe' : 'Add to the library'}</button>
   </div>
 
   {#if problem?.conflict}
@@ -238,23 +238,23 @@
 
   {#if loaded}
     <div class="sheet">
-      <div class="main">
+      <div class="main panel">
         <label class="visually-hidden" for="title">Title</label>
         <textarea id="title" class="title" rows="1" placeholder="Name the dish" bind:value={form.title} aria-invalid={titleError} oninput={() => (titleError = false)}></textarea>
         {#if titleError}<p class="field-error">A recipe needs a name.</p>{/if}
 
         <label class="field">
-          <span class="caps">Source</span>
+          <span class="label">Source</span>
           <input type="url" bind:value={form.source_url} placeholder="https://" />
         </label>
         <label class="field">
-          <span class="caps">Introduction</span>
+          <span class="label">Introduction</span>
           <textarea rows="2" bind:value={form.description} placeholder="A line or two about the dish (optional)"></textarea>
         </label>
 
         <section aria-labelledby="ing-h">
           <div class="col-head">
-            <h2 id="ing-h" class="caps">Ingredients</h2>
+            <h2 id="ing-h" class="label">Ingredients</h2>
             <p class="hint">One per line. Start a line with # for a heading, like <em># For the sauce</em>.</p>
           </div>
           <ol class="lines">
@@ -264,7 +264,7 @@
                 <input data-list="ingredients" data-i={i} bind:value={form.ingredients[i]} onkeydown={(e) => lineKey('ingredients', i, e)} onpaste={(e) => linePaste('ingredients', i, e)} placeholder={i === 0 ? '2 tablespoons Dijon mustard' : ''} aria-label="Ingredient {i + 1}" />
                 <span class="parsed" aria-label="Read as">
                   {#if p && !p.section && form.ingredients[i].trim()}
-                    <span class="p-amt" class:none={!amount(p)}>{amount(p) || 'no amount'}</span>
+                    <span class="p-amt fig" class:none={!amount(p)}>{amount(p) || 'no amount'}</span>
                     <span class="p-item">{p.item}</span>
                     {#if p.note}<span class="p-note">{p.note}</span>{/if}
                   {:else if p?.section}
@@ -280,13 +280,13 @@
 
         <section aria-labelledby="method-h">
           <div class="col-head">
-            <h2 id="method-h" class="caps">Method</h2>
+            <h2 id="method-h" class="label">Method</h2>
             <p class="hint">Enter starts a new step. Durations like <em>20 minutes</em> become timers when cooking.</p>
           </div>
           <ol class="lines steps">
             {#each form.steps as _, i}
               <li class:heading={form.steps[i].trim().startsWith('#')}>
-                <span class="n" aria-hidden="true">{i + 1}</span>
+                <span class="n fig" aria-hidden="true">{i + 1}</span>
                 <textarea data-list="steps" data-i={i} rows="2" bind:value={form.steps[i]} onkeydown={(e) => lineKey('steps', i, e)} onpaste={(e) => linePaste('steps', i, e)} aria-label="Step {i + 1}"></textarea>
                 <button type="button" class="rm" onclick={() => removeLine('steps', i)} aria-label="Remove step {i + 1}"><X size={16} /></button>
               </li>
@@ -296,12 +296,12 @@
         </section>
 
         <label class="field">
-          <span class="caps">Notes</span>
+          <span class="label">Notes</span>
           <textarea rows="4" bind:value={form.notes} placeholder="Substitutions, what worked, what to change next time"></textarea>
         </label>
       </div>
 
-      <aside class="side">
+      <aside class="side panel">
         <div class="photo">
           <Plate hash={form.images[0]} title={form.title} />
           <label class="btn photo-btn">
@@ -314,18 +314,18 @@
         </div>
 
         <label class="field">
-          <span class="caps">Yield</span>
+          <span class="label">Yield</span>
           <input bind:value={form.yield_text} placeholder="Serves 4" />
         </label>
         <fieldset class="times">
-          <legend class="caps">Minutes</legend>
+          <legend class="label">Minutes</legend>
           <label><span>Prep</span><input type="number" min="0" inputmode="numeric" bind:value={form.prep_minutes} /></label>
           <label><span>Cook</span><input type="number" min="0" inputmode="numeric" bind:value={form.cook_minutes} /></label>
           <label><span>Total</span><input type="number" min="0" inputmode="numeric" bind:value={form.total_minutes} /></label>
         </fieldset>
 
         <div class="field">
-          <label class="caps" for="tag-input">Tags</label>
+          <label class="label" for="tag-input">Tags</label>
           <ul class="tags">
             {#each form.tags as t, i (t)}
               <li>{t}<button type="button" onclick={() => (form.tags.splice(i, 1), touch())} aria-label="Remove tag {t}"><X size={14} /></button></li>
@@ -345,41 +345,42 @@
 
 <style>
   .editor {
-    max-width: 76rem;
+    max-width: 80rem;
     margin: 0 auto;
     padding: 0 var(--gutter) var(--space-8);
   }
   .toolbar {
     position: sticky;
-    top: calc(var(--masthead) + 3px);
+    top: var(--bar);
     z-index: 5;
     display: flex;
     align-items: center;
     gap: var(--space-3);
     padding: var(--space-3) 0;
-    background: var(--paper);
-    border-bottom: 1px solid var(--rule);
+    background: var(--pass);
   }
   .back {
     display: inline-flex;
     align-items: center;
     gap: var(--space-2);
+    min-height: 40px;
+    font-size: var(--ui);
+    font-weight: 600;
     text-decoration: none;
-    color: var(--ink-soft);
+    color: var(--ink-2);
     margin-right: auto;
   }
   .back:hover {
-    color: var(--brick);
+    color: var(--red);
   }
   .state {
-    color: var(--ink-soft);
-    font-size: 0.6875rem;
+    color: var(--ink-3);
   }
   .notice {
-    margin-top: var(--space-4);
+    margin-bottom: var(--space-4);
     padding: var(--space-4) var(--space-5);
-    border: 1.5px solid var(--brick);
-    background: var(--brick-wash);
+    background: var(--ticket);
+    border-top: 4px solid var(--red);
   }
   .notice-acts {
     display: flex;
@@ -390,31 +391,38 @@
   .sheet {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 20rem;
-    gap: var(--space-8);
-    margin-top: var(--space-6);
+    gap: var(--space-4);
+    align-items: start;
+  }
+  .panel {
+    background: var(--ticket);
+    padding: var(--space-5) var(--space-5) var(--space-6);
+  }
+  .main {
+    border-top: 3px solid var(--ink);
   }
   .title {
     width: 100%;
     border: 0;
-    border-bottom: 1.5px solid var(--ink);
+    border-bottom: 2px solid var(--ink);
     background: none;
     font-size: var(--title-xl);
-    line-height: 1.1;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    line-height: 1.08;
     padding: var(--space-2) 0;
     resize: none;
     field-sizing: content;
     outline: none;
   }
-  .title:focus {
-    border-bottom-color: var(--brick);
-  }
+  .title:focus,
   .title[aria-invalid='true'] {
-    border-bottom-color: var(--brick);
+    border-bottom-color: var(--red);
   }
   .field-error {
-    color: var(--brick);
-    font-family: var(--sans);
+    color: var(--red);
     font-size: 0.875rem;
+    font-weight: 600;
     margin-top: var(--space-2);
   }
   .field {
@@ -422,20 +430,20 @@
     gap: var(--space-1);
     margin-top: var(--space-5);
   }
-  .field > .caps,
+  .field > .label,
   .times legend {
-    color: var(--ink-soft);
+    color: var(--ink-3);
   }
   .field input,
   .field textarea,
   .times input {
     width: 100%;
     border: 0;
-    border-bottom: 1px solid var(--rule);
+    border-bottom: 1.5px solid var(--perf);
     background: none;
     padding: var(--space-2) 0;
     outline: none;
-    font-size: 1.0625rem;
+    font-size: var(--read);
   }
   .field textarea {
     resize: vertical;
@@ -445,7 +453,7 @@
   .field input:focus,
   .field textarea:focus,
   .times input:focus {
-    border-bottom-color: var(--brick);
+    border-bottom-color: var(--red);
   }
 
   section {
@@ -458,22 +466,23 @@
     align-items: baseline;
     gap: var(--space-1) var(--space-4);
     padding-bottom: var(--space-2);
-    border-bottom: 1px solid var(--ink);
-  }
-  .col-head h2 {
-    color: var(--ink);
+    border-bottom: 3px solid var(--ink);
   }
   .hint {
-    font-size: 0.875rem;
-    font-style: italic;
-    color: var(--ink-soft);
+    font-size: 0.8125rem;
+    color: var(--ink-3);
+  }
+  .hint em {
+    font-style: normal;
+    font-weight: 700;
+    color: var(--ink-2);
   }
   .lines li {
     display: grid;
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) 36px;
     gap: var(--space-4);
     align-items: center;
-    border-bottom: 1px solid var(--rule);
+    border-bottom: 1.5px dashed var(--ticket-press);
   }
   .lines input,
   .lines textarea {
@@ -481,41 +490,39 @@
     border: 0;
     background: none;
     padding: var(--space-2) 0;
-    font-size: 1.0625rem;
+    font-size: var(--read);
     outline: none;
   }
   .lines li:focus-within {
-    background: var(--paper-press);
-    box-shadow: -8px 0 0 var(--paper-press), 8px 0 0 var(--paper-press);
+    background: var(--ticket-press);
+    box-shadow: -8px 0 0 var(--ticket-press), 8px 0 0 var(--ticket-press);
   }
   .lines li.heading input,
   .lines li.heading textarea {
-    font-style: italic;
+    font-weight: 800;
   }
   .parsed {
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
     gap: 2px var(--space-2);
-    font-family: var(--sans);
     font-size: 0.8125rem;
-    color: var(--ink-soft);
+    color: var(--ink-3);
     min-height: 1.5em;
   }
   .p-amt {
-    font-weight: 650;
+    font-size: 1.0625rem;
     color: var(--ink);
   }
   .p-amt.none {
-    font-weight: 400;
-    font-style: italic;
-    color: var(--ink-soft);
+    font-stretch: 100%;
+    font-weight: 500;
+    font-size: 0.8125rem;
+    color: var(--ink-3);
   }
   .p-item {
     color: var(--ink);
-  }
-  .p-note {
-    font-style: italic;
+    font-weight: 600;
   }
   .rm {
     display: grid;
@@ -523,8 +530,9 @@
     width: 36px;
     height: 36px;
     border: 0;
+    border-radius: 3px;
     background: none;
-    color: var(--ink-faint);
+    color: var(--ink-3);
     opacity: 0;
   }
   .lines li:hover .rm,
@@ -533,21 +541,20 @@
     opacity: 1;
   }
   .rm:hover {
-    color: var(--brick);
+    color: var(--red);
   }
   .steps li {
-    grid-template-columns: 2rem minmax(0, 1fr) 36px;
+    grid-template-columns: 2.25rem minmax(0, 1fr) 36px;
     align-items: start;
   }
   .steps .n {
-    font-family: var(--sans);
-    font-weight: 650;
+    font-size: 1.375rem;
     padding-top: var(--space-2);
   }
   .steps textarea {
     resize: none;
     field-sizing: content;
-    line-height: 1.5;
+    line-height: var(--read-lh);
   }
   .steps .rm {
     margin-top: 4px;
@@ -556,11 +563,11 @@
     margin-top: var(--space-2);
     border: 0;
     background: none;
-    padding: var(--space-2) 0;
-    font-family: var(--sans);
+    min-height: 40px;
+    padding: 0;
     font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--brick);
+    font-weight: 700;
+    color: var(--red);
   }
   .add:hover {
     text-decoration: underline;
@@ -568,9 +575,10 @@
   }
 
   .side {
+    position: sticky;
+    top: calc(var(--bar) + 68px);
     display: grid;
     align-content: start;
-    gap: 0;
   }
   .photo {
     display: flex;
@@ -593,9 +601,14 @@
     margin-bottom: var(--space-1);
   }
   .times label span {
-    font-size: 0.875rem;
-    font-style: italic;
-    color: var(--ink-soft);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--ink-2);
+  }
+  .times input {
+    font-stretch: 62%;
+    font-weight: 800;
+    font-size: 1.5rem;
   }
   .tags {
     display: flex;
@@ -607,10 +620,10 @@
     display: inline-flex;
     align-items: center;
     padding-left: var(--space-3);
-    border: 1px solid var(--ink);
-    border-radius: 2px;
-    font-family: var(--sans);
+    border: 2px solid var(--ink);
+    border-radius: 3px;
     font-size: 0.875rem;
+    font-weight: 700;
   }
   .tags button {
     display: grid;
@@ -621,21 +634,21 @@
     background: none;
   }
   .tags button:hover {
-    color: var(--brick);
+    color: var(--red);
   }
   .trash {
     justify-self: start;
     display: inline-flex;
     align-items: center;
     gap: var(--space-2);
-    margin-top: var(--space-7);
+    min-height: 40px;
+    margin-top: var(--space-6);
     border: 0;
     background: none;
-    padding: var(--space-2) 0;
-    font-family: var(--sans);
+    padding: 0;
     font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--brick);
+    font-weight: 700;
+    color: var(--red);
   }
   .trash:hover {
     text-decoration: underline;
@@ -645,10 +658,15 @@
   @media (max-width: 960px) {
     .sheet {
       grid-template-columns: 1fr;
-      gap: var(--space-6);
     }
     .side {
+      position: static;
       order: -1;
+    }
+    .main,
+    .side {
+      padding-left: var(--space-4);
+      padding-right: var(--space-4);
     }
     .lines li {
       grid-template-columns: minmax(0, 1fr) 36px;
@@ -664,6 +682,12 @@
     }
     .rm {
       opacity: 1;
+    }
+  }
+  @media (max-width: 760px) {
+    .toolbar {
+      top: 0;
+      position: relative;
     }
   }
 </style>

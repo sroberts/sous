@@ -39,7 +39,7 @@
     {/each}
   </ul>
   <form onsubmit={add}>
-    <label for="who-new" class="caps">Someone new</label>
+    <label for="who-new" class="label">Someone new</label>
     <div class="row">
       <input id="who-new" bind:value={name} placeholder="Their name" autocomplete="given-name" />
       <button class="btn" disabled={!name.trim()}>Add</button>
@@ -52,40 +52,46 @@
 <style>
   dialog {
     width: min(420px, calc(100vw - 32px));
-    border: 1.5px solid var(--ink);
-    outline: 3px double var(--ink);
-    outline-offset: 4px;
+    border: 0;
+    border-top: 4px solid var(--ink);
     border-radius: 0;
-    background: var(--paper);
+    background: var(--ticket);
     color: var(--ink);
     padding: var(--space-6);
   }
   dialog::backdrop {
-    background: rgb(42 36 32 / 0.35);
+    background: rgb(20 21 22 / 0.45);
   }
   h2 {
     font-size: var(--title-l);
+    font-weight: 800;
   }
   p {
     margin-top: var(--space-2);
-    color: var(--ink-soft);
-    font-size: 1rem;
+    color: var(--ink-2);
+    font-size: var(--ui);
   }
   ul {
     margin: var(--space-5) 0;
-    border-top: 1px solid var(--rule);
+    border-top: 3px solid var(--ink);
   }
   .person {
     width: 100%;
+    min-height: 52px;
     text-align: left;
     border: 0;
-    border-bottom: 1px solid var(--rule);
+    border-bottom: 1.5px dashed var(--perf);
     background: none;
-    padding: var(--space-3) 0;
-    font-size: var(--dish);
+    padding: 0 var(--space-2);
+    font-size: var(--title-m);
+    font-weight: 700;
   }
   .person:hover {
-    color: var(--brick);
+    background: var(--ticket-press);
+    color: var(--red);
+  }
+  .label {
+    color: var(--ink-3);
   }
   .row {
     display: flex;
@@ -94,20 +100,22 @@
   }
   input {
     flex: 1;
+    min-width: 0;
     border: 0;
-    border-bottom: 1.5px solid var(--ink);
+    border-bottom: 2px solid var(--ink);
     background: none;
     padding: var(--space-2) 0;
+    font-size: var(--read);
     outline: none;
   }
   input:focus {
-    border-bottom-color: var(--brick);
+    border-bottom-color: var(--red);
   }
   .error {
-    color: var(--brick);
+    color: var(--red);
+    font-weight: 600;
   }
   .cancel {
     margin-top: var(--space-5);
-    padding-left: 0;
   }
 </style>
