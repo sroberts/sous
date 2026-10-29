@@ -390,7 +390,7 @@
     "/v1/me": {
       "get": {
         "operationId": "getMe",
-        "summary": "The person making the request; 401 who_are_you when nobody is",
+        "summary": "The person making the request, and whether Outpost signed them in; 401 who_are_you when nobody is",
         "parameters": [
           {
             "$ref": "#/components/parameters/Person"
@@ -405,7 +405,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Person"
+                  "$ref": "#/components/schemas/Me"
                 }
               }
             }
@@ -2220,6 +2220,27 @@
           "ok",
           "fetched_at",
           "error"
+        ],
+        "additionalProperties": false
+      },
+      "Me": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "description": "outpost when signed in through the Outpost gateway, which fixes who this is; device when chosen on this device"
+          }
+        },
+        "required": [
+          "username",
+          "name",
+          "source"
         ],
         "additionalProperties": false
       },

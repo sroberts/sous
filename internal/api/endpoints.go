@@ -63,8 +63,8 @@ func (a *api) endpoints() []endpoint {
 			Summary: "System status: version, schema version, auth mode, recipe count, storage size and gateway key health",
 			Resp:    jsonOf[recipes.Status](), Handle: a.status},
 		{Method: "GET", Path: "/v1/me", OpID: "getMe",
-			Summary: "The person making the request; 401 who_are_you when nobody is",
-			Resp:    jsonOf[recipes.Person](), Handle: a.me},
+			Summary: "The person making the request, and whether Outpost signed them in; 401 who_are_you when nobody is",
+			Resp:    jsonOf[recipes.Me](), Handle: a.me},
 		{Method: "GET", Path: "/v1/people", OpID: "listPeople",
 			Summary: "Everyone in the household",
 			Resp:    jsonOf[recipes.Items[recipes.Person]](), Handle: a.listPeople},
@@ -183,7 +183,11 @@ func (a *api) me(w http.ResponseWriter, r *http.Request, c identity.Caller) erro
 	if c.Person == nil {
 		return recipes.Errorf(recipes.CodeWhoAreYou, "no one is selected on this device")
 	}
-	writeJSON(w, http.StatusOK, recipes.Person{Username: c.Person.Username, Name: c.Person.Name})
+	src := recipes.SourceDevice
+	if c.Route == identity.RouteGateway {
+		src = recipes.SourceOutpost
+	}
+	writeJSON(w, http.StatusOK, recipes.Me{Person: recipes.Person{Username: c.Person.Username, Name: c.Person.Name}, Source: src})
 	return nil
 }
 

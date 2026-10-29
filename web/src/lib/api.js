@@ -41,6 +41,7 @@ async function request(method, path, { body, version, raw } = {}) {
 }
 
 export const api = {
+  me: () => request('GET', '/v1/me'),
   people: () => request('GET', '/v1/people'),
   addPerson: (name) => request('POST', '/v1/people', { body: { name } }),
 

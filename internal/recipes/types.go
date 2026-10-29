@@ -130,6 +130,18 @@ type Person struct {
 	Name     string `json:"name"`
 }
 
+// Me is GET /v1/me: the caller, and how Sous knows who they are.
+type Me struct {
+	Person
+	Source string `json:"source" jsonschema:"outpost when signed in through the Outpost gateway, which fixes who this is; device when chosen on this device"`
+}
+
+// Sources of a Me.
+const (
+	SourceOutpost = "outpost"
+	SourceDevice  = "device"
+)
+
 // NewPerson is the body of POST /v1/people.
 type NewPerson struct {
 	Name string `json:"name" jsonschema:"display name; the username is derived from it"`

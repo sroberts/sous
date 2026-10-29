@@ -48,27 +48,35 @@
     <a class="btn primary" href="/new" use:link><Plus aria-hidden="true" />New recipe</a>
   </div>
   <div class="who">
-    <button class="who-btn" aria-haspopup="menu" aria-expanded={menuOpen} onclick={() => (menuOpen = !menuOpen)}>
-      {#if session.person}
+    {#if session.outpost}
+      <!-- Outpost's login decides who this is; there is no one to switch to. -->
+      <span class="who-btn signed" title="Signed in with Outpost">
         <span class="avatar fig" aria-hidden="true">{session.person.name.slice(0, 1)}</span>
         <span class="name">{session.person.name}</span>
-      {:else}
-        <span class="name">Who’s cooking?</span>
+      </span>
+    {:else}
+      <button class="who-btn" aria-haspopup="menu" aria-expanded={menuOpen} onclick={() => (menuOpen = !menuOpen)}>
+        {#if session.person}
+          <span class="avatar fig" aria-hidden="true">{session.person.name.slice(0, 1)}</span>
+          <span class="name">{session.person.name}</span>
+        {:else}
+          <span class="name">Who’s cooking?</span>
+        {/if}
+        <ChevronDown size={15} aria-hidden="true" />
+      </button>
+      {#if menuOpen}
+        <ul class="menu" role="menu">
+          {#each session.people as p (p.username)}
+            <li role="none">
+              <button role="menuitemradio" aria-checked={session.person?.username === p.username} onclick={() => (choosePerson(p), (menuOpen = false))}>
+                {p.name}
+                {#if session.person?.username === p.username}<Check size={16} aria-hidden="true" />{/if}
+              </button>
+            </li>
+          {/each}
+          <li role="none"><button role="menuitem" onclick={() => ((session.asking = true), (menuOpen = false))}>Someone else…</button></li>
+        </ul>
       {/if}
-      <ChevronDown size={15} aria-hidden="true" />
-    </button>
-    {#if menuOpen}
-      <ul class="menu" role="menu">
-        {#each session.people as p (p.username)}
-          <li role="none">
-            <button role="menuitemradio" aria-checked={session.person?.username === p.username} onclick={() => (choosePerson(p), (menuOpen = false))}>
-              {p.name}
-              {#if session.person?.username === p.username}<Check size={16} aria-hidden="true" />{/if}
-            </button>
-          </li>
-        {/each}
-        <li role="none"><button role="menuitem" onclick={() => ((session.asking = true), (menuOpen = false))}>Someone else…</button></li>
-      </ul>
     {/if}
   </div>
 </header>
@@ -172,6 +180,9 @@
     padding: 0 var(--space-1);
     font-size: var(--ui);
     font-weight: 600;
+  }
+  .signed {
+    cursor: default;
   }
   .avatar {
     display: grid;
