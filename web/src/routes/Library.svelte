@@ -164,7 +164,7 @@
               <a class="hang ticket" href="/r/{r.id}" use:link>
                 <span class="clip" aria-hidden="true"></span>
                 <span class="hang-head">
-                  {#if t?.fig}<span class="fig big">{t.fig}<small>{t.unit}</small></span>{:else}<span class="fig big" title={t?.text}>–<small>{t?.text ? 'see recipe' : 'no time'}</small></span>{/if}
+                  {#if t?.fig}<span class="fig big">{t.fig}<small>{t.unit}</small></span>{:else}<span class="fig big" title={t?.text}>—<small>{t?.text ? 'see recipe' : 'no time'}</small></span>{/if}
                   <span class="fig ing">{r.ingredient_items.length} ing</span>
                 </span>
                 <hr class="perf" />

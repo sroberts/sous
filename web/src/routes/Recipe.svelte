@@ -62,7 +62,7 @@
         <h1>{recipe.title}</h1>
         {#if recipe.source_url || recipe.tags.length}
           <p class="src">
-            {#if recipe.tags.length}<span>{recipe.tags.join(', ')}</span>{/if}
+            {#if recipe.tags.length}<span>{recipe.tags.join(', ')}</span>{#if recipe.source_url}<span class="dot" aria-hidden="true">·</span>{/if}{/if}
             {#if recipe.source_url}<a href={recipe.source_url} target="_blank" rel="noreferrer">{recipe.source_host ?? recipe.source_url}<ExternalLink size={13} aria-hidden="true" /></a>{/if}
           </p>
         {/if}
@@ -200,9 +200,7 @@
     flex-wrap: wrap;
     gap: 0 var(--space-3);
   }
-  .src span + a::before {
-    content: '·';
-    margin-right: var(--space-3);
+  .dot {
     color: var(--ink-3);
   }
   .src a {

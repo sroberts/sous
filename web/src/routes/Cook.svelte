@@ -381,9 +381,19 @@
     border-radius: 0 0 3px 3px;
     background: linear-gradient(var(--steel), var(--steel-lo));
   }
-  /* Timers are a lane of the same hanging row, clipped to the rail. */
+  /* Timers are a lane of the same hanging row, clipped to the rail. While
+     one runs, the queue narrows to a single ticket so the step keeps room. */
+  .timed .next {
+    flex-basis: 12rem;
+  }
+  .timed .next + .next {
+    display: none;
+  }
+  .timed .t-clock {
+    font-size: 1.875rem;
+  }
   .timers {
-    flex: 0 0 13.5rem;
+    flex: 0 0 12.5rem;
     display: grid;
     gap: var(--space-3);
     margin-left: auto;
@@ -565,7 +575,7 @@
     font-size: 1.125rem;
   }
 
-  @media (max-width: 1440px) {
+  @media (max-width: 1439px) {
     .next + .next,
     .timed .next {
       display: none;
@@ -618,7 +628,7 @@
     .timers {
       position: absolute;
       top: 0;
-      right: var(--space-2);
+      right: var(--space-4);
       z-index: 1;
       width: 10.5rem;
     }
@@ -627,6 +637,10 @@
     }
     .tick .t-clock {
       font-size: 1.75rem;
+    }
+    .tick {
+      background: var(--ticket-press);
+      box-shadow: inset 0 0 0 1.5px var(--perf);
     }
   }
   @media (max-width: 560px) {
