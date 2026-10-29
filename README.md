@@ -3,8 +3,8 @@
 A household recipe manager, run as a service under [Outpost](outpost-spec.md).
 Web UI, REST API, and MCP from one Go binary.
 
-Status: design. No code yet. The foundation is specified in
-[`spec.md`](spec.md).
+Status: the basics run. The service, REST API, MCP, and web UI are built to
+[`spec.md`](spec.md); the feature specs it lists in §13 come next.
 
 ## Shape
 
@@ -40,6 +40,25 @@ Status: design. No code yet. The foundation is specified in
   for recipes already opened and for the shopping list, and syncs on reconnect.
 - **REST and MCP** have parity. MCP agents get full read/write, attributed
   like any other change.
+
+## Running the service
+
+```sh
+cd web && npm ci && npm run build && cd ..   # build the UI into the binary
+OUTPOST_STORAGE_DIR=./.dev-data go run ./cmd/sous --port 8099
+```
+
+Then open http://127.0.0.1:8099. Everything Sous keeps lives in
+`OUTPOST_STORAGE_DIR`; `.dev-data/` is gitignored. Without the UI build, the
+binary still runs and serves a page saying how to build it.
+
+```sh
+go test -short ./...   # unit and API tests
+go test ./...          # plus the Outpost conformance suite, which builds the binary
+```
+
+MCP clients connect to `http://127.0.0.1:8099/mcp` and name themselves with
+an `X-Sous-Person` header, unless they come through the Outpost gateway.
 
 ## Developing the web UI
 

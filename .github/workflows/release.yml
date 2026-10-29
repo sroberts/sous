@@ -1,0 +1,53 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Build the UI
+        working-directory: web
+        run: npm ci && npm run build
+
+      - name: Check the UI is embedded
+        env:
+          SOUS_REQUIRE_UI: "1"
+        run: go test ./internal/ui/
+
+      - name: Build binaries
+        env:
+          CGO_ENABLED: "0"
+        run: |
+          mkdir dist
+          for target in darwin/arm64 linux/amd64 linux/arm64; do
+            GOOS=${target%/*} GOARCH=${target#*/} go build -trimpath \
+              -ldflags "-s -w -X main.version=${GITHUB_REF_NAME}" \
+              -o "dist/sous-${target%/*}-${target#*/}" ./cmd/sous
+          done
+
+      - name: Checksums and descriptor
+        working-directory: dist
+        run: |
+          sha256sum sous-* > SHA256SUMS
+          cp ../outpost.toml .
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* --generate-notes
