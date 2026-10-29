@@ -18,6 +18,7 @@ title), so an interrupted import can simply be run again.
 
 import argparse
 import base64
+import binascii
 import io
 import json
 import re
@@ -26,6 +27,7 @@ import urllib.error
 import urllib.request
 import zipfile
 from dataclasses import dataclass, field
+from urllib.parse import urlsplit
 
 from PIL import Image
 
@@ -134,12 +136,23 @@ def recipe_body(d: dict, images: list[str]) -> dict:
 
 
 def key(title: str | None, link: str | None) -> tuple[str, str]:
-    return ((link or "").strip(), (title or "Untitled").strip().casefold())
+    return ((link or "").strip(), ((title or "").strip() or "Untitled").casefold())
+
+
+def host_of(link: str) -> str | None:
+    """The host as Sous reports it in summaries: lower-case, no leading www."""
+    try:
+        h = urlsplit(link).hostname if urlsplit(link).scheme else None
+    except ValueError:
+        return None
+    return h.removeprefix("www.") if h else None
 
 
 # ---------------------------------------------------------------- the API
 
 class ApiError(Exception):
+    """An error response from Sous, or status 0 when Sous couldn't be reached."""
+
     def __init__(self, status: int, body: bytes):
         self.status = status
         try:
@@ -147,7 +160,7 @@ class ApiError(Exception):
             self.message = json.loads(body)["error"]["message"]
         except (ValueError, KeyError, TypeError):
             self.code, self.message = "", body[:200].decode(errors="replace")
-        super().__init__(f"{status} {self.code}: {self.message}")
+        super().__init__(f"{status} {self.code}: {self.message}" if status else self.message)
 
 
 @dataclass
@@ -167,15 +180,17 @@ class Sous:
                 return json.loads(b) if b else None
         except urllib.error.HTTPError as e:
             raise ApiError(e.code, e.read()) from None
+        except (urllib.error.URLError, OSError) as e:
+            raise ApiError(0, f"can't reach Sous at {self.url}: {e}".encode()) from None
 
-    def titles(self) -> dict[str, list[str]]:
-        """Recipe ids by case-folded title, across the whole library."""
-        out: dict[str, list[str]] = {}
+    def titles(self) -> dict[str, list[tuple[str, str | None]]]:
+        """(id, source host) by case-folded title, across the whole library."""
+        out: dict[str, list[tuple[str, str | None]]] = {}
         cursor = None
         while True:
             page = self.call("GET", "/v1/recipes?limit=200" + (f"&cursor={cursor}" if cursor else ""))
             for r in page["items"]:
-                out.setdefault(r["title"].strip().casefold(), []).append(r["id"])
+                out.setdefault(r["title"].strip().casefold(), []).append((r["id"], r.get("source_host")))
             cursor = page.get("next_cursor")
             if not cursor:
                 return out
@@ -183,8 +198,9 @@ class Sous:
 
 class Present:
     """Which Mela recipes Sous already has, by source link plus title. List
-    summaries carry only the host, so a title match fetches the candidates
-    to compare links; a fresh library costs one paged list and nothing more."""
+    summaries carry only the host, so a title and host match fetches the
+    candidate to compare the full link; a fresh library costs one paged list
+    and nothing more."""
 
     def __init__(self, sous: Sous | None):
         self.sous = sous
@@ -195,8 +211,9 @@ class Present:
         k = key(title, link)
         if k in self.added:
             return True
-        for rid in self.by_title.get(k[1], []):
-            if (self.sous.call("GET", f"/v1/recipes/{rid}").get("source_url") or "").strip() == k[0]:
+        host = host_of(k[0])
+        for rid, rhost in self.by_title.get(k[1], []):
+            if rhost == host and (self.sous.call("GET", f"/v1/recipes/{rid}").get("source_url") or "").strip() == k[0]:
                 return True
         return False
 
@@ -206,7 +223,12 @@ class Present:
 
 # ---------------------------------------------------------------- images
 
-def upload(sous: Sous, data: bytes, report: "Report") -> str | None:
+def upload(sous: Sous, b64: str, report: "Report") -> str | None:
+    try:
+        data = base64.b64decode(b64, validate=True)
+    except (binascii.Error, ValueError) as e:
+        report.skipped_images.append(f"not valid base64 ({e})")
+        return None
     try:
         return sous.call("POST", "/v1/images", raw=data)["hash"]
     except ApiError as e:
@@ -217,7 +239,7 @@ def upload(sous: Sous, data: bytes, report: "Report") -> str | None:
         img = Image.open(io.BytesIO(data))
         img.seek(0)
         out = io.BytesIO()
-        if img.mode in ("RGBA", "LA", "P"):
+        if img.mode in ("RGBA", "LA", "PA") or "transparency" in img.info:
             img.convert("RGBA").save(out, "PNG")
         else:
             img.convert("RGB").save(out, "JPEG", quality=92)
@@ -256,38 +278,50 @@ def ensure_person(sous: Sous, name: str | None) -> None:
 
 def run(path: str, sous: Sous, dry_run: bool) -> Report:
     report = Report()
-    with zipfile.ZipFile(path) as z:
-        records = [json.loads(z.read(n)) for n in sorted(z.namelist()) if n.endswith(".melarecipe")]
     present = Present(None if dry_run else sous)
-    for i, d in enumerate(records, 1):
-        title = (d.get("title") or "Untitled").strip()
-        if key(d.get("title"), d.get("link")) in present.added:
-            # Mela can hold the same recipe twice; the first copy wins.
-            report.duplicates.append(title)
-            continue
-        if present.has(d.get("title"), d.get("link")):
-            report.present += 1
-            continue
-        try:
-            if dry_run:
-                recipe_body(d, [])
+    with zipfile.ZipFile(path) as z:
+        names = sorted(n for n in z.namelist() if n.endswith(".melarecipe"))
+        for i, name in enumerate(names, 1):
+            if i % 50 == 0:
+                print(f"{i}/{len(names)}", file=sys.stderr)
+            try:
+                d = json.loads(z.read(name))  # one at a time: each holds its photos
+            except ValueError as e:
+                report.failed.append(f"{name}: not a readable recipe ({e})")
+                continue
+            title = (d.get("title") or "").strip() or "Untitled"
+            if key(d.get("title"), d.get("link")) in present.added:
+                # Mela can hold the same recipe twice; the first copy wins.
+                report.duplicates.append(title)
+                continue
+            try:
+                if present.has(d.get("title"), d.get("link")):
+                    report.present += 1
+                    continue
+                if dry_run:
+                    recipe_body(d, [])
+                    present.add(d.get("title"), d.get("link"))
+                    report.imported += 1
+                    continue
+                hashes = [h for b64 in d.get("images") or [] if (h := upload(sous, b64, report))]
+                made = sous.call("POST", "/v1/recipes", recipe_body(d, list(dict.fromkeys(hashes))))
                 present.add(d.get("title"), d.get("link"))
                 report.imported += 1
+            except ApiError as e:
+                report.failed.append(f"{title}: {e}")
+                if e.status in (0, 401, 503):
+                    break  # every later call would fail the same way
                 continue
-            hashes = [h for b64 in d.get("images") or []
-                      if (h := upload(sous, base64.b64decode(b64), report))]
-            made = sous.call("POST", "/v1/recipes", recipe_body(d, list(dict.fromkeys(hashes))))
             mine = {"favorite": bool(d.get("favorite")), "want_to_cook": bool(d.get("wantToCook"))}
             if any(mine.values()):
-                sous.call("PUT", f"/v1/recipes/{made['id']}/mine", mine)
-            present.add(d.get("title"), d.get("link"))
-            report.imported += 1
-        except ApiError as e:
-            report.failed.append(f"{title}: {e}")
-            if e.status in (401, 503):
-                break  # every later call would fail the same way
-        if i % 50 == 0:
-            print(f"{i}/{len(records)}", file=sys.stderr)
+                try:
+                    sous.call("PUT", f"/v1/recipes/{made['id']}/mine", mine)
+                except ApiError as e:
+                    # A re-run skips the recipe, so say exactly what to fix by hand.
+                    flags = " and ".join(k.replace("_", " ") for k, v in mine.items() if v)
+                    report.failed.append(f"{title}: imported, but not marked {flags} ({e})")
+                    if e.status in (0, 401, 503):
+                        break
     return report
 
 
@@ -301,9 +335,12 @@ def main() -> None:
     a = ap.parse_args()
 
     sous = Sous(a.url.rstrip("/"), a.person)
-    if not a.dry_run:
-        ensure_person(sous, a.name)
-    r = run(a.export, sous, a.dry_run)
+    try:
+        if not a.dry_run:
+            ensure_person(sous, a.name)
+        r = run(a.export, sous, a.dry_run)
+    except ApiError as e:
+        sys.exit(f"import stopped before it began: {e}")
 
     verb = "would import" if a.dry_run else "imported"
     print(f"{verb} {r.imported}, already present {r.present}, failed {len(r.failed)}")
