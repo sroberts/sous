@@ -337,6 +337,7 @@ JSON in and out. Errors are always
 | `GET /v1/trash` | Deleted recipes |
 | `PUT /v1/recipes/{id}/mine` | Set the caller's `favorite` / `want_to_cook` |
 | `GET /v1/tags` | Tags with recipe counts |
+| `POST /v1/ingredients/parse` | Parse `{lines}` without saving; returns each line as the server would store it. The editor's live preview uses it. Not a write, so it needs no person |
 | `POST /v1/images` | Upload raw bytes (`image/jpeg`, `png`, `webp`, `heic`); returns `{hash}` |
 | `GET /v1/images/{hash}` | The image. `Cache-Control: immutable`, since the content never changes under a hash |
 | `GET /v1/changes` | The change log, newest first, filterable by `entity_id`, `person`, `via` |
@@ -346,6 +347,7 @@ JSON in and out. Errors are always
   recipe, so two people (or a person and an agent) can't silently overwrite
   each other.
 - **Pagination** is by opaque cursor, never by offset.
+- **List items are summaries:** `id`, `title`, `source_host`, `tags`, `cover` (first image hash), `total_minutes`, `time_text`, `ingredient_items` (parsed `item`s, lower-cased), the caller's `mine` flags, `version`, and `updated_at`. The web UI pages through the whole list once and searches it locally, so the library stays instant at household scale.
 - **Deletion is soft** in the basics. Purging the trash is a deliberate later
   action, not a timer, because Outpost provides no scheduling (Outpost §10).
 

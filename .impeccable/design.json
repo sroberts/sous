@@ -1,0 +1,388 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-29T00:02:28+00:00",
+  "title": "Design System: Sous",
+  "extensions": {
+    "colorMeta": {
+      "paper": {
+        "role": "neutral",
+        "displayName": "Cotton Paper",
+        "canonical": "oklch(95.4% 0.013 82.4)",
+        "tonalRamp": [
+          "#0e0b06",
+          "#27241d",
+          "#433f38",
+          "#615d55",
+          "#817d75",
+          "#a29e95",
+          "#c8c3bb",
+          "#f3eee5"
+        ]
+      },
+      "paper-press": {
+        "role": "neutral",
+        "displayName": "Pressed Paper",
+        "canonical": "oklch(92.1% 0.020 84.6)",
+        "tonalRamp": [
+          "#0f0a03",
+          "#292319",
+          "#453f34",
+          "#635d51",
+          "#837d70",
+          "#a49e91",
+          "#cac3b6",
+          "#f5eee0"
+        ]
+      },
+      "paper-deep": {
+        "role": "neutral",
+        "displayName": "Deep Paper",
+        "canonical": "oklch(88.8% 0.025 83.4)",
+        "tonalRamp": [
+          "#100a02",
+          "#2a2316",
+          "#463f31",
+          "#645d4e",
+          "#847c6d",
+          "#a69d8d",
+          "#ccc3b2",
+          "#f7eddc"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Letterpress Ink",
+        "canonical": "oklch(26.6% 0.012 55.8)",
+        "tonalRamp": [
+          "#0f0a07",
+          "#29231f",
+          "#453e3a",
+          "#635c57",
+          "#837c77",
+          "#a49d98",
+          "#cac2bd",
+          "#f5ede7"
+        ]
+      },
+      "ink-soft": {
+        "role": "neutral",
+        "displayName": "Soft Ink",
+        "canonical": "oklch(44.9% 0.016 60.3)",
+        "tonalRamp": [
+          "#100a05",
+          "#2a221c",
+          "#463e37",
+          "#655c55",
+          "#857b74",
+          "#a69c94",
+          "#ccc2ba",
+          "#f7ece4"
+        ]
+      },
+      "ink-faint": {
+        "role": "neutral",
+        "displayName": "Faint Ink",
+        "canonical": "oklch(62.3% 0.018 64.5)",
+        "tonalRamp": [
+          "#100a04",
+          "#2a221b",
+          "#473e36",
+          "#655c53",
+          "#857b72",
+          "#a79c93",
+          "#cdc2b8",
+          "#f7ece2"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "oklch(84.0% 0.027 80.2)",
+        "tonalRamp": [
+          "#110a01",
+          "#2b2314",
+          "#473e2f",
+          "#665c4c",
+          "#867c6b",
+          "#a79d8c",
+          "#cec3b1",
+          "#f8edda"
+        ]
+      },
+      "brick": {
+        "role": "primary",
+        "displayName": "Letterpress Brick",
+        "canonical": "oklch(50.4% 0.147 32.6)",
+        "tonalRamp": [
+          "#340000",
+          "#570000",
+          "#7b0800",
+          "#a0331f",
+          "#c55640",
+          "#eb7861",
+          "#ff9e85",
+          "#ffc8ae"
+        ]
+      },
+      "brick-press": {
+        "role": "primary",
+        "displayName": "Pressed Brick",
+        "canonical": "oklch(44.4% 0.132 32.4)",
+        "tonalRamp": [
+          "#300000",
+          "#530000",
+          "#761705",
+          "#9a3a29",
+          "#bf5b48",
+          "#e47d68",
+          "#ffa38d",
+          "#ffcdb6"
+        ]
+      },
+      "brick-wash": {
+        "role": "primary",
+        "displayName": "Brick Wash",
+        "canonical": "oklch(91.1% 0.026 48.4)",
+        "tonalRamp": [
+          "#140803",
+          "#2f2019",
+          "#4c3c34",
+          "#6a5a51",
+          "#8b7970",
+          "#ad9a91",
+          "#d3c0b6",
+          "#feeae0"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "step": {
+        "displayName": "Step",
+        "purpose": "Cook mode's current step at menu-card scale, under a brick Franklin numeral."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Recipe title and the editor's title field."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Preview recipe name and dialog heads."
+      },
+      "dish": {
+        "displayName": "Dish",
+        "purpose": "A dish line in the library menu; source in italic beneath."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "The one reading size for all recipe text, 65ch measure."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Tracked Franklin capitals for section and column heads, form labels, nav."
+      },
+      "control": {
+        "displayName": "Control",
+        "purpose": "Tracked Franklin capitals on buttons."
+      },
+      "figure": {
+        "displayName": "Figure",
+        "purpose": "Tabular lining Franklin for every quantity, time and count."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "The one easing for entrances and sheets."
+      },
+      {
+        "name": "state-change",
+        "value": "120ms",
+        "purpose": "Button background, colour and border changes."
+      },
+      {
+        "name": "sheet",
+        "value": "200ms ease-out, 16px rise",
+        "purpose": "Cook-mode ingredient sheet on narrow screens."
+      },
+      {
+        "name": "press",
+        "value": "280ms ease-out, 10px rise with fade",
+        "purpose": "Each new cook step entering."
+      },
+      {
+        "name": "rise",
+        "value": "320ms ease-out, 12px rise with fade",
+        "purpose": "Toast entrance."
+      },
+      {
+        "name": "ring",
+        "value": "1.2s ease-out x3, scale 1.04",
+        "purpose": "A finished timer calling for attention."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "1ms",
+        "purpose": "All animation and transition durations collapse under prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "compact",
+        "value": "760px"
+      },
+      {
+        "name": "single-column",
+        "value": "900px"
+      },
+      {
+        "name": "editor-stack",
+        "value": "960px"
+      },
+      {
+        "name": "library-preview",
+        "value": "1100px"
+      }
+    ],
+    "rules": {
+      "doubleRule": "border-top: 3px double ink under the masthead and cook bar",
+      "leader": "2px dotted ink-faint, nudged up 5px to sit on the baseline",
+      "focus": "2px solid brick outline, 2px offset"
+    }
+  },
+  "components": [
+    {
+      "name": "Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Default printed button: ink outline on paper, tracked capitals.",
+      "html": "<button class=\"ds-btn\">Open</button>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border:1.5px solid var(--ink,#2a2420);border-radius:2px;background:transparent;color:var(--ink,#2a2420);font-family:var(--sans,'Libre Franklin',system-ui,sans-serif);font-size:.8125rem;font-weight:650;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:background-color 120ms,color 120ms,border-color 120ms}.ds-btn:hover{background:var(--paper-press,#ebe4d6)}.ds-btn:active{background:var(--paper-deep,#e2d9c8)}.ds-btn:focus-visible{outline:2px solid var(--brick,#a83b27);outline-offset:2px}.ds-btn[aria-pressed=true]{color:var(--brick,#a83b27);border-color:var(--brick,#a83b27)}"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one brick-filled action per view: Begin cooking, Next step, Save.",
+      "html": "<button class=\"ds-btn-primary\">Begin cooking</button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 16px;border:1.5px solid var(--brick,#a83b27);border-radius:2px;background:var(--brick,#a83b27);color:var(--paper,#f4efe6);font-family:var(--sans,'Libre Franklin',system-ui,sans-serif);font-size:.8125rem;font-weight:650;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:background-color 120ms,border-color 120ms}.ds-btn-primary:hover{background:var(--brick-press,#8e2f1e);border-color:var(--brick-press,#8e2f1e)}.ds-btn-primary:focus-visible{outline:2px solid var(--brick,#a83b27);outline-offset:2px}"
+    },
+    {
+      "name": "Quiet Button",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "Borderless secondary action (Edit, Cancel).",
+      "html": "<button class=\"ds-btn-quiet\">Edit</button>",
+      "css": ".ds-btn-quiet{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border:1.5px solid transparent;border-radius:2px;background:transparent;color:var(--ink,#2a2420);font-family:var(--sans,'Libre Franklin',system-ui,sans-serif);font-size:.8125rem;font-weight:650;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:background-color 120ms}.ds-btn-quiet:hover{background:var(--paper-press,#ebe4d6)}.ds-btn-quiet:focus-visible{outline:2px solid var(--brick,#a83b27);outline-offset:2px}"
+    },
+    {
+      "name": "Underline Field",
+      "kind": "input",
+      "refersTo": "field-underline",
+      "description": "A field is one ink underline; it turns brick on focus.",
+      "html": "<label class=\"ds-field\"><span>Search</span><input placeholder=\"Search the menu\"></label>",
+      "css": ".ds-field{display:grid;gap:4px;max-width:360px}.ds-field span{font-family:var(--sans,'Libre Franklin',system-ui,sans-serif);font-size:.75rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft,#5c534c)}.ds-field input{border:0;border-bottom:1.5px solid var(--ink,#2a2420);background:none;padding:8px 0;font-family:var(--serif,'Libre Caslon Text',Georgia,serif);font-size:1.0625rem;color:var(--ink,#2a2420);caret-color:var(--brick,#a83b27);outline:none}.ds-field input::placeholder{color:var(--ink-soft,#5c534c)}.ds-field input:focus{border-bottom-color:var(--brick,#a83b27)}"
+    },
+    {
+      "name": "Masthead Nav",
+      "kind": "nav",
+      "refersTo": "nav-link",
+      "description": "Tracked capitals; the current section sits over a brick underline.",
+      "html": "<nav class=\"ds-nav\"><a class=\"on\" href=\"#\">Menu</a><a href=\"#\">Want to cook</a><a href=\"#\">Favorites</a></nav>",
+      "css": ".ds-nav{display:flex;gap:24px;padding-bottom:12px;border-bottom:3px double var(--ink,#2a2420)}.ds-nav a{font-family:var(--sans,'Libre Franklin',system-ui,sans-serif);font-size:.75rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;text-decoration:none;color:var(--ink-soft,#5c534c);padding:6px 0 4px;border-bottom:2px solid transparent}.ds-nav a:hover{color:var(--ink,#2a2420)}.ds-nav a.on{color:var(--ink,#2a2420);border-bottom-color:var(--brick,#a83b27)}.ds-nav a:focus-visible{outline:2px solid var(--brick,#a83b27);outline-offset:2px}"
+    },
+    {
+      "name": "Using Ticket",
+      "kind": "chip",
+      "refersTo": "using-ticket",
+      "description": "An ingredient on hand in the Using filter: brick outline and text.",
+      "html": "<span class=\"ds-ticket\">butter<button aria-label=\"Remove\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M18 6 6 18M6 6l12 12\"/></svg></button></span>",
+      "css": ".ds-ticket{display:inline-flex;align-items:center;gap:2px;padding:2px 2px 2px 10px;border:1.5px solid var(--brick,#a83b27);border-radius:2px;color:var(--brick,#a83b27);font-family:var(--sans,'Libre Franklin',system-ui,sans-serif);font-size:.875rem;font-weight:600}.ds-ticket button{display:grid;place-items:center;width:28px;height:28px;border:0;background:none;color:inherit;cursor:pointer}.ds-ticket button:hover{background:var(--brick-wash,#f1ddd3)}.ds-ticket button:focus-visible{outline:2px solid var(--brick,#a83b27);outline-offset:2px}"
+    },
+    {
+      "name": "Menu Line",
+      "kind": "custom",
+      "description": "Signature dish line: name, dotted leader, tabular time in the price column, italic source beneath; brick when selected.",
+      "html": "<ol class=\"ds-menu\"><li><a href=\"#\"><span class=\"l\"><span class=\"n\">Apple Cider Doughnut Cake</span><span class=\"d\"></span><span class=\"t\">2 hr 45</span></span><span class=\"s\">seriouseats.com</span></a></li><li><a class=\"sel\" href=\"#\"><span class=\"l\"><span class=\"n\">Ben's Brownies</span><span class=\"d\"></span><span class=\"t\">1 hr 10</span></span><span class=\"s\">facebook.com</span></a></li></ol>",
+      "css": ".ds-menu{list-style:none;margin:0;padding:0;max-width:52rem}.ds-menu a{display:block;padding:4px 0;text-decoration:none;color:var(--ink,#2a2420)}.ds-menu .l{display:flex;align-items:last baseline;gap:8px}.ds-menu .n{font-family:var(--serif,'Libre Caslon Text',Georgia,serif);font-size:1.25rem;line-height:1.3}.ds-menu .d{flex:1;min-width:24px;border-bottom:2px dotted var(--ink-faint,#8f857c);transform:translateY(-5px)}.ds-menu .t{font-family:var(--sans,'Libre Franklin',system-ui,sans-serif);font-size:.875rem;font-variant-numeric:tabular-nums lining-nums;min-width:4.5em;text-align:right;white-space:nowrap}.ds-menu .s{display:block;font-family:var(--serif,'Libre Caslon Text',Georgia,serif);font-style:italic;font-size:.9375rem;line-height:1.3;color:var(--ink-soft,#5c534c)}.ds-menu a:hover .n{text-decoration:underline;text-decoration-color:var(--ink-faint,#8f857c);text-underline-offset:.18em}.ds-menu a.sel .n{color:var(--brick,#a83b27)}.ds-menu a.sel .d{border-bottom-color:var(--brick,#a83b27)}.ds-menu a:focus-visible{outline:2px solid var(--brick,#a83b27);outline-offset:2px}"
+    },
+    {
+      "name": "Plate",
+      "kind": "card",
+      "description": "A photograph printed into the paper with a 1px inked edge; initial on pressed paper when missing.",
+      "html": "<div class=\"ds-plate\"><span>A</span></div>",
+      "css": ".ds-plate{position:relative;width:240px;aspect-ratio:4/3;background:var(--paper-press,#ebe4d6);border:1px solid var(--ink,#2a2420)}.ds-plate span{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--serif,'Libre Caslon Text',Georgia,serif);font-style:italic;font-size:5rem;line-height:1;color:var(--ink-faint,#8f857c)}"
+    },
+    {
+      "name": "Cook Timer",
+      "kind": "custom",
+      "refersTo": "timer",
+      "description": "A running timer in the cook strip; fills brick when done.",
+      "html": "<ul class=\"ds-timers\"><li><span class=\"lb\">Step 6 · 1 hour</span><span class=\"ck\">1:00:00</span></li><li class=\"done\"><span class=\"lb\">Rest</span><span class=\"ck\">0:00</span></li></ul>",
+      "css": ".ds-timers{display:flex;gap:8px;list-style:none;margin:0;padding:0}.ds-timers li{display:flex;align-items:center;gap:12px;padding:8px 16px;border:1.5px solid var(--ink,#2a2420);border-radius:2px;color:var(--ink,#2a2420)}.ds-timers .lb{font-family:var(--serif,'Libre Caslon Text',Georgia,serif);font-style:italic;font-size:.9375rem}.ds-timers .ck{font-family:var(--sans,'Libre Franklin',system-ui,sans-serif);font-size:1.5rem;font-weight:650;font-variant-numeric:tabular-nums lining-nums}.ds-timers li.done{background:var(--brick,#a83b27);border-color:var(--brick,#a83b27);color:var(--paper,#f4efe6)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Letterpress Menu",
+    "overview": "Sous is set like a two-colour letterpress restaurant menu printed on cotton paper. The library reads as the house menu: dishes listed in a serif face, dotted leaders running to cook times in a price column, centred spaced-capital course heads, a double rule closing the masthead. Every surface is paper and ink. Structure comes from printers' rules and type, never from boxes floating above the page.\n\nThere are two inks and only two. Dark ink carries everything; its lighter values are tints of that same warm ink, never a neutral grey. Brick is the second ink, and it is spent on what is active, selected, actionable, or asking for the cook's action right now. Density follows the two modes of use: the desk screens (library, recipe, editor) are dense and calm at one reading size; cook mode prints one step at a time at menu-card scale for reading across a counter.\n\nPhotographs are printed, not displayed: they sit in the paper as plates with an inked edge, their whites taking the paper's colour.",
+    "keyCharacteristics": [
+      "Warm paper ground with one warm ink and its tints; brick as the reserved second ink.",
+      "Libre Caslon Text for titles and all reading text; Libre Franklin in tracked capitals for labels, controls and figures.",
+      "Hairline rules, ink rules, dotted leaders and double rules do all structural work.",
+      "Flat: no shadows, no cards, no rounded tiles; corners are square or barely softened (2px).",
+      "Every quantity and time is set in tabular lining figures."
+    ],
+    "rules": [
+      {
+        "name": "The Second Ink Rule",
+        "body": "Brick marks only what is active, selected, actionable, or waiting on the cook. If a brick element is neither live nor asking for action, it goes back to ink.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tint Rule",
+        "body": "Every light value is the ink printed thinner on paper. Don't introduce a neutral grey or a cool tone.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tabular Rule",
+        "body": "Every quantity, time and count is Franklin in tabular lining figures, so the price column aligns down the menu.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Measure Rule",
+        "body": "Recipe reading text uses one size (1.1875rem / 1.6) and one measure (65ch). Don't add a second reading size for \"long\" recipes.",
+        "section": "typography"
+      },
+      {
+        "name": "The Price Column Rule",
+        "body": "A dotted leader always ends at a figure. A dish with no time and no match count has no leader; never draw a leader into empty space.",
+        "section": "layout"
+      },
+      {
+        "name": "The Printed Sheet Rule",
+        "body": "No drop shadows. If something must stand apart, rule it or tint the paper under it.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** close every top band (masthead, cook bar) with a 3px double ink rule.",
+      "**Do** run a dotted leader from a dish to its time, and only when there is a figure to reach.",
+      "**Do** spend brick only on active, selected, actionable or attention-needing states, and keep exactly one brick-filled primary per view.",
+      "**Do** set every quantity, time and count in tabular lining Franklin.",
+      "**Do** keep recipe reading text at 1.1875rem / 1.6 with a 65ch measure.",
+      "**Do** separate with rules and paper tints: hairline between rows, ink rule under column heads.",
+      "**Do** print photographs as plates: multiplied into the paper with a 1px inked edge.",
+      "**Do** keep cook-mode targets large (52px lines, 56px icon buttons, 72px pager)."
+    ],
+    "donts": [
+      "**Don't** use drop shadows or lift anything off the page.",
+      "**Don't** set recipes in cards or rounded tiles; the library is a typographic list, not a photo grid.",
+      "**Don't** round corners past 2px.",
+      "**Don't** introduce a third ink, a neutral grey, or pure white.",
+      "**Don't** use faint ink for body text.",
+      "**Don't** bold Caslon headings; build hierarchy from size and italic.",
+      "**Don't** box form fields; a field is an underline."
+    ]
+  }
+}

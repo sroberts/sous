@@ -1,0 +1,195 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--paper);
+  color: var(--ink);
+  -webkit-text-size-adjust: 100%;
+  scrollbar-color: var(--rule) transparent;
+}
+
+body {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: var(--read);
+  line-height: var(--read-lh);
+  font-variant-numeric: tabular-nums lining-nums;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--brick-wash);
+  color: var(--ink);
+}
+
+h1,
+h2,
+h3,
+h4,
+p,
+ul,
+ol,
+figure {
+  margin: 0;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 400;
+  text-wrap: balance;
+  line-height: 1.15;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+ul,
+ol {
+  padding: 0;
+  list-style: none;
+}
+
+a {
+  color: inherit;
+  text-decoration-color: var(--ink-faint);
+  text-underline-offset: 0.18em;
+  text-decoration-thickness: 1px;
+}
+
+a:hover {
+  text-decoration-color: var(--brick);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--brick);
+  outline-offset: 2px;
+  border-radius: 1px;
+}
+
+input,
+textarea {
+  caret-color: var(--brick);
+}
+
+::placeholder {
+  color: var(--ink-soft);
+  opacity: 1;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+/* Small capitals in Franklin: section heads, labels, controls. */
+.caps {
+  font-family: var(--sans);
+  font-size: var(--caps);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* Buttons are printed: square, inked, never floating. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  border: 1.5px solid var(--ink);
+  border-radius: 2px;
+  background: transparent;
+  font-family: var(--sans);
+  font-size: 0.8125rem;
+  font-weight: 650;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 120ms, color 120ms, border-color 120ms;
+}
+
+.btn:hover {
+  background: var(--paper-press);
+}
+
+.btn:active {
+  background: var(--paper-deep);
+}
+
+.btn.primary {
+  background: var(--brick);
+  border-color: var(--brick);
+  color: var(--paper);
+}
+
+.btn.primary:hover {
+  background: var(--brick-press);
+  border-color: var(--brick-press);
+}
+
+.btn.quiet {
+  border-color: transparent;
+}
+
+.btn.quiet:hover {
+  background: var(--paper-press);
+}
+
+.btn:disabled {
+  border-color: var(--rule);
+  color: var(--ink-faint);
+  background: transparent;
+  cursor: not-allowed;
+}
+
+.btn svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 1.75;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* The double rule letterpress menus close a masthead with. */
+.double-rule {
+  border: 0;
+  border-top: 3px double var(--ink);
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}
