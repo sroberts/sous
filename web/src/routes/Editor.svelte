@@ -1,13 +1,15 @@
 <script>
   import { tick } from 'svelte';
-  import { ArrowLeft, X, ImagePlus, Trash2 } from '@lucide/svelte';
+  import { ArrowLeft, X, ImagePlus, Trash2, Link2 } from '@lucide/svelte';
   import { go, link } from '../lib/router.svelte.js';
   import { api } from '../lib/api.js';
   import { session, asPerson, refreshIndex, toast } from '../lib/session.svelte.js';
   import { amount, ago } from '../lib/format.js';
   import Plate from '../components/Plate.svelte';
 
-  let { id } = $props();
+  // draft: an unsaved recipe from an import. With id and merge, the draft
+  // updates that recipe instead (spec.md §14): tags, notes and photos stay.
+  let { id, draft = null, merge = false } = $props();
 
   let loaded = $state(!id);
   let version = $state(null);
@@ -25,12 +27,18 @@
     prep_minutes: '',
     cook_minutes: '',
     total_minutes: '',
+    time_text: '',
+    nutrition_text: '',
     notes: '',
     tags: [],
     images: [],
     ingredients: [''],
     steps: [''],
   });
+
+  // In import mode, leaving goes back to the import page.
+  const back = $derived(draft ? '/import' : id ? `/r/${id}` : '/');
+  const backLabel = $derived(draft ? 'Import' : id ? 'Recipe' : 'Library');
 
   function fill(r) {
     const lines = (rows, field) => {
@@ -53,6 +61,8 @@
       prep_minutes: r.prep_minutes ?? '',
       cook_minutes: r.cook_minutes ?? '',
       total_minutes: r.total_minutes ?? '',
+      time_text: r.time_text ?? '',
+      nutrition_text: r.nutrition_text ?? '',
       notes: r.notes ?? '',
       tags: [...r.tags],
       images: [...r.images],
@@ -63,10 +73,54 @@
     dirty = false;
   }
 
+  function fromDraft(d) {
+    const list = (a) => (a?.length ? [...a] : ['']);
+    return {
+      title: d.title ?? '',
+      source_url: d.source_url ?? '',
+      description: d.description ?? '',
+      yield_text: d.yield_text ?? '',
+      prep_minutes: d.prep_minutes ?? '',
+      cook_minutes: d.cook_minutes ?? '',
+      total_minutes: d.total_minutes ?? '',
+      time_text: d.time_text ?? '',
+      nutrition_text: d.nutrition_text ?? '',
+      notes: d.notes ?? '',
+      tags: [...(d.tags ?? [])],
+      images: [...(d.images ?? [])],
+      ingredients: list(d.ingredients),
+      steps: list(d.steps),
+    };
+  }
+
+  // Merge rules: the import replaces what the page says about the dish and
+  // keeps what the household added. A new cover goes after the existing photos.
+  function mergeDraft(d) {
+    const next = fromDraft(d);
+    const cover = d.images?.[0];
+    form = {
+      ...next,
+      title: next.title || form.title,
+      tags: form.tags,
+      notes: form.notes,
+      images: cover && !form.images.includes(cover) ? [...form.images, cover] : form.images,
+    };
+    dirty = true;
+  }
+
+  function startFromDraft() {
+    if (!draft || id) return;
+    form = fromDraft(draft);
+    dirty = true;
+    document.title = `Importing ${form.title || 'a recipe'} · Sous`;
+  }
+  startFromDraft();
+
   if (id) {
     api.recipe(id).then(
       (r) => {
         fill(r);
+        if (merge && draft) mergeDraft(draft);
         loaded = true;
         document.title = `Editing ${r.title} · Sous`;
       },
@@ -165,6 +219,8 @@
       prep_minutes: num(form.prep_minutes),
       cook_minutes: num(form.cook_minutes),
       total_minutes: num(form.total_minutes),
+      time_text: form.time_text.trim() || null,
+      nutrition_text: form.nutrition_text.trim() || null,
       notes: form.notes.trim() || null,
       tags: form.tags,
       images: form.images,
@@ -187,7 +243,8 @@
       if (!r) return;
       dirty = false;
       await refreshIndex();
-      go(`/r/${r.id}`, { replace: !id });
+      // An import's URL would fetch again, so it never stays in history.
+      go(`/r/${r.id}`, { replace: !id || !!draft });
     } catch (err) {
       problem = err.status === 412 ? { conflict: err.body.current } : { message: err.message };
     } finally {
@@ -218,9 +275,12 @@
 
 <form class="editor" onsubmit={save} oninput={touch} novalidate>
   <div class="toolbar">
-    <a class="back" href={id ? `/r/${id}` : '/'} use:link><ArrowLeft size={16} aria-hidden="true" />{id ? 'Recipe' : 'Library'}</a>
-    <span class="state label" aria-live="polite">{saving ? 'Saving…' : dirty ? 'Unsaved changes' : ''}</span>
-    <a class="btn quiet" href={id ? `/r/${id}` : '/'} use:link>Cancel</a>
+    <a class="back" href={back} use:link><ArrowLeft size={16} aria-hidden="true" />{backLabel}</a>
+    {#if !id && !draft}
+      <a class="import-link" href="/import" use:link><Link2 size={16} aria-hidden="true" />Import from a link</a>
+    {/if}
+    <span class="state label" aria-live="polite">{saving ? 'Saving…' : dirty ? (draft && !merge ? 'Not saved yet' : 'Unsaved changes') : ''}</span>
+    <a class="btn quiet" href={back} use:link>Cancel</a>
     <button class="btn primary" disabled={saving || !loaded}>{id ? 'Save recipe' : 'Add to the library'}</button>
   </div>
 
@@ -323,6 +383,14 @@
           <label><span>Cook</span><input type="number" min="0" inputmode="numeric" bind:value={form.cook_minutes} /></label>
           <label><span>Total</span><input type="number" min="0" inputmode="numeric" bind:value={form.total_minutes} /></label>
         </fieldset>
+        <label class="field">
+          <span class="label">Time note</span>
+          <input bind:value={form.time_text} placeholder="Plus overnight to chill" />
+        </label>
+        <label class="field">
+          <span class="label">Nutrition</span>
+          <textarea rows="2" bind:value={form.nutrition_text} placeholder="Per serving: 420 calories · 18 g protein"></textarea>
+        </label>
 
         <div class="field">
           <label class="label" for="tag-input">Tags</label>
@@ -335,7 +403,7 @@
           <datalist id="all-tags">{#each allTags as t}<option value={t}></option>{/each}</datalist>
         </div>
 
-        {#if id}
+        {#if id && !draft}
           <button type="button" class="trash" onclick={trash}><Trash2 size={16} aria-hidden="true" />Move to trash</button>
         {/if}
       </aside>
@@ -368,12 +436,26 @@
     font-weight: 600;
     text-decoration: none;
     color: var(--ink-2);
-    margin-right: auto;
   }
-  .back:hover {
+  .back:hover,
+  .import-link:hover {
     color: var(--red);
   }
+  .import-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: 40px;
+    margin-left: var(--space-3);
+    padding-left: var(--space-4);
+    border-left: 1.5px solid var(--perf);
+    font-size: var(--ui);
+    font-weight: 600;
+    color: var(--ink-2);
+    text-decoration: none;
+  }
   .state {
+    margin-left: auto;
     color: var(--ink-3);
   }
   .notice {
@@ -688,6 +770,20 @@
     .toolbar {
       top: 0;
       position: relative;
+      flex-wrap: wrap;
+    }
+    .import-link {
+      margin-left: 0;
+      padding-left: var(--space-3);
+    }
+    .state:empty {
+      display: none;
+    }
+    .state:empty + .btn {
+      margin-left: auto;
+    }
+    .toolbar .primary {
+      flex: 1 0 auto;
     }
   }
 </style>

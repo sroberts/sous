@@ -8,9 +8,13 @@ import { createHash, randomUUID } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseIngredientLines, parseStepLines, parseIngredient, toLines } from './parse.js';
+import { splitText } from './importText.js';
 
 const LOCAL = new URL('../mock-local/', import.meta.url).pathname;
 const FIXTURES = new URL('./fixtures.json', import.meta.url).pathname;
+// Canned import results, keyed by normalizeSource(url). An entry is either
+// { preview } or { error, page, delay? }.
+const IMPORTS = new URL('./imports.json', import.meta.url).pathname;
 
 function load() {
   const local = join(LOCAL, 'recipes.json');
@@ -130,6 +134,72 @@ function applyPatch(r, body) {
 
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// The mock's NormalizeSourceURL: host without www., scheme, fragment,
+// tracking params or trailing slash.
+function normalizeSource(u) {
+  try {
+    const x = new URL(String(u).trim());
+    if (x.protocol !== 'http:' && x.protocol !== 'https:') return null;
+    for (const k of [...x.searchParams.keys()]) if (/^(utm_|mc_)/.test(k) || k === 'fbclid' || k === 'gclid') x.searchParams.delete(k);
+    const q = x.searchParams.toString();
+    return `${x.hostname.toLowerCase().replace(/^www\./, '')}${x.pathname.replace(/\/+$/, '')}${q ? `?${q}` : ''}`;
+  } catch {
+    return null;
+  }
+}
+
+function duplicatesOf(urls) {
+  const keys = new Set(urls.map(normalizeSource).filter(Boolean));
+  return [...db.recipes.values()]
+    .filter((r) => r.source_url && keys.has(normalizeSource(r.source_url)))
+    .map((r) => ({ id: r.id, title: r.title, version: r.version, deleted: !!r.deleted_at }));
+}
+
+function titleFromSlug(url) {
+  const slug = new URL(url).pathname.split('/').filter(Boolean).pop() ?? '';
+  const words = slug.replace(/\.\w+$/, '').replace(/^\d+-/, '').split(/[-_]+/).filter(Boolean);
+  return words.length ? words.map((w) => w[0].toUpperCase() + w.slice(1)).join(' ') : null;
+}
+
+function importFail(res, code, message, page) {
+  send(res, 422, { error: { code, message }, page: page ?? null });
+}
+
+async function importPreview(req, res) {
+  const body = JSON.parse((await readBody(req)).toString() || '{}');
+  const url = String(body.url ?? '').trim();
+  const text = String(body.text ?? '').trim();
+  if (!url === !text) return fail(res, 400, 'invalid', 'Send either a url or some text, not both.');
+  const preview = (draft, report, images = []) =>
+    send(res, 200, {
+      draft,
+      ingredients: parseIngredientLines(draft.ingredients ?? []),
+      images,
+      report: { fetched_url: null, archived: false, found: [], missing: [], warnings: [], ...report },
+      duplicates: duplicatesOf([url, report.source_url, draft.source_url].filter(Boolean)),
+    });
+
+  if (text) {
+    const split = splitText(text);
+    const title = String(body.title ?? '').trim() || split.title || '';
+    if (!split.ingredients.length && !split.steps.length) return importFail(res, 'no_recipe_found', 'Sous found no ingredients or steps in that text.');
+    const draft = { title, ingredients: split.ingredients, steps: split.steps };
+    const missing = [!title && 'title', !split.ingredients.length && 'ingredients', !split.steps.length && 'steps'].filter(Boolean);
+    return preview(draft, { method: 'text', source_url: '', found: ['ingredients', 'steps'].filter((f) => !missing.includes(f)), missing: [...missing, 'times', 'photo'] });
+  }
+
+  const key = normalizeSource(url);
+  if (!key) return importFail(res, 'unsupported_url', 'Sous reads web pages: links starting with http:// or https://.');
+  const entry = JSON.parse(readFileSync(IMPORTS, 'utf8'))[key];
+  if (entry?.delay) await delay(entry.delay);
+  if (entry?.preview) {
+    const p = structuredClone(entry.preview);
+    return preview(p.draft, p.report, p.images);
+  }
+  if (entry?.error) return importFail(res, entry.error.code, entry.error.message, entry.page);
+  return importFail(res, 'no_recipe_found', 'The page has no recipe data.', { source_url: url, title: titleFromSlug(url), image: null });
+}
+
 async function handle(req, res) {
   db ??= load();
   const url = new URL(req.url, 'http://x');
@@ -174,6 +244,7 @@ async function handle(req, res) {
     logChange(person, via, r.id, 'create', `Added ${r.title}`);
     return send(res, 201, full(r, person), { etag: `"${r.version}"` });
   }
+  if (path === '/v1/recipes/import/preview' && req.method === 'POST') return importPreview(req, res);
   if ((m = path.match(/^\/v1\/recipes\/([\w-]+)$/))) {
     const r = db.recipes.get(m[1]);
     if (!r) return fail(res, 404, 'not_found', 'That recipe does not exist.');

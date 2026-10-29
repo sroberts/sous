@@ -64,6 +64,10 @@ export const api = {
   tags: () => request('GET', '/v1/tags'),
   parseIngredients: (lines) => request('POST', '/v1/ingredients/parse', { body: { lines } }),
   uploadImage: (file) => request('POST', '/v1/images', { raw: file }),
+  /** Read a recipe from a link or pasted text into an unsaved draft. A failed
+   * read throws an ApiError with status 422; err.body.page holds what the page
+   * still offered. */
+  importPreview: (body) => request('POST', '/v1/recipes/import/preview', { body }),
 };
 
 export const imageUrl = (hash) => `/v1/images/${hash}`;

@@ -8,10 +8,11 @@
   import Recipe from './routes/Recipe.svelte';
   import Cook from './routes/Cook.svelte';
   import Editor from './routes/Editor.svelte';
+  import Import from './routes/Import.svelte';
 
   boot();
 
-  const titles = { library: 'Sous', new: 'New recipe · Sous' };
+  const titles = { library: 'Sous', new: 'New recipe · Sous', import: 'Import a recipe · Sous' };
   $effect(() => {
     if (titles[route.name]) document.title = titles[route.name];
   });
@@ -37,6 +38,9 @@
   {#key route.id}<Editor id={route.id} />{/key}
 {:else if route.name === 'new'}
   <Editor id={null} />
+{:else if route.name === 'import'}
+  <!-- A new ?url= is a new import, so the page starts over. -->
+  {#key route.search.toString()}<Import />{/key}
 {/if}
 
 {#if session.asking}
