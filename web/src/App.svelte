@@ -58,6 +58,6 @@
     font-size: var(--title-l);
   }
   .down p {
-    color: var(--ink-soft);
+    color: var(--ink-2);
   }
 </style>
