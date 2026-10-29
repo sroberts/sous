@@ -2,9 +2,18 @@ package identity
 
 import (
 	"context"
+	"crypto/ed25519"
+	"errors"
+	"net"
 	"net/http"
+	"net/url"
+	"strings"
+	"sync"
 	"time"
 )
+
+// codeInternal matches the API's code for an error that isn't the caller's.
+const codeInternal = "internal"
 
 // Directory is the people store the resolver consults. recipes.Service
 // implements it.
@@ -36,11 +45,21 @@ type ResolverConfig struct {
 // Resolver resolves the Caller for each request.
 type Resolver struct {
 	cfg ResolverConfig
+
+	mu sync.Mutex
+	// upserted holds the name and email last written for each gateway
+	// username, so a person is written once per process unless they change.
+	upserted map[string]nameEmail
 }
+
+type nameEmail struct{ name, email string }
 
 // NewResolver returns a Resolver for cfg.
 func NewResolver(cfg ResolverConfig) *Resolver {
-	return &Resolver{cfg: cfg}
+	if cfg.Now == nil {
+		cfg.Now = time.Now
+	}
+	return &Resolver{cfg: cfg, upserted: map[string]nameEmail{}}
 }
 
 // Resolve establishes who is calling, in this order:
@@ -57,5 +76,102 @@ func NewResolver(cfg ResolverConfig) *Resolver {
 //
 // via is recorded on the returned Caller as given.
 func (r *Resolver) Resolve(req *http.Request, via Via) (Caller, *Error) {
-	panic("TODO")
+	ctx := req.Context()
+	if r.cfg.Gateway {
+		if toks := req.Header.Values(HeaderIdentity); len(toks) > 0 {
+			p, err := r.gateway(ctx, toks, hostname(req.Host))
+			if err != nil {
+				return Caller{}, err
+			}
+			return Caller{Person: p, Route: RouteGateway, Via: via}, nil
+		}
+	}
+	if r.cfg.RequireGateway {
+		return Caller{}, &Error{http.StatusUnauthorized, CodeGatewayRequired, "this service only accepts requests through the Outpost gateway"}
+	}
+	if name := req.Header.Get(HeaderPerson); name != "" {
+		p, err := r.cfg.Directory.Lookup(ctx, name)
+		if err != nil {
+			return Caller{}, internal()
+		}
+		if p == nil {
+			return Caller{}, &Error{http.StatusUnauthorized, CodeUnknownPerson, "no person named " + name}
+		}
+		return Caller{Person: p, Route: RouteDirect, Via: via}, nil
+	}
+	if ck, err := req.Cookie(CookiePerson); err == nil {
+		// A cookie that doesn't decode or names no one is stale, not an
+		// error: the UI just asks who's cooking again.
+		if name, err := url.PathUnescape(ck.Value); err == nil && name != "" {
+			p, err := r.cfg.Directory.Lookup(ctx, name)
+			if err != nil {
+				return Caller{}, internal()
+			}
+			if p != nil {
+				return Caller{Person: p, Route: RouteDirect, Via: via}, nil
+			}
+		}
+	}
+	return Caller{Route: RouteNone, Via: via}, nil
+}
+
+func (r *Resolver) gateway(ctx context.Context, toks []string, host string) (*Person, *Error) {
+	if len(toks) != 1 {
+		return nil, &Error{http.StatusUnauthorized, CodeInvalidIdentity, "more than one identity token"}
+	}
+	key := func(kid string) (ed25519.PublicKey, error) {
+		if r.cfg.JWKS == nil {
+			return nil, ErrJWKSUnavailable
+		}
+		return r.cfg.JWKS.Key(ctx, kid)
+	}
+	c, err := verify(toks[0], key, r.cfg.Issuer, host, r.cfg.Now())
+	if errors.Is(err, ErrJWKSUnavailable) {
+		return nil, &Error{http.StatusServiceUnavailable, CodeIdentityUnavailable, "cannot fetch the gateway's signing keys"}
+	}
+	if err != nil {
+		return nil, &Error{http.StatusUnauthorized, CodeInvalidIdentity, err.Error()}
+	}
+	groups := c.Groups
+	if groups == nil {
+		groups = []string{}
+	}
+	p := &Person{Username: c.Sub, Name: c.Name, Email: c.Email, Groups: groups}
+	if err := r.upsert(ctx, *p); err != nil {
+		return nil, internal()
+	}
+	return p, nil
+}
+
+func (r *Resolver) upsert(ctx context.Context, p Person) error {
+	want := nameEmail{p.Name, p.Email}
+	r.mu.Lock()
+	have, ok := r.upserted[p.Username]
+	r.mu.Unlock()
+	if ok && have == want {
+		return nil
+	}
+	if err := r.cfg.Directory.UpsertGateway(ctx, p); err != nil {
+		return err
+	}
+	r.mu.Lock()
+	r.upserted[p.Username] = want
+	r.mu.Unlock()
+	return nil
+}
+
+// internal hides a store failure's detail from the client.
+func internal() *Error {
+	return &Error{http.StatusInternalServerError, codeInternal, "could not look up the caller"}
+}
+
+// hostname normalises a Host header the way Outpost does before it signs
+// aud: lower case, without port, brackets or a trailing dot.
+func hostname(raw string) string {
+	h := raw
+	if host, _, err := net.SplitHostPort(raw); err == nil {
+		h = host
+	}
+	h = strings.TrimPrefix(strings.TrimSuffix(h, "]"), "[")
+	return strings.TrimSuffix(strings.ToLower(h), ".")
 }
