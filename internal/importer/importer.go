@@ -125,7 +125,7 @@ func (im *Importer) fromText(ctx context.Context, c identity.Caller, req recipes
 		}
 		return recipes.ImportPreview{}, &recipes.ImportError{Code: recipes.CodeNoRecipe, Message: messageNoText, Page: page}
 	}
-	draft := recipes.RecipeInput{Title: title, Ingredients: ingredients, Steps: Unnumber(steps)}
+	draft := recipes.RecipeInput{Title: title, Ingredients: ingredients, Steps: steps}
 	if source != "" {
 		draft.SourceURL = &source
 	}
@@ -201,7 +201,16 @@ func (im *Importer) fetchPage(ctx context.Context, rawURL string) (fetched, erro
 	if resp.Status >= 200 && resp.Status <= 299 && !isHTML(ct) {
 		return fetched{}, importErr(recipes.CodeUnsupportedURL, "That link isn't a web page.", fallback)
 	}
-	page := Scan(resp.Body, ct, resp.URL)
+	// The id_ copy is the original markup, so its relative links belong to
+	// the original site, not to web.archive.org.
+	base := resp.URL
+	if archived {
+		if u, err := url.Parse(orig); err == nil {
+			base = u
+		}
+	}
+	page := Scan(resp.Body, ct, base)
+	page.FetchedURL = resp.URL.String()
 	page.SourceURL = rawURL
 	page.Status = resp.Status
 	page.Server = resp.Header.Get("Server")

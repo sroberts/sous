@@ -95,12 +95,15 @@
 
   // Merge rules: the import replaces what the page says about the dish and
   // keeps what the household added. A new cover goes after the existing photos.
+  // The imported version replaces what it has; anything the page didn't
+  // carry (an empty yield, no description) keeps the household's own value.
   function mergeDraft(d) {
     const next = fromDraft(d);
+    const blank = (v) => v == null || (typeof v === 'string' && !v.trim()) || (Array.isArray(v) && !v.some((x) => String(x).trim()));
+    const kept = Object.fromEntries(Object.entries(next).map(([k, v]) => [k, blank(v) ? form[k] : v]));
     const cover = d.images?.[0];
     form = {
-      ...next,
-      title: next.title || form.title,
+      ...kept,
       tags: form.tags,
       notes: form.notes,
       images: cover && !form.images.includes(cover) ? [...form.images, cover] : form.images,

@@ -25,7 +25,7 @@ func NormalizeSourceURL(u string) string {
 	q := p.Query()
 	for k := range q {
 		l := strings.ToLower(k)
-		if strings.HasPrefix(l, "utm_") || strings.HasPrefix(l, "mc_") || l == "fbclid" || l == "gclid" {
+		if IsTrackingParam(l) {
 			delete(q, k)
 		}
 	}
@@ -74,4 +74,11 @@ func (s *Service) FindBySource(ctx context.Context, c identity.Caller, urls ...s
 		return nil, err
 	}
 	return slices.Clip(out), nil
+}
+
+// IsTrackingParam reports whether a query parameter only tracks a click
+// (utm_*, mc_*, fbclid, gclid). Links are stored and compared without them.
+func IsTrackingParam(name string) bool {
+	l := strings.ToLower(name)
+	return strings.HasPrefix(l, "utm_") || strings.HasPrefix(l, "mc_") || l == "fbclid" || l == "gclid"
 }

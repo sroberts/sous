@@ -484,8 +484,6 @@ func rankImages(list []Candidate) []Candidate {
 	return out
 }
 
-var trackingParams = regexp.MustCompile(`^(?:utm_.*|fbclid|gclid|mc_.*)$`)
-
 // CleanURL drops the fragment and tracking parameters.
 func CleanURL(raw string) string {
 	u, err := url.Parse(strings.TrimSpace(raw))
@@ -496,7 +494,7 @@ func CleanURL(raw string) string {
 	if u.RawQuery != "" {
 		q := u.Query()
 		for k := range q {
-			if trackingParams.MatchString(strings.ToLower(k)) {
+			if recipes.IsTrackingParam(k) {
 				q.Del(k)
 			}
 		}
@@ -516,13 +514,20 @@ func sourceURL(p Page, archived bool, orig string) string {
 	if ref == "" {
 		ref = p.SourceURL
 	}
-	if p.Canonical != "" && sameHost(p.Canonical, ref) {
+	if p.Canonical != "" && sameHost(p.Canonical, ref) && hasPath(p.Canonical) {
 		return CleanURL(p.Canonical)
 	}
 	if ref != "" {
 		return CleanURL(ref)
 	}
 	return CleanURL(p.SourceURL)
+}
+
+// hasPath rejects a canonical that is a site's homepage, which some sites
+// put on every page; taking it would make every recipe a duplicate.
+func hasPath(u string) bool {
+	p, err := url.Parse(u)
+	return err == nil && strings.Trim(p.Path, "/") != ""
 }
 
 func sameHost(a, b string) bool {

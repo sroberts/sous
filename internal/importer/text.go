@@ -2,6 +2,7 @@ package importer
 
 import (
 	"regexp"
+	"slices"
 	"strings"
 	"unicode/utf8"
 )
@@ -108,6 +109,11 @@ func SplitText(text string) (title string, ingredients, steps []string) {
 		}
 		ingredients = plain(rest[:n])
 		steps = plain(rest[n:])
+	}
+	// Strip one numbering style only: once "1." is gone, a step that begins
+	// "1 cup flour" must keep its quantity.
+	if stripped := stripDotted(stripStepPrefixes(steps)); !slices.Equal(stripped, steps) {
+		return title, ingredients, stripped
 	}
 	return title, ingredients, Unnumber(steps)
 }

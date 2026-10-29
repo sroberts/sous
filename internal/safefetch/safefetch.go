@@ -179,7 +179,13 @@ func (c *Client) dial(ctx context.Context, network, address string) (net.Conn, e
 		}
 		targets[i] = ap
 	}
-	d := &net.Dialer{Timeout: c.opts.Timeout, Control: c.control}
+	// With several addresses, give each a short slice so a blackholed IPv6
+	// address can't spend the whole fetch budget before IPv4 is tried.
+	timeout := c.opts.Timeout
+	if len(targets) > 1 && timeout > 3*time.Second {
+		timeout = 3 * time.Second
+	}
+	d := &net.Dialer{Timeout: timeout, Control: c.control}
 	var lastErr error
 	for _, ap := range targets {
 		if c.onDial != nil {

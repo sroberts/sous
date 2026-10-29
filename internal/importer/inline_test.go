@@ -47,3 +47,14 @@ func TestIngredientHeading(t *testing.T) {
 		}
 	}
 }
+
+func TestSplitTextDropsDottedNumbers(t *testing.T) {
+	_, _, steps := SplitText("Ingredients\n1 cup flour\nDirections\n1. Mix.\n2. Bake.")
+	if !slices.Equal(steps, []string{"Mix.", "Bake."}) {
+		t.Errorf("steps = %q", steps)
+	}
+	_, _, steps = SplitText("Directions\n1. Mix.\n3. Bake.")
+	if !slices.Equal(steps, []string{"1. Mix.", "3. Bake."}) {
+		t.Errorf("out-of-order numbers were stripped: %q", steps)
+	}
+}

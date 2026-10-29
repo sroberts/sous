@@ -125,12 +125,21 @@
   }
 
   async function restore(d) {
-    const ok = await asPerson(() => api.restoreRecipe(d.id).then(() => true));
+    let ok;
+    try {
+      ok = await asPerson(() => api.restoreRecipe(d.id).then(() => true));
+    } catch (err) {
+      toast(`${d.title} couldn’t be restored: ${err.message}`);
+      return;
+    }
     if (!ok) return;
     d.deleted = false;
     await refreshIndex();
     toast(`${d.title} is back in the library.`);
   }
+
+  // Only http(s) links are ever made clickable; ?url= is outside input.
+  const webLink = (u) => /^https?:\/\//i.test(u);
 
   const failHost = $derived(hostOf(failure?.page?.source_url ?? failure?.url ?? '') || 'The site');
   const copy = $derived.by(() => {
@@ -210,7 +219,7 @@
         <div class="why">
           <h1>{copy.title}</h1>
           <p>{copy.body}</p>
-          {#if failure.url}<p class="url"><a href={failure.url} target="_blank" rel="noreferrer">{failure.url}</a></p>{/if}
+          {#if failure.url}<p class="url">{#if webLink(failure.url)}<a href={failure.url} target="_blank" rel="noreferrer">{failure.url}</a>{:else}{failure.url}{/if}</p>{/if}
           <div class="acts">
             {#if copy.retry && failure.url}<button class="btn" onclick={() => run({ url: failure.url })}>Try again</button>{/if}
             <a class="btn quiet" href="/import" use:link>Try another link</a>

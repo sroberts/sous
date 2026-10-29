@@ -143,6 +143,7 @@ var (
 	unnumberMatch = regexp.MustCompile(`^(\d+)\s+\S`)
 	unnumberStrip = regexp.MustCompile(`^\d+\s+`)
 	stepPrefixRE  = regexp.MustCompile(`(?i)^step\s*(\d+)\s*[:.)\-–—]?\s*`)
+	dottedRE      = regexp.MustCompile(`^(\d+)[.)]\s+`)
 )
 
 // Unnumber is unnumber() from the Mela import: strip "1 Heat the oven…"
@@ -184,6 +185,12 @@ func splitInlineNumbered(steps []string) []string {
 		}
 	}
 	return out
+}
+
+// stripDotted drops "1." numbering from pasted text under the same rule.
+// Structured data keeps it; the server's step parser removes it on save.
+func stripDotted(steps []string) []string {
+	return stripSequential(steps, dottedRE, dottedRE)
 }
 
 // stripStepPrefixes drops "Step 1:" labels under the same rule.

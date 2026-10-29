@@ -132,6 +132,9 @@ func convertGIF(b []byte) ([]byte, error) {
 }
 
 func transparent(img image.Image) bool {
+	if p, ok := img.(*image.Paletted); ok {
+		return !p.Opaque()
+	}
 	r := img.Bounds()
 	for y := r.Min.Y; y < r.Max.Y; y++ {
 		for x := r.Min.X; x < r.Max.X; x++ {
