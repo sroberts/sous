@@ -137,7 +137,7 @@ func run(args []string, getenv func(string) string, stdout io.Writer) int {
 		Version:  version,
 		Auth:     auth,
 	}))
-	app.Handle("/mcp", api.WithIdentity(resolver, identity.ViaMCP, mcp.New(svc, log)))
+	app.Handle("/mcp", api.WithIdentity(resolver, identity.ViaMCP, mcp.New(svc, log, version)))
 	app.Handle("/", ui.Handler(log))
 	s.setApp(app)
 	s.ready.Store(true)
