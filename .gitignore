@@ -10,3 +10,9 @@ internal/ui/dist/
 .impeccable/review/
 .impeccable/questions/*
 !.impeccable/questions/roll.json
+
+# Go service
+/.dev-data/
+/sous
+/dist/
+internal/recipes/testdata/*.local.json

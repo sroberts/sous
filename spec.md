@@ -210,8 +210,10 @@ A `people` row is keyed by a username:
 - Gateway users are created or updated on first sight, from the token's `sub`,
   `name`, and `email`.
 - Without the gateway, people are created with `POST /v1/people`. An
-  unrecognised `X-Sous-Person` is a 401, not an implicit create, so a typo
-  doesn't make a new household member.
+  unrecognised `X-Sous-Person` is a 401 `unknown_person`, not an implicit
+  create, so a typo doesn't make a new household member. An unrecognised
+  `sous_person` cookie (left over after a restore, say) is treated as nobody,
+  so the UI simply asks who's cooking again.
 
 A username is the same person by either route, so enabling the gateway later
 keeps everyone's history.
