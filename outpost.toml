@@ -1,0 +1,6 @@
+# outpost.toml
+name                = "sous"
+healthcheck         = "/up"
+mcp                 = true
+restart_policy      = "on-failure"
+start_grace_seconds = 30
