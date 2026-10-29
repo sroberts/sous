@@ -1,0 +1,77 @@
+{
+  "draft": {
+    "title": "Asian Garlic Noodles",
+    "source_url": "https://thewoksoflife.com/garlic-noodles/",
+    "description": "This quick and easy Asian garlic noodles recipe takes just 20 minutes to make. The combo of soy sauce, oyster sauce, butter, and parmesan is an umami blast!",
+    "yield_text": "4",
+    "prep_minutes": 5,
+    "cook_minutes": 15,
+    "total_minutes": 20,
+    "nutrition_text": "Serving: 1 serving · Calories: 468 kcal · Fat: 15 g · Saturated fat: 9 g · Cholesterol: 34 mg · Sodium: 510 mg · Carbohydrates: 68 g · Fiber: 3 g · Sugar: 3 g · Protein: 14 g",
+    "ingredients": [
+      "12 ounces thin spaghetti (340g; can also use dried Chinese noodles or fresh egg noodles)",
+      "salt",
+      "4 tablespoons unsalted butter",
+      "8 cloves garlic (peeled and thinly sliced)",
+      "1/8 teaspoon turmeric (optional)",
+      "1 tablespoon oyster sauce (or vegetarian oyster sauce)",
+      "1 tablespoon soy sauce",
+      "1-2 teaspoons brown sugar (depending on your taste)",
+      "1 teaspoon sesame oil",
+      "1-2 whole scallions (chopped)",
+      "1/4 cup Parmesan cheese"
+    ],
+    "steps": [
+      "Bring a large pot of salted water to a boil. Cook the noodles/pasta according to package instructions. If using fresh noodles, you may simply need to blanch them. (Reserve some of the pasta cooking water, as you may need it in the sauce later.)",
+      "Meanwhile, heat the butter in a large skillet over medium heat and add the garlic. Cook for 5 minutes, until lightly caramelized, and stir in the turmeric (if using), oyster sauce, soy sauce, brown sugar, and sesame oil. Stir for 1 minute and add the scallions.",
+      "After 30 seconds, to let the scallions wilt, toss in the cooked pasta and parmesan cheese. If the sauce is too thick, add a few tablespoons of the noodle cooking water to loosen them up. Serve!"
+    ]
+  },
+  "images": [
+    {
+      "url": "https://thewoksoflife.com/wp-content/uploads/2020/06/asian-garlic-noodles-10.jpg",
+      "width": 1300,
+      "height": 1774,
+      "rank": 0
+    },
+    {
+      "url": "https://thewoksoflife.com/wp-content/uploads/2020/06/asian-garlic-noodles-11.jpg",
+      "width": null,
+      "height": null,
+      "rank": 1
+    },
+    {
+      "url": "https://thewoksoflife.com/wp-content/uploads/2020/06/asian-garlic-noodles-11-500x500.jpg",
+      "width": null,
+      "height": null,
+      "rank": 2
+    },
+    {
+      "url": "https://thewoksoflife.com/wp-content/uploads/2020/06/asian-garlic-noodles-11-500x375.jpg",
+      "width": null,
+      "height": null,
+      "rank": 3
+    },
+    {
+      "url": "https://thewoksoflife.com/wp-content/uploads/2020/06/asian-garlic-noodles-11-480x270.jpg",
+      "width": null,
+      "height": null,
+      "rank": 4
+    }
+  ],
+  "report": {
+    "method": "json-ld",
+    "found": [
+      "title",
+      "description",
+      "ingredients",
+      "steps",
+      "times",
+      "yield",
+      "nutrition",
+      "image"
+    ],
+    "missing": [],
+    "warnings": []
+  }
+}

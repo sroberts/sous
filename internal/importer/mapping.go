@@ -138,7 +138,9 @@ func (c *extractCtx) mapRecipe(r map[string]any, method string) (recipes.RecipeI
 
 	for _, v := range listOf(g.resolve(firstOf(r, "recipeIngredient", "ingredients"))) {
 		for _, line := range cleanLines(stringOf(v)) {
-			if line = stripBullet(line); line != "" {
+			if line = singleParens(stripBullet(line)); line != "" {
+				line = leadingDotRE.ReplaceAllString(line, "0.$1") // ".25 cup" reads as 0.25
+				line, _ = ingredientHeading(line)
 				in.Ingredients = append(in.Ingredients, line)
 			}
 		}
@@ -146,7 +148,7 @@ func (c *extractCtx) mapRecipe(r map[string]any, method string) (recipes.RecipeI
 
 	var steps, notes []string
 	c.instructions(r["recipeInstructions"], &steps, &notes, false)
-	in.Steps = Unnumber(stripStepPrefixes(steps))
+	in.Steps = Unnumber(stripStepPrefixes(splitInlineNumbered(steps)))
 	if len(notes) > 0 {
 		n := strings.Join(notes, "\n\n")
 		in.Notes = &n

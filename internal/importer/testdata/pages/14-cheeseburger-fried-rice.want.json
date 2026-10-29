@@ -1,0 +1,90 @@
+{
+  "draft": {
+    "title": "Cheeseburger Fried Rice",
+    "source_url": "https://www.bonappetit.com/recipe/cheeseburger-fried-rice",
+    "description": "This cheeseburger fried rice recipe from Agnes and Sherman in Houston is immediately familiar and comforting, complete with a patty melt sauce.",
+    "yield_text": "2–4 servings",
+    "total_minutes": 35,
+    "ingredients": [
+      "½ small white onion, finely chopped",
+      "1 Tbsp. apple cider vinegar",
+      "1 Tbsp. sugar",
+      "½ tsp. Diamond Crystal or ¼ tsp. Morton kosher salt",
+      "⅓ cup mayonnaise",
+      "¼ cup ketchup",
+      "1 tsp. soy sauce",
+      "1 tsp. yellow mustard",
+      "½ tsp. garlic powder",
+      "½ tsp. paprika",
+      "2 large eggs",
+      "Kosher salt, freshly ground pepper",
+      "1 Tbsp. sesame seeds",
+      "3 Tbsp. vegetable oil, divided",
+      "8 oz. ground beef",
+      "1 tsp. sugar",
+      "2 Tbsp. soy sauce, divided",
+      "½ small white onion, finely chopped",
+      "2 cups chilled cooked short-grain white rice",
+      "1 cup (packed) 1\"-pieces iceberg lettuce",
+      "2 slices American cheese"
+    ],
+    "steps": [
+      "# Sauce",
+      "Bring ½ small white onion, finely chopped, 1 Tbsp. apple cider vinegar, 1 Tbsp. sugar, ½ tsp. Diamond Crystal or ¼ tsp. Morton kosher salt, and 1 Tbsp. water to a simmer in a small saucepan over medium heat. Cook until onion is softened, about 1 minute. Scrape into a blender; add ⅓ cup mayonnaise, ¼ cup ketchup, 1 tsp. soy sauce, 1 tsp. yellow mustard, ½ tsp. garlic powder, and ½ tsp. paprika and blend until smooth. Transfer burger sauce to an airtight container; chill until ready to use.",
+      "Do Ahead: Sauce can be made 4 days ahead. Keep chilled.",
+      "# Fried Rice and Assembly",
+      "Whisk 2 large eggs, a pinch of kosher salt, and a pinch of freshly ground pepper in a medium bowl to combine; set aside.",
+      "Toast 1 Tbsp. sesame seeds in a medium nonstick or cast-iron skillet over low heat, stirring often, until golden, about 3 minutes; transfer to a plate.",
+      "Heat 1 Tbsp. vegetable oil in same pan over medium-high. Add 8 oz. ground beef and press into a thin layer; season lightly with salt and pepper. Cook, undisturbed, until deeply browned underneath, 6–8 minutes. Add 1 tsp. sugar and 1 Tbsp. soy sauce and cook, stirring and breaking up, until meat is cooked through, about 1 minute. Transfer to another plate.",
+      "Cook ½ small white onion, finely chopped, and remaining 2 Tbsp. vegetable oil in same pan, stirring often, until onion is translucent, about 1 minute. Pour in reserved egg mixture, swirling pan to coat. Cook, undisturbed, 5 seconds, then stir in a circular motion with a heatproof rubber spatula or wooden spoon until curds are just set, about 30 seconds more.",
+      "Return beef to pan and add 2 cups chilled cooked short-grain white rice. Cook, stirring often, until rice is softened and heated through, about 5 minutes. Mix in 1 cup (packed) 1\"-pieces iceberg lettuce and remaining 1 Tbsp. soy sauce; season with salt and pepper. Cook, stirring, until lettuce starts to wilt, about 30 seconds. Drizzle about 2 Tbsp. burger sauce over rice (save remaining sauce for another use). Arrange 2 slices American cheese on top in a single layer. Reduce heat to low, cover, and cook until cheese is melted, about 1 minute. (Or to recreate the restaurant presentation, spoon fried rice onto an ovenproof platter; top with sauce and cheese and broil until cheese is melted, up to 2 minutes.) Top with sesame seeds.",
+      "Do Ahead: Ground beef can be cooked 2 days ahead. Transfer to an airtight container; cover and chill."
+    ]
+  },
+  "images": [
+    {
+      "url": "https://assets.bonappetit.com/photos/6a84d040e13cd3d88c9b62fc/16:9/w_1280,c_limit/olmos_agnesandsherman-bonapp-1290.jpg",
+      "width": null,
+      "height": null,
+      "rank": 0
+    },
+    {
+      "url": "https://assets.bonappetit.com/photos/6a84d040e13cd3d88c9b62fc/16:9/w_1280,c_limit/olmos_agnesandsherman-bonapp-1290.jpg?mbid=social_retweet",
+      "width": null,
+      "height": null,
+      "rank": 1
+    },
+    {
+      "url": "https://assets.bonappetit.com/photos/6a84d040e13cd3d88c9b62fc/4:3/w_1435,h_1077,c_limit/olmos_agnesandsherman-bonapp-1290.jpg",
+      "width": null,
+      "height": null,
+      "rank": 2
+    },
+    {
+      "url": "https://assets.bonappetit.com/photos/6a84d040e13cd3d88c9b62fc/1:1/w_1148,h_1148,c_limit/olmos_agnesandsherman-bonapp-1290.jpg",
+      "width": null,
+      "height": null,
+      "rank": 3
+    },
+    {
+      "url": "https://assets.bonappetit.com/photos/6a84d040e13cd3d88c9b62fc/16:9/w_1337,h_752,c_limit/olmos_agnesandsherman-bonapp-1290.jpg",
+      "width": null,
+      "height": null,
+      "rank": 4
+    }
+  ],
+  "report": {
+    "method": "json-ld",
+    "found": [
+      "title",
+      "description",
+      "ingredients",
+      "steps",
+      "times",
+      "yield",
+      "image"
+    ],
+    "missing": [],
+    "warnings": []
+  }
+}

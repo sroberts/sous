@@ -35,6 +35,9 @@ jobs:
       - name: go vet
         run: go vet ./...
 
+      - name: go vet (live importer check)
+        run: go vet -tags live ./internal/importer
+
       # Fails if the committed golden file differs from what parse.js produces.
       - name: Parser golden drift check
         run: |

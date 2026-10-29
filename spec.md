@@ -121,6 +121,9 @@ $OUTPOST_STORAGE_DIR/
   under its final name. Identical bytes deduplicate for free.
 - **Orphaned images** (no recipe references them) are left alone in the
   basics. A sweep can come later; it is not needed for correctness.
+- **Imported photos** (§14) take the normal image path: fetched, written to
+  `tmp/`, renamed into `images/`. They are stored when the preview is made, so
+  a preview that is never saved leaves orphaned photos. That is allowed.
 - **No symlinks** are created anywhere in storage.
 
 In-memory state, such as the JWKS cache and parsed configuration, is rebuilt
@@ -233,6 +236,9 @@ No colour, no progress output.
 - **Requests:** method, path, status, duration, person, and route
   (gateway/direct/none). `/up` is never logged; at one probe every 3 seconds
   it would drown everything else.
+- **Imports:** one `import` line per attempt (§14): `host`, `path`, `outcome`
+  (`ok` or an error code), `method`, `duration_ms`. Never the query string,
+  which can carry tokens; never the page.
 - **Never logged:** identity tokens, cookies, request bodies.
 
 ---
@@ -341,6 +347,7 @@ JSON in and out. Errors are always
 | `GET /v1/tags` | Tags with recipe counts |
 | `POST /v1/ingredients/parse` | Parse `{lines}` without saving; returns each line as the server would store it. The editor's live preview uses it. Not a write, so it needs no person |
 | `POST /v1/images` | Upload raw bytes (`image/jpeg`, `png`, `webp`, `heic`); returns `{hash}` |
+| `POST /v1/recipes/import/preview` | Read a recipe from a link (`url`) or pasted text (`text`, optional `title`) into a draft, without saving it. Exactly one of `url` or `text`. Needs a person, because it stores photos (§14) |
 | `GET /v1/images/{hash}` | The image. `Cache-Control: immutable`, since the content never changes under a hash |
 | `GET /v1/changes` | The change log, newest first, filterable by `entity_id`, `person`, `via` |
 
@@ -373,6 +380,7 @@ as the REST handlers. The basics expose:
 | `update_recipe` | `PATCH /v1/recipes/{id}` (takes `version` in place of `If-Match`) |
 | `delete_recipe` / `restore_recipe` | soft delete and restore |
 | `set_my_recipe_flags` | `PUT /v1/recipes/{id}/mine` |
+| `import_recipe` | `POST /v1/recipes/import/preview`, with optional `save` (§14) |
 | `list_tags` | `GET /v1/tags` |
 | `recent_changes` | `GET /v1/changes` |
 
@@ -396,6 +404,8 @@ internal/identity/   gateway verification, JWKS cache, attribution (§5)
 internal/recipes/    domain logic and the ingredient parser
 internal/api/        REST handlers and the OpenAPI document (§8)
 internal/mcp/        MCP tools (§9)
+internal/importer/   reading a recipe from a page or pasted text (§14)
+internal/safefetch/  the guarded HTTP client the importer fetches with (§14)
 internal/ui/         go:embed of the built web assets
 web/                 UI source; builds into internal/ui/dist
 scripts/mela-import/ the one-time import (§11)
@@ -535,9 +545,233 @@ Each builds on the model and API above without changing what this spec defines.
 - **Scaling and units:** servings-based scaling, US ↔ metric conversion.
 - **Meal plan and shopping list:** a weekly plan, and a combined, de-duplicated
   list grouped by aisle.
-- **Import from URL:** schema.org `Recipe` extraction from a link.
+- **Import from URL:** specified in §14.
 - **Collections:** hand-ordered groups of recipes.
 - **Ratings, personal notes, cook history:** per person, keyed like
   `person_recipe`.
 - **Image derivatives:** resized variants for the UI, generated on demand and
   stored under `images/`.
+
+---
+
+## 14. Import from a link
+
+A person gives Sous a link; Sous reads the recipe on that page into a draft
+the person checks in the editor and then saves. Nothing is saved by the read.
+
+### How a page is read
+
+Sous fetches the page and tries four readers, in order, and uses the first
+that yields a recipe with usable data:
+
+1. **JSON-LD.** `application/ld+json` blocks, including `@graph`, top-level
+   arrays, `mainEntity`, and `@id` references. Slightly broken JSON (HTML
+   comments, CDATA, raw control characters in strings) is repaired first.
+2. **Microdata.** The first `itemscope` of type `schema.org/Recipe`, mapped
+   into the same shape as JSON-LD.
+3. **h-recipe.** The first `.h-recipe` element, mapped the same way.
+4. **Paste.** If none works, the error carries what the page did show (below)
+   and the person pastes the recipe text (see Text mode).
+
+The report names the method: `json-ld`, `microdata`, `h-recipe` or `text`.
+Notes on what is extracted:
+
+- Titles lose a trailing period and a trailing " Recipe".
+- Ingredients come from `recipeIngredient`, with bullets stripped.
+- Steps come from `recipeInstructions` in any of its shapes (text, step
+  objects, sections). Sections become `# Heading` lines, as in the editor.
+  "Step N:" prefixes are removed only when the steps are numbered in order
+  (the same rule as the Mela import, §11).
+- Tips, and sections named like "notes", "tips" or "cook's notes", go to
+  the recipe's notes.
+- Times are ISO 8601 durations or free text. Sous never invents a total: a
+  lone total is shown bare, otherwise "Prep: … · Cook: …" goes in `time_text`.
+- Nutrition is joined into `nutrition_text` in a fixed order with " · ".
+- With several recipes on a page, the first with ingredients is used, with a
+  warning.
+- **No tags are imported.** Tagging is done by hand.
+- `source_url` is the page's canonical URL when it is on the same host, else
+  the final URL after redirects, else the link given, with the fragment and
+  tracking parameters (`utm_*`, `fbclid`, `gclid`, `mc_*`) removed.
+
+### Preview, then save
+
+`POST /v1/recipes/import/preview` takes `{url}` or `{text, url?, title?}` and
+returns 200 with:
+
+- `draft`: a recipe in the shape `POST /v1/recipes` accepts, with photos
+  already stored and listed in `images`;
+- `ingredients`: the draft's lines as the server would store them;
+- `images`: every photo candidate found, best first, each with `hash` once
+  stored or `problem` if it was skipped;
+- `report`: `method`, `source_url`, `fetched_url`, `archived`, and lists of
+  what was `found`, what is `missing`, and `warnings`;
+- `duplicates`: see below.
+
+The web UI shows the draft in the editor under a banner that says how the page
+was read and what is missing. The person edits, then saves through the normal
+create call. Agents do the same, or pass `save` to `import_recipe`.
+
+The route needs a person (`Write: true`), because stored photos record who
+added them.
+
+### Errors
+
+Every import failure is a 422 with the usual error object plus `page`:
+
+```json
+{"error":{"code":"blocked","message":"…"},"page":{"source_url":"…","title":"…","image":{…}}}
+```
+
+`page` is what could still be read from the page (its title and best photo),
+or `null` when nothing was fetched. It is enough to start a pasted recipe.
+The codes:
+
+| Code | When |
+|---|---|
+| `unsupported_url` | Not an http(s) link, has credentials in it, points at an address Sous won't fetch (below), or the page isn't HTML |
+| `not_found` | The site answered 404 or 410, or the name doesn't resolve |
+| `blocked` | 401, 403, 429 or 451; a 503 from a bot challenge; or a 200 that is a bot wall (Cloudflare, captcha, "enable JavaScript") with no recipe. Sites such as Reddit end up here |
+| `site_error` | Any other 5xx |
+| `timeout` | The site didn't answer in time |
+| `too_large` | The page is over 5 MiB |
+| `paywalled` | See the paywall rule |
+| `no_recipe_found` | Anything else: the page loaded but holds no usable recipe |
+
+Request mistakes (both or neither of `url` and `text`) are the ordinary 400
+`invalid`. These errors are separate from `recipes.Error`, which already uses
+`not_found` and `too_large` for other statuses; callers check for an import
+error first.
+
+### The fetch guard
+
+The importer fetches whatever address a person types, so the fetcher
+(`internal/safefetch/`) is the trust boundary and is the only HTTP client the
+importer uses.
+
+- **Blocked addresses.** A host is refused unless every address it resolves
+  to is a public unicast address. Refused: loopback, private (RFC 1918 and
+  ULA), link-local, multicast, unspecified; `0.0.0.0/8`, `100.64.0.0/10`
+  (CGNAT), `192.0.0.0/24`, the documentation ranges (`192.0.2.0/24`,
+  `198.51.100.0/24`, `203.0.113.0/24`, `2001:db8::/32`), `198.18.0.0/15`,
+  `240.0.0.0/4`, broadcast, and the IPv6 transition ranges (`64:ff9b::/96`,
+  `64:ff9b:1::/48`, `2002::/16`, `2001::/32`, `fec0::/10`). IPv4-mapped IPv6
+  addresses are unmapped before the check. The host's own interface
+  addresses, read at startup, are refused too. Any public port is allowed.
+- **Pinned at dial time.** The check happens in the dialer, on the addresses
+  it just resolved, and the connection is made to that checked address. There
+  is no second lookup, so DNS rebinding cannot swap in another address. A
+  second check on the socket backs this up. This applies to every redirect hop.
+- **Caps.** 10 seconds per fetch; at most 5 redirects, to http or https only;
+  5 MiB per page, 25 MiB per image, counted after decompression; response
+  headers at most 64 KiB. Non-2xx bodies are read to at most 64 KiB. At most
+  4 imports run at once, and one preview has a 25 second budget overall.
+- **No ambient credentials.** No cookie jar, and no `Cookie` or
+  `Authorization` header is ever sent. Environment proxies are ignored.
+- **Honest User-Agent:** `Sous/<version> (+https://github.com/sroberts/sous)`.
+  Sous does not imitate a browser; a site that refuses it gets `blocked` and
+  the paste fallback.
+- **`robots.txt` is not consulted.** A person asked for this one page; it is
+  not crawling. This is a recorded decision, not an oversight.
+- Tests may relax the address check only through hooks that panic outside
+  `go test`.
+
+### Images
+
+Photos are fetched and stored while the preview is made, through the normal
+image path (§3), so the draft already points at stored hashes and the editor
+needs no second step. Candidates come from the recipe's `image`, then
+`og:image`, then `twitter:image`, ranked by known size, then by size hints in
+the URL, with unhinted URLs ahead of small thumbnails. Up to three are tried
+in order and the first that works is the cover. The page is sent as `Referer`.
+
+- JPEG, PNG, WebP and HEIC are stored as they are.
+- **GIF** is converted: the first frame, to PNG if it has transparency, else
+  JPEG at quality 90.
+- TIFF, AVIF, SVG, BMP and anything unrecognised are **skipped**; the
+  candidate records a `problem` and the next is tried. The `Accept` header for
+  images does not offer AVIF.
+- A photo that can't be stored never fails the import; the banner says so.
+
+### Duplicates
+
+A recipe imported from a link is found again by its `source_url`, with no
+schema change and no index. Sous compares `NormalizeSourceURL` (lower-case
+host, no `www.`, http equal to https, no fragment, no tracking parameters, no
+trailing slash) of the link given, the final URL and the canonical URL against
+every recipe's `source_url`, in Go. At household scale that is cheap. Matches
+return in `duplicates` as `{id, title, version, deleted}`; a match in the
+trash has `deleted: true`.
+
+In the web UI a duplicate stops the import at a choice: open the existing
+recipe, update it with this version, save as new, or (for a trashed one)
+restore it. Updating replaces the title, description, yield, times,
+`time_text`, nutrition, ingredients, steps and `source_url`; it keeps tags,
+notes and existing photos, appends the imported cover if it is new, and saves
+through `PATCH` with the usual `If-Match` handling. MCP `import_recipe` with
+`save: true` on a duplicate returns an `exists` error rather than a copy.
+
+### Wayback Machine links
+
+A link of the form `web.archive.org/web/<timestamp>/<original>` is read from
+the capture without the archive's toolbar (`/web/<timestamp>id_/<original>`).
+`source_url` is the cleaned original address, not the archive's, so the recipe
+is credited to the site it came from and duplicates match across both forms.
+The report sets `archived` and `fetched_url` to the archive URL, and the
+banner says so. Image URLs are rewritten to the archive's raw-asset form
+(`/web/<timestamp>im_/<asset>`), because the original site may be gone.
+
+### The paywall rule
+
+If usable recipe data is present, Sous imports it, even when the page marks
+itself `isAccessibleForFree: false`, and adds the warning "The site marks this
+for subscribers; check it's complete." Only when the page is marked not-free
+and has no usable recipe does the import fail with `paywalled`. Sous sends no
+cookies and holds no site logins, so it reads what the site publishes to
+anyone.
+
+### Text mode
+
+`{text}` (with an optional `title`, and optionally the `url` the recipe is
+credited to) skips fetching entirely. The text is split into a title,
+ingredients and steps: lines are trimmed and bullets stripped; headings such
+as "Ingredients" and "Directions", "Instructions", "Method", "Steps" or
+"Preparation" divide the sections; without headings, a leading run of
+quantity-like or short unpunctuated lines are ingredients and the rest are
+steps. Numbered steps are un-numbered by the same rule as above. The report
+method is `text`. This is the paste fallback after a failed link; a `url` sent
+with it is credited and checked for duplicates but never fetched. Text that
+yields neither ingredients nor steps is a 422 `no_recipe_found`.
+
+### MCP
+
+`import_recipe {url, save?}` is registered when the server has an importer.
+It returns the preview plus `saved`, the created recipe when `save` was true.
+It is marked open-world (it reaches the web) and non-destructive. Without
+`save` nothing is stored but photos: the agent checks the draft and passes it
+to `create_recipe`. Failures carry the codes above, and the tool description
+tells the agent to ask the person to paste the recipe.
+
+### Bookmarklet and iOS Shortcut
+
+The `/import` page opens with `?url=` (also `text` and `title`) and reads
+automatically, so anything that can open a URL can send a recipe.
+The page itself shows both setups; there is no settings area.
+
+- **Bookmarklet** (desktop): a draggable link that opens
+  `<sous>/import?url=` plus the current page's address.
+- **iOS Shortcut:** receive URLs and Safari pages from the Share Sheet; Get
+  URLs from Input; URL Encode; Text `https://<sous host>/import?url=[Encoded
+  URL]`; Open URLs. Tailscale must be connected and Safari signed in through
+  the gateway.
+
+A PWA `share_target` is not built, but the `url`, `text` and `title`
+parameters are what one would send.
+
+### Out of scope
+
+- **Paywall handling.** Signed-in fetching, cookies and site logins are for a
+  later spec. Until then Sous never sends cookies.
+- **Re-import.** There is no "refresh from source". Updating a duplicate with
+  a fresh read (above) is the whole of it.
+- Importing tags, collections or ratings from a page.

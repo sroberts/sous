@@ -1,0 +1,73 @@
+{
+  "draft": {
+    "title": "Grilled Fish Tacos with Chile-Lime Slaw and Avocado-Tomatillo Salsa",
+    "source_url": "https://sunset.com/recipe/grilled-fish-tacos-chile-lime-slaw-avocado-tomatillo-salsa",
+    "description": "All great fish tacos share certain traits: The slaw must be cool and crisp, the fish of the highest quality, and the spices pungent. At The Marshall Store, they do it right. You can too.",
+    "yield_text": "Serves 2 to 4 (serving size: 2 tacos) servings",
+    "prep_minutes": 35,
+    "cook_minutes": 60,
+    "total_minutes": 95,
+    "nutrition_text": "Calories: 585 calories · Fat: 29 g · Saturated fat: 2.6 g · Cholesterol: 37 mg · Sodium: 816 mg · Carbohydrates: 62 g · Fiber: 12 g · Protein: 28 g",
+    "ingredients": [
+      "# Chile-Lime Slaw",
+      "2 1/2 cups shredded red cabbage (about 1/4 of a medium cabbage)",
+      "2 1/2 cups shredded green cabbage (about 1/4 of a medium cabbage)",
+      "1 cup cilantro, roughly chopped",
+      "1/2 jalapeño chile, stemmed, seeded, and minced",
+      "Juice of 3 large limes",
+      "1/2 teaspoon fine sea salt",
+      "1/4 teaspoon pepper",
+      "# Avocado-Tomatillo Salsa",
+      "1 pound tomatillos, peeled and quartered",
+      "1/4 yellow onion, sliced",
+      "1 jalapeño chile, stemmed, halved, and seeded",
+      "1 ripe avocado, pitted and peeled",
+      "1 cup cilantro leaves and tender stems",
+      "1/2 teaspoon fine sea salt",
+      "1/4 teaspoon pepper",
+      "# Fish",
+      "1 1/2 teaspoons ground coriander",
+      "1 1/2 teaspoons ground cumin",
+      "1 1/2 teaspoons Hungarian sweet paprika",
+      "1 pound rock cod fillets, cut into 1 1/2-in. chunks",
+      "1/4 teaspoon fine sea salt",
+      "1/4 teaspoon pepper",
+      "2 teaspoons canola or vegetable oil",
+      "8 corn tortillas (6 in.), homemade or store-bought",
+      "1 shallot, finely chopped",
+      "1 jalapeño chile, stemmed, seeded, and minced",
+      "Cilantro leaves, for garnish",
+      "Lime wedges"
+    ],
+    "steps": [
+      "Make slaw: Toss all ingredients together in a bowl. Chill at least 30 minutes and up to 2 hours, tossing occasionally.",
+      "Make salsa: Preheat oven to 425°. In a small roasting pan, toss together tomatillos, onion, and jalapeño. Roast until browned in places and tender, 25 minutes. Cool to room temperature and chill until close to serving time. In a blender, blend roasted vegetables, avocado, cilantro, salt, and pepper until smooth.",
+      "Grill fish: Prepare a grill for medium-high heat (450°). In a small, dry cast-iron skillet over medium heat, toast coriander and cumin until aromatic, 20 seconds; remove from heat and stir in paprika. Season fish chunks with salt and pepper and coat evenly with coriander mixture. Brush cooking grate clean and coat fish on both sides with oil. Place fish on an oiled grilling grid or in a fish basket, and grill without moving for 2 minutes. Begin turning fish chunks with a metal spatula, in the order added to grill, and cook until firm and golden, 2 minutes. Transfer to a platter. (Or, cook fish in an oiled, well-seasoned cast-iron skillet or grill pan.)",
+      "Warm tortillas: Heat a skillet over medium-high heat. Working with one tortilla at a time, dip into a shallow bowl of water. Cook in hot skillet until water evaporates from first side and tortilla is browned in places, about 30 seconds. Flip and cook until dry, about 15 seconds more. Wrap in a clean kitchen towel to keep warm. Repeat with remaining tortillas.",
+      "Flake some fish onto each tortilla, then top with slaw and salsa. Scatter a little shallot and jalapeño over the top, and garnish with cilantro leaves. Serve with lime wedges."
+    ]
+  },
+  "images": [
+    {
+      "url": "https://img.sunset02.com/sites/default/files/image/city-guides/icons/insiderguides-restaurants-icon-x.jpg",
+      "width": null,
+      "height": null,
+      "rank": 0
+    }
+  ],
+  "report": {
+    "method": "json-ld",
+    "found": [
+      "title",
+      "description",
+      "ingredients",
+      "steps",
+      "times",
+      "yield",
+      "nutrition",
+      "image"
+    ],
+    "missing": [],
+    "warnings": []
+  }
+}

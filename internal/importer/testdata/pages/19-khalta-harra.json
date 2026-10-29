@@ -1,0 +1,75 @@
+{
+  "source_url": "https://sunset.com/recipe/chile-spice-mix",
+  "fetched_url": "https://sunset.com/recipe/chile-spice-mix",
+  "status": 200,
+  "server": "nginx",
+  "size": 143866,
+  "title": "Chile-Spice Mix Recipe - Sunset Magazine",
+  "og_title": "Khalta Harra (Chile-Spice Mix)",
+  "og_site_name": "Sunset Magazine",
+  "canonical": "https://sunset.com/recipe/chile-spice-mix",
+  "jsonld": [
+    {
+      "@context": "http://schema.org",
+      "@type": "Recipe",
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingCount": 1,
+        "ratingValue": 5
+      },
+      "author": {
+        "@type": "Person",
+        "name": "Reem Assil"
+      },
+      "cookTime": "PT0H0M",
+      "datePublished": "2022-06-13",
+      "description": "Khalta Harra (Chile-Spice Mix)",
+      "image": "https://img.sunset02.com/sites/default/files/image/city-guides/icons/insiderguides-restaurants-icon-x.jpg",
+      "keywords": "",
+      "name": "Khalta Harra (Chile-Spice Mix)",
+      "nutrition": {
+        "@type": "NutritionInformation",
+        "calories": 0,
+        "carbohydrateContent": "",
+        "cholesterolContent": "",
+        "fatContent": "",
+        "fiberContent": "",
+        "proteinContent": "",
+        "saturatedFatContent": "",
+        "servingSize": "",
+        "sodiumContent": "",
+        "sugarContent": "",
+        "transFatContent": "",
+        "unsaturatedFatContent": ""
+      },
+      "prepTime": "PT0H0M",
+      "recipeCategory": "",
+      "recipeCuisine": "",
+      "recipeIngredient": [
+        "1 tbsp plus 1 tsp. whole coriander seeds",
+        "2 tsp whole cardamom seeds (about 17 pods)",
+        "2 tsp whole cumin seeds",
+        "6 tbsp Aleppo pepper",
+        "2 tsp kosher salt",
+        "2 tsp dried lime, ground",
+        "\u0026#189; tsp ground cinnamon"
+      ],
+      "recipeInstructions": [
+        {
+          "@type": "HowToStep",
+          "text": "Toast the coriander, cardamom, and cumin in a dry pan over medium heat until fragrant, 2 to 3 minutes. The spices will begin to dance around in the pan when they are close to being done. Be careful not to let them burn. "
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Once they are slightly darker in color and fragrant, remove them from the pan and let cool completely. Then grind them to a coarse powder in a spice grinder or mortar and pestle. "
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Mix with the Aleppo pepper, salt, dried lime, and cinnamon."
+        }
+      ],
+      "recipeYield": "",
+      "totalTime": "PT0H0M"
+    }
+  ]
+}

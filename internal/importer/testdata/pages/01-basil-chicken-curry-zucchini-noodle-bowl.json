@@ -1,0 +1,365 @@
+{
+  "source_url": "https://www.halfbakedharvest.com/basil-chicken-curry-zucchini-noodle-bowl/",
+  "fetched_url": "https://www.halfbakedharvest.com/basil-chicken-curry-zucchini-noodle-bowl/",
+  "status": 200,
+  "server": "cloudflare",
+  "size": 609786,
+  "title": "Basil Chicken Curry Zucchini Noodle Bowls. - Half Baked Harvest",
+  "og_title": "Basil Chicken Curry Zucchini Noodle Bowls.",
+  "og_site_name": "Half Baked Harvest",
+  "og_image": "https://www.halfbakedharvest.com/wp-content/uploads/2016/06/Basil-Chicken-Curry-Zucchini-Noodle-Bowls-1.jpg",
+  "og_image_width": 1200,
+  "og_image_height": 1800,
+  "canonical": "https://www.halfbakedharvest.com/basil-chicken-curry-zucchini-noodle-bowl/",
+  "markers": [
+    "captcha",
+    "enable javascript"
+  ],
+  "jsonld": [
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@id": "https://www.halfbakedharvest.com/basil-chicken-curry-zucchini-noodle-bowl/#article",
+          "@type": "Article",
+          "articleSection": [
+            "Chicken",
+            "Gluten-Free",
+            "Main Course"
+          ],
+          "author": {
+            "@id": "https://www.halfbakedharvest.com/#/schema/person/9b2904ad2a2c76cbcd62517659d460f7",
+            "name": "Tieghan Gerard"
+          },
+          "commentCount": 63,
+          "dateModified": "2019-11-23T06:34:06+00:00",
+          "datePublished": "2016-06-09T08:00:58+00:00",
+          "headline": "Basil Chicken Curry Zucchini Noodle Bowls.",
+          "image": {
+            "@id": "https://www.halfbakedharvest.com/basil-chicken-curry-zucchini-noodle-bowl/#primaryimage"
+          },
+          "inLanguage": "en-US",
+          "isPartOf": {
+            "@id": "https://www.halfbakedharvest.com/basil-chicken-curry-zucchini-noodle-bowl/"
+          },
+          "keywords": [
+            "autumn",
+            "basil",
+            "Chicken",
+            "corn",
+            "Easy",
+            "Fall",
+            "goat cheese",
+            "Healthy",
+            "indian",
+            "light",
+            "low carb",
+            "middle eastern",
+            "no carb",
+            "quick",
+            "simple",
+            "spring",
+            "summer",
+            "zucchini"
+          ],
+          "potentialAction": [
+            {
+              "@type": "CommentAction",
+              "name": "Comment",
+              "target": [
+                "https://www.halfbakedharvest.com/basil-chicken-curry-zucchini-noodle-bowl/#respond"
+              ]
+            }
+          ],
+          "publisher": {
+            "@id": "https://www.halfbakedharvest.com/#organization"
+          },
+          "thumbnailUrl": "https://www.halfbakedharvest.com/wp-content/uploads/2016/06/Basil-Chicken-Curry-Zucchini-Noodle-Bowls-1.jpg",
+          "wordCount": 940
+        },
+        {
+          "@id": "https://www.halfbakedharvest.com/basil-chicken-curry-zucchini-noodle-bowl/",
+          "@type": "WebPage",
+          "breadcrumb": {
+            "@id": "https://www.halfbakedharvest.com/basil-chicken-curry-zucchini-noodle-bowl/#breadcrumb"
+          },
+          "dateModified": "2019-11-23T06:34:06+00:00",
+          "datePublished": "2016-06-09T08:00:58+00:00",
+          "description": "Basil Chicken Curry Zucchini Noodle Bowl - fast, easy, light \u0026 healthy...and LOADED with great produce! A delicious go-to summer bowl! @halfbakedharvest.com",
+          "image": {
+            "@id": "https://www.halfbakedharvest.com/basil-chicken-curry-zucchini-noodle-bowl/#primaryimage"
+          },
+          "inLanguage": "en-US",
+          "isPartOf": {
+            "@id": "https://www.halfbakedharvest.com/#website"
+          },
+          "name": "Basil Chicken Curry Zucchini Noodle Bowls. - Half Baked Harvest",
+          "potentialAction": [
+            {
+              "@type": "ReadAction",
+              "target": [
+                "https://www.halfbakedharvest.com/basil-chicken-curry-zucchini-noodle-bowl/"
+              ]
+            }
+          ],
+          "primaryImageOfPage": {
+            "@id": "https://www.halfbakedharvest.com/basil-chicken-curry-zucchini-noodle-bowl/#primaryimage"
+          },
+          "thumbnailUrl": "https://www.halfbakedharvest.com/wp-content/uploads/2016/06/Basil-Chicken-Curry-Zucchini-Noodle-Bowls-1.jpg",
+          "url": "https://www.halfbakedharvest.com/basil-chicken-curry-zucchini-noodle-bowl/"
+        },
+        {
+          "@id": "https://www.halfbakedharvest.com/basil-chicken-curry-zucchini-noodle-bowl/#primaryimage",
+          "@type": "ImageObject",
+          "caption": "Basil Chicken Curry Zucchini Noodle Bowls | halfbakedharvest.com @hbharvest",
+          "contentUrl": "https://www.halfbakedharvest.com/wp-content/uploads/2016/06/Basil-Chicken-Curry-Zucchini-Noodle-Bowls-1.jpg",
+          "height": 1800,
+          "inLanguage": "en-US",
+          "url": "https://www.halfbakedharvest.com/wp-content/uploads/2016/06/Basil-Chicken-Curry-Zucchini-Noodle-Bowls-1.jpg",
+          "width": 1200
+        },
+        {
+          "@id": "https://www.halfbakedharvest.com/basil-chicken-curry-zucchini-noodle-bowl/#breadcrumb",
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "item": "https://www.halfbakedharvest.com/",
+              "name": "Home",
+              "position": 1
+            },
+            {
+              "@type": "ListItem",
+              "item": "https://www.halfbakedharvest.com/recipe-index/",
+              "name": "Recipe Index",
+              "position": 2
+            },
+            {
+              "@type": "ListItem",
+              "item": "https://www.halfbakedharvest.com/category/recipes/diet-specific/",
+              "name": "Diet-Specific",
+              "position": 3
+            },
+            {
+              "@type": "ListItem",
+              "item": "https://www.halfbakedharvest.com/category/recipes/diet-specific/gluten-free-recipes/",
+              "name": "Gluten-Free",
+              "position": 4
+            },
+            {
+              "@type": "ListItem",
+              "name": "Basil Chicken Curry Zucchini Noodle Bowls.",
+              "position": 5
+            }
+          ]
+        },
+        {
+          "@id": "https://www.halfbakedharvest.com/#website",
+          "@type": "WebSite",
+          "description": "Made with Love",
+          "inLanguage": "en-US",
+          "name": "Half Baked Harvest",
+          "potentialAction": [
+            {
+              "@type": "SearchAction",
+              "query-input": {
+                "@type": "PropertyValueSpecification",
+                "valueName": "search_term_string",
+                "valueRequired": true
+              },
+              "target": {
+                "@type": "EntryPoint",
+                "urlTemplate": "https://www.halfbakedharvest.com/?s={search_term_string}"
+              }
+            }
+          ],
+          "publisher": {
+            "@id": "https://www.halfbakedharvest.com/#organization"
+          },
+          "url": "https://www.halfbakedharvest.com/"
+        },
+        {
+          "@id": "https://www.halfbakedharvest.com/#organization",
+          "@type": "Organization",
+          "image": {
+            "@id": "https://www.halfbakedharvest.com/#/schema/logo/image/"
+          },
+          "logo": {
+            "@id": "https://www.halfbakedharvest.com/#/schema/logo/image/",
+            "@type": "ImageObject",
+            "caption": "Half Baked Harvest",
+            "contentUrl": "https://halfbakedharvest.com/wp-content/uploads/2026/04/half-baked-harvest-yoast-black.png",
+            "height": 1000,
+            "inLanguage": "en-US",
+            "url": "https://halfbakedharvest.com/wp-content/uploads/2026/04/half-baked-harvest-yoast-black.png",
+            "width": 1000
+          },
+          "name": "Half Baked Harvest",
+          "sameAs": [
+            "https://www.facebook.com/hbharvest",
+            "https://x.com/hbharvest",
+            "http://instagram.com/halfbakedharvest",
+            "https://pinterest.com/hbharvest/",
+            "https://www.youtube.com/user/tieghangerard/videos"
+          ],
+          "url": "https://www.halfbakedharvest.com/"
+        },
+        {
+          "@id": "https://www.halfbakedharvest.com/#/schema/person/9b2904ad2a2c76cbcd62517659d460f7",
+          "@type": "Person",
+          "image": {
+            "@id": "https://secure.gravatar.com/avatar/7036495bc5ea357403212cff0b64834c57cfbd3ed04ba77bfdf88b1b027f1d84?s=96\u0026d=mm\u0026r=pg",
+            "@type": "ImageObject",
+            "caption": "Tieghan Gerard",
+            "contentUrl": "https://secure.gravatar.com/avatar/7036495bc5ea357403212cff0b64834c57cfbd3ed04ba77bfdf88b1b027f1d84?s=96\u0026d=mm\u0026r=pg",
+            "inLanguage": "en-US",
+            "url": "https://secure.gravatar.com/avatar/7036495bc5ea357403212cff0b64834c57cfbd3ed04ba77bfdf88b1b027f1d84?s=96\u0026d=mm\u0026r=pg"
+          },
+          "name": "Tieghan Gerard",
+          "sameAs": [
+            "https://www.halfbakedharvest.com/meet-tieghan/"
+          ]
+        },
+        {
+          "@id": "https://www.halfbakedharvest.com/basil-chicken-curry-zucchini-noodle-bowl/#recipe",
+          "@type": "Recipe",
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingCount": "62",
+            "ratingValue": "3.78",
+            "reviewCount": "3"
+          },
+          "author": {
+            "@id": "https://www.halfbakedharvest.com/#/schema/person/9b2904ad2a2c76cbcd62517659d460f7"
+          },
+          "cookTime": "PT15M",
+          "datePublished": "2016-06-09T08:00:58+00:00",
+          "description": "Also known as my new go-to summer weeknight meal.",
+          "image": [
+            "https://www.halfbakedharvest.com/wp-content/uploads/2016/06/Basil-Chicken-Curry-Zucchini-Noodle-Bowls-1.jpg",
+            "https://www.halfbakedharvest.com/wp-content/uploads/2016/06/Basil-Chicken-Curry-Zucchini-Noodle-Bowls-1-500x500.jpg",
+            "https://www.halfbakedharvest.com/wp-content/uploads/2016/06/Basil-Chicken-Curry-Zucchini-Noodle-Bowls-1-500x375.jpg",
+            "https://www.halfbakedharvest.com/wp-content/uploads/2016/06/Basil-Chicken-Curry-Zucchini-Noodle-Bowls-1-480x270.jpg"
+          ],
+          "isPartOf": {
+            "@id": "https://www.halfbakedharvest.com/basil-chicken-curry-zucchini-noodle-bowl/#article"
+          },
+          "keywords": "basil, chicken curry, curry, noodle, noodle bowl",
+          "mainEntityOfPage": "https://www.halfbakedharvest.com/basil-chicken-curry-zucchini-noodle-bowl/",
+          "name": "Basil Chicken Curry Zucchini Noodle Bowls.",
+          "nutrition": {
+            "@type": "NutritionInformation",
+            "calories": "544 kcal",
+            "carbohydrateContent": "35 g",
+            "cholesterolContent": "85 mg",
+            "fatContent": "18 g",
+            "fiberContent": "6 g",
+            "proteinContent": "36 g",
+            "saturatedFatContent": "6 g",
+            "servingSize": "1 serving",
+            "sodiumContent": "284 mg",
+            "sugarContent": "20 g"
+          },
+          "prepTime": "PT15M",
+          "recipeCategory": [
+            "Main Course"
+          ],
+          "recipeCuisine": [
+            "American",
+            "Indian"
+          ],
+          "recipeIngredient": [
+            "1 pound raw boneless (skinless chicken, diced*)",
+            "2 tablespoons olive oil",
+            "2 bell peppers (chopped)",
+            "2 cups ears corn (kernels removed from the cob (or about 1 1/2-2 frozen corn))",
+            "1 tablespoon fresh ginger (grated)",
+            "2 cloves garlic (grated or minced)",
+            "1 tablespoon spicy curry powder",
+            "2-3 tablespoon Thai red curry paste (I used 3)",
+            "1 (14 ounce) can coconut milk",
+            "1 tablespoon low sodium soy sauce",
+            "1/2 cup each (fresh basil + cilantro, chopped)",
+            "4 zucchini (spiralized)",
+            "2 peaches (diced)",
+            "1 jalapeño (seeded + diced)",
+            "4 ounces goat cheese (crumbled)",
+            "mint, lime, and peanuts, for serving"
+          ],
+          "recipeInstructions": [
+            {
+              "@type": "HowToStep",
+              "name": "Heat a large skillet over medium-high heat and add 1 tablespoon olive oil. Once hot, add the diced chicken and cook the chicken until browned all over and cooked through, about 5-10 minutes. Remove the chicken from the skillet and place on a plate.",
+              "text": "Heat a large skillet over medium-high heat and add 1 tablespoon olive oil. Once hot, add the diced chicken and cook the chicken until browned all over and cooked through, about 5-10 minutes. Remove the chicken from the skillet and place on a plate.",
+              "url": "https://www.halfbakedharvest.com/basil-chicken-curry-zucchini-noodle-bowl/#wprm-recipe-39536-step-0-0"
+            },
+            {
+              "@type": "HowToStep",
+              "name": "Add another tablespoon olive oil to the skillet. Add the red peppers and corn, cook 3-4 minutes and then toss in the ginger and garlic. Continue cooking the veggies another 5 minutes or until they just begin to soften. Add the chicken back to the skillet and toss everything together. To the skillet add the curry powder and curry paste and give everything another good toss. Cook 1 minute and then add the coconut milk and soy sauce. Stir to combine, bring the mixture to a boil, cook 5 minutes or until the sauce thickens slightly. Remove from the heat and stir in the basil + cilantro. Add the zucchini and toss to combine and heat through.",
+              "text": "Add another tablespoon olive oil to the skillet. Add the red peppers and corn, cook 3-4 minutes and then toss in the ginger and garlic. Continue cooking the veggies another 5 minutes or until they just begin to soften. Add the chicken back to the skillet and toss everything together. To the skillet add the curry powder and curry paste and give everything another good toss. Cook 1 minute and then add the coconut milk and soy sauce. Stir to combine, bring the mixture to a boil, cook 5 minutes or until the sauce thickens slightly. Remove from the heat and stir in the basil + cilantro. Add the zucchini and toss to combine and heat through.",
+              "url": "https://www.halfbakedharvest.com/basil-chicken-curry-zucchini-noodle-bowl/#wprm-recipe-39536-step-0-1"
+            },
+            {
+              "@type": "HowToStep",
+              "name": "In a small bowl toss together the peaches and jalapeño.",
+              "text": "In a small bowl toss together the peaches and jalapeño.",
+              "url": "https://www.halfbakedharvest.com/basil-chicken-curry-zucchini-noodle-bowl/#wprm-recipe-39536-step-0-2"
+            },
+            {
+              "@type": "HowToStep",
+              "name": "Divide the curry among bowls. Add a spoonful of the peaches + jalapeno, and a sprinkle of goat cheese. Top with mint, lime, and peanuts. Eat with Naan!",
+              "text": "Divide the curry among bowls. Add a spoonful of the peaches + jalapeno, and a sprinkle of goat cheese. Top with mint, lime, and peanuts. Eat with Naan!",
+              "url": "https://www.halfbakedharvest.com/basil-chicken-curry-zucchini-noodle-bowl/#wprm-recipe-39536-step-0-3"
+            }
+          ],
+          "recipeYield": [
+            "4",
+            "4 Servings"
+          ],
+          "review": [
+            {
+              "@type": "Review",
+              "author": {
+                "@type": "Person",
+                "name": "Annie J."
+              },
+              "datePublished": "2019-06-21",
+              "reviewBody": "I veganized this with a chicken alternative and it was heavenly! Nomm'd on this for the first day of summer, it hit the spot ?",
+              "reviewRating": {
+                "@type": "Rating",
+                "ratingValue": "5"
+              }
+            },
+            {
+              "@type": "Review",
+              "author": {
+                "@type": "Person",
+                "name": "Cozy"
+              },
+              "datePublished": "2019-05-22",
+              "reviewBody": "Absolutely delicious! I added in chopped carrots and onions and left out the goat cheese and it was still lovely. The coconut curry with the zoodles is an awesome combo, you could probably add in an any of your favorite veggies and it would still cook in well. Peach and jalapeno salsa to top was a great add. One of my favorite zoodle recipes I've tried so far, thank you!",
+              "reviewRating": {
+                "@type": "Rating",
+                "ratingValue": "5"
+              }
+            },
+            {
+              "@type": "Review",
+              "author": {
+                "@type": "Person",
+                "name": "Samantha"
+              },
+              "datePublished": "2018-08-06",
+              "reviewBody": "I made this recipe tonight and I LOVED it! It was very filling. It was a bit runny at first but I let it simmer for a little while as recommended and it thickened up. Thanks for the recipe!",
+              "reviewRating": {
+                "@type": "Rating",
+                "ratingValue": "5"
+              }
+            }
+          ],
+          "totalTime": "PT30M"
+        }
+      ]
+    }
+  ]
+}

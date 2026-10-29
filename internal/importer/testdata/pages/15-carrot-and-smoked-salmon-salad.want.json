@@ -1,0 +1,55 @@
+{
+  "draft": {
+    "title": "Carrot and Smoked Salmon Salad",
+    "source_url": "https://www.americastestkitchen.com/recipes/14183-carrot-and-smoked-salmon-salad",
+    "description": "This hearty salad uses every part of the carrot.",
+    "yield_text": "Serves 4 to 6",
+    "nutrition_text": "Calories: 221 · Cholesterol: 9 mg · Sodium: 682 mg · Carbohydrates: 23 g · Protein: 9 g",
+    "ingredients": [
+      "2 pounds carrots with greens attached, divided, ¼ cup greens chopped",
+      "5 tablespoons cider vinegar, divided",
+      "1 tablespoon sugar",
+      "⅛ teaspoon plus ¾ teaspoon table salt, divided",
+      "¼ cup extra-virgin olive oil, divided",
+      "¼ teaspoon pepper",
+      "1 red grapefruit",
+      "2 tablespoons chopped fresh dill leaves",
+      "2 teaspoons Dijon mustard",
+      "2 heads Belgian endive (4 ounces each), halved, cored, and sliced ½ inch thick",
+      "8 ounces smoked salmon"
+    ],
+    "steps": [
+      "Adjust oven rack to lowest position and heat oven to 450 degrees. Peel and shave 4 ounces carrots into thin ribbons with vegetable peeler; set aside. Peel and slice remaining carrots on bias ¼ inch thick; set aside.",
+      "Microwave ¼ cup vinegar, sugar, and ⅛ teaspoon salt in medium bowl until simmering, 1 to 2 minutes. Add shaved carrots and stir to combine. Let sit, stirring occasionally, for 45 minutes. (Drained pickled carrots can be refrigerated for up to 5 days.)",
+      "Toss sliced carrots, 1 tablespoon oil, pepper, and ½ teaspoon salt together in bowl to coat. Spread carrots in single layer on rimmed baking sheet, cut side down. Roast until tender and bottoms are well browned, 15 to 25 minutes. Let cool slightly, about 15 minutes.",
+      "Meanwhile, cut away peel and pith from grapefruit. Quarter grapefruit, then slice crosswise into ¼-inch-thick pieces.",
+      "Whisk dill, mustard, remaining 1 tablespoon vinegar, and remaining ¼ teaspoon salt together in large bowl. Whisking constantly, slowly drizzle in remaining 3 tablespoons oil until emulsified. Add endive, carrot greens, roasted carrots, pickled carrots, and grapefruit and toss to combine; season with salt and pepper to taste. Arrange salmon around edge of serving platter, then transfer salad to center of platter. Serve."
+    ]
+  },
+  "images": [
+    {
+      "url": "https://res.cloudinary.com/hksqkdlah/image/upload/c_fill,dpr_2.0,f_auto,fl_lossy.progressive.strip_profile,g_faces:auto,q_auto:low/SFS_Carrot_and_Smoked_Salmon_Salad_318_alfajk",
+      "width": 1200,
+      "height": 1200,
+      "rank": 0
+    }
+  ],
+  "report": {
+    "method": "json-ld",
+    "found": [
+      "title",
+      "description",
+      "ingredients",
+      "steps",
+      "yield",
+      "nutrition",
+      "image"
+    ],
+    "missing": [
+      "times"
+    ],
+    "warnings": [
+      "The site marks this for subscribers; check it's complete."
+    ]
+  }
+}

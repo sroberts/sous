@@ -1,0 +1,47 @@
+{
+  "draft": {
+    "title": "Mustard Slaw",
+    "source_url": "https://www.foodandwine.com/recipes/mustard-slaw",
+    "description": "This coleslaw recipe from Steven Raichlen is dressed with mustard, vinegar, and hot sauce for a bright, punchy flavor",
+    "yield_text": "14",
+    "total_minutes": 20,
+    "nutrition_text": "Calories: 100 kcal · Fat: 5 g · Saturated fat: 0 g · Unsaturated fat: 0 g · Cholesterol: 0 mg · Sodium: 193 mg · Carbohydrates: 13 g · Fiber: 3 g · Sugar: 8 g · Protein: 2 g",
+    "ingredients": [
+      "1/3 cup Dijon mustard",
+      "1/3 cup sugar",
+      "1/3 cup distilled white vinegar",
+      "1/3 cup vegetable oil",
+      "2 to 3 tablespoons hot sauce",
+      "1 teaspoon celery seeds",
+      "Salt and freshly ground pepper",
+      "1 large head green cabbage, cored and finely chopped (about 10 cups)",
+      "4 carrots, finely grated"
+    ],
+    "steps": [
+      "Whisk mustard with sugar in a very large bowl. Gradually whisk in vinegar, vegetable oil, hot sauce, and celery seeds. Season with salt and pepper; dressing should be highly seasoned. Add cabbage and carrots to the dressing and toss thoroughly."
+    ]
+  },
+  "images": [
+    {
+      "url": "https://www.foodandwine.com/thmb/8fNWLpEoz-t858grZFDUI6hRs8c=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/Mustard-Slaw-FT-RECIPE0723-c94dfa6f82924113be9e945c30cb09f9.jpg",
+      "width": 1500,
+      "height": 1000,
+      "rank": 0
+    }
+  ],
+  "report": {
+    "method": "json-ld",
+    "found": [
+      "title",
+      "description",
+      "ingredients",
+      "steps",
+      "times",
+      "yield",
+      "nutrition",
+      "image"
+    ],
+    "missing": [],
+    "warnings": []
+  }
+}

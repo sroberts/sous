@@ -1,0 +1,139 @@
+{
+  "source_url": "https://www.americastestkitchen.com/recipes/14183-carrot-and-smoked-salmon-salad",
+  "fetched_url": "https://www.americastestkitchen.com/recipes/14183-carrot-and-smoked-salmon-salad",
+  "status": 200,
+  "server": "nginx",
+  "size": 412337,
+  "title": "Carrot and Smoked Salmon Salad | America's Test Kitchen",
+  "og_title": "Carrot and Smoked Salmon Salad | America's Test Kitchen",
+  "og_site_name": "America's Test Kitchen",
+  "og_image": "https://res.cloudinary.com/hksqkdlah/image/upload/c_fill,dpr_2.0,f_auto,fl_lossy.progressive.strip_profile,g_faces:auto,q_auto:low/SFS_Carrot_and_Smoked_Salmon_Salad_318_alfajk",
+  "twitter_image": "https://res.cloudinary.com/hksqkdlah/image/upload/c_fill,dpr_2.0,f_auto,fl_lossy.progressive.strip_profile,g_faces:auto,q_auto:low/SFS_Carrot_and_Smoked_Salmon_Salad_318_alfajk",
+  "canonical": "https://www.americastestkitchen.com/recipes/14183-carrot-and-smoked-salmon-salad",
+  "markers": [
+    "not-free"
+  ],
+  "jsonld": [
+    [
+      {
+        "@id": "https://www.americastestkitchen.com/recipes/14183-carrot-and-smoked-salmon-salad",
+        "@type": "WebPage"
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "Recipe",
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "4.6",
+          "reviewCount": 12
+        },
+        "associatedMedia": {
+          "@type": "ImageObject",
+          "contentUrl": "https://res.cloudinary.com/hksqkdlah/image/upload/c_fill,dpr_2.0,f_auto,fl_lossy.progressive.strip_profile,g_faces:auto,q_auto:low/SFS_Carrot_and_Smoked_Salmon_Salad_318_alfajk",
+          "description": "Carrot and Smoked Salmon Salad"
+        },
+        "author": [
+          {
+            "@type": "Person",
+            "name": "Leah Colins",
+            "url": "https://www.americastestkitchen.com/authors/141"
+          }
+        ],
+        "commentCount": 4,
+        "dateModified": "2026-09-22T15:39:56Z",
+        "datePublished": "2021-09-22T00:00:00.000Z",
+        "description": "This hearty salad uses every part of the carrot.",
+        "hasPart": {
+          "@type": "WebPageElement",
+          "cssSelector": ".paywall-hidden",
+          "isAccessibleForFree": false
+        },
+        "image": [
+          {
+            "@type": "ImageObject",
+            "contentUrl": "https://res.cloudinary.com/hksqkdlah/image/upload/c_fill,dpr_2.0,f_auto,fl_lossy.progressive.strip_profile,g_faces:auto,q_auto:low/SFS_Carrot_and_Smoked_Salmon_Salad_318_alfajk",
+            "creditText": "America's Test Kitchen",
+            "height": 1200,
+            "representativeOfPage": true,
+            "url": "https://res.cloudinary.com/hksqkdlah/image/upload/c_fill,dpr_2.0,f_auto,fl_lossy.progressive.strip_profile,g_faces:auto,q_auto:low/SFS_Carrot_and_Smoked_Salmon_Salad_318_alfajk",
+            "width": 1200
+          }
+        ],
+        "isAccessibleForFree": false,
+        "keywords": "Fish \u0026 Seafood,Vegetables,Salads,Easter",
+        "name": "Carrot and Smoked Salmon Salad",
+        "nutrition": {
+          "@type": "NutritionInformation",
+          "calories": "221",
+          "carbohydrateContent": "23 g",
+          "cholesterolContent": "9 mg",
+          "fiberContent": "",
+          "proteinContent": "9 g",
+          "sodiumContent": "682 mg"
+        },
+        "recipeCategory": "Main Courses",
+        "recipeCuisine": "",
+        "recipeIngredient": [
+          "2 pounds carrots with greens attached, divided, ¼ cup greens chopped",
+          "5 tablespoons cider vinegar, divided",
+          "1 tablespoon sugar",
+          "⅛ teaspoon plus ¾ teaspoon table salt, divided",
+          "¼ cup extra-virgin olive oil, divided",
+          "¼ teaspoon pepper",
+          "1 red grapefruit",
+          "2 tablespoons chopped fresh dill leaves",
+          "2 teaspoons Dijon mustard",
+          "2 heads Belgian endive (4 ounces each), halved, cored, and sliced ½ inch thick",
+          "8 ounces smoked salmon"
+        ],
+        "recipeInstructions": [
+          {
+            "@type": "HowToStep",
+            "text": "Adjust oven rack to lowest position and heat oven to 450 degrees. Peel and shave 4 ounces carrots into thin ribbons with vegetable peeler; set aside. Peel and slice remaining carrots on bias ¼ inch thick; set aside."
+          },
+          {
+            "@type": "HowToStep",
+            "text": "Microwave ¼ cup vinegar, sugar, and ⅛ teaspoon salt in medium bowl until simmering, 1 to 2 minutes. Add shaved carrots and stir to combine. Let sit, stirring occasionally, for 45 minutes. (Drained pickled carrots can be refrigerated for up to 5 days.)"
+          },
+          {
+            "@type": "HowToStep",
+            "text": "Toss sliced carrots, 1 tablespoon oil, pepper, and ½ teaspoon salt together in bowl to coat. Spread carrots in single layer on rimmed baking sheet, cut side down. Roast until tender and bottoms are well browned, 15 to 25 minutes. Let cool slightly, about 15 minutes."
+          },
+          {
+            "@type": "HowToStep",
+            "text": "Meanwhile, cut away peel and pith from grapefruit. Quarter grapefruit, then slice crosswise into ¼-inch-thick pieces."
+          },
+          {
+            "@type": "HowToStep",
+            "text": "Whisk dill, mustard, remaining 1 tablespoon vinegar, and remaining ¼ teaspoon salt together in large bowl. Whisking constantly, slowly drizzle in remaining 3 tablespoons oil until emulsified. Add endive, carrot greens, roasted carrots, pickled carrots, and grapefruit and toss to combine; season with salt and pepper to taste. Arrange salmon around edge of serving platter, then transfer salad to center of platter. Serve."
+          }
+        ],
+        "recipeYield": "Serves 4 to 6",
+        "tool": [
+          {
+            "@type": "HowToTool",
+            "name": "Fruit/Vegetable Peelers",
+            "url": "https://www.americastestkitchen.com/equipment_reviews/1372-fruit-slash-vegetable-peelers"
+          },
+          {
+            "@type": "HowToTool",
+            "name": "The Best Mixing Bowls",
+            "url": "https://www.americastestkitchen.com/equipment_reviews/1538-mixing-bowls"
+          },
+          {
+            "@type": "HowToTool",
+            "name": "All-Purpose Whisks",
+            "url": "https://www.americastestkitchen.com/equipment_reviews/1370-all-purpose-whisks"
+          },
+          {
+            "@type": "HowToTool",
+            "name": "The Best Chef’s Knives",
+            "url": "https://www.americastestkitchen.com/equipment_reviews/2357-the-best-chef-s-knives-under-75"
+          }
+        ],
+        "totalTime": "",
+        "url": "https://www.americastestkitchen.com/recipes/14183-carrot-and-smoked-salmon-salad"
+      }
+    ]
+  ]
+}

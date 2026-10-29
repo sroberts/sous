@@ -1,0 +1,320 @@
+{
+  "source_url": "https://www.foodandwine.com/chicken-korma-11785879",
+  "fetched_url": "https://www.foodandwine.com/chicken-korma-11785879",
+  "status": 200,
+  "server": "cloudflare",
+  "size": 672068,
+  "title": "Chicken Korma Recipe",
+  "og_title": "This Easy Chicken Korma Tastes Like It Simmered All Day",
+  "og_site_name": "Food \u0026 Wine",
+  "og_image": "https://www.foodandwine.com/thmb/92Ft6LQ7Bi29CrlBCuKdyVUuCT0=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/Chicken-Korma-FT-MAG-RECIPE-0925-10bc404f210748dfa35321d184ec3941.jpg",
+  "twitter_image": "https://www.foodandwine.com/thmb/92Ft6LQ7Bi29CrlBCuKdyVUuCT0=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/Chicken-Korma-FT-MAG-RECIPE-0925-10bc404f210748dfa35321d184ec3941.jpg",
+  "canonical": "https://www.foodandwine.com/chicken-korma-11785879",
+  "jsonld": [
+    [
+      {
+        "@context": "http://schema.org",
+        "@type": [
+          "Recipe"
+        ],
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingCount": "10",
+          "ratingValue": "3.9"
+        },
+        "author": [
+          {
+            "@type": "Person",
+            "name": "Paige Grandjean",
+            "url": "https://www.foodandwine.com/author/paige-grandjean"
+          }
+        ],
+        "dateModified": "2026-07-21T15:52:37-04:00",
+        "datePublished": "2025-08-08T10:02:00-04:00",
+        "description": "Creamy chicken korma simmers tender pieces of chicken in a gentle curry of yogurt, cashews, and warm spices, delivering rich flavor without the heat.",
+        "headline": "Chicken Korma",
+        "image": {
+          "@type": "ImageObject",
+          "contentUrl": "https://www.foodandwine.com/thmb/92Ft6LQ7Bi29CrlBCuKdyVUuCT0=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/Chicken-Korma-FT-MAG-RECIPE-0925-10bc404f210748dfa35321d184ec3941.jpg",
+          "creditText": "Morgan Hunt Glaze / Food Styling by Margaret Monroe Dickey / Prop Styling by Julia Bayless",
+          "height": 1000,
+          "url": "https://www.foodandwine.com/thmb/92Ft6LQ7Bi29CrlBCuKdyVUuCT0=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/Chicken-Korma-FT-MAG-RECIPE-0925-10bc404f210748dfa35321d184ec3941.jpg",
+          "width": 1500
+        },
+        "mainEntityOfPage": {
+          "@id": "https://www.foodandwine.com/chicken-korma-11785879",
+          "@type": [
+            "WebPage"
+          ],
+          "breadcrumb": {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "item": {
+                  "@id": "https://www.foodandwine.com/recipes/dinner",
+                  "name": "Dinner"
+                },
+                "position": 1
+              },
+              {
+                "@type": "ListItem",
+                "item": {
+                  "@id": "https://www.foodandwine.com/poultry-dishes-7497047",
+                  "name": "Poultry Dishes"
+                },
+                "position": 2
+              },
+              {
+                "@type": "ListItem",
+                "item": {
+                  "@id": "https://www.foodandwine.com/chicken-main-course-7497051",
+                  "name": "Chicken Main Course"
+                },
+                "position": 3
+              },
+              {
+                "@type": "ListItem",
+                "item": {
+                  "@id": "https://www.foodandwine.com/chicken-stews-curries-7497055",
+                  "name": "Chicken Stews and Curries"
+                },
+                "position": 4
+              }
+            ]
+          },
+          "name": "Chicken Korma"
+        },
+        "name": "Chicken Korma",
+        "nutrition": {
+          "@type": "NutritionInformation",
+          "calories": "692 kcal",
+          "carbohydrateContent": "46 g",
+          "cholesterolContent": "212 mg",
+          "fatContent": "33 g",
+          "fiberContent": "6 g",
+          "proteinContent": "58 g",
+          "saturatedFatContent": "6 g",
+          "sodiumContent": "926 mg",
+          "sugarContent": "16 g",
+          "unsaturatedFatContent": "0 g"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "brand": "Food \u0026 Wine",
+          "logo": {
+            "@type": "ImageObject",
+            "contentUrl": "https://www.foodandwine.com/thmb/uV0O06O8WNrLepjgxkntdVuRpeE=/112x112/filters:no_upscale():max_bytes(150000):strip_icc()/brand_logo_schema-f3b2e548eb6f4243ad527798593483e0.png",
+            "creditText": "Food \u0026 Wine",
+            "height": 112,
+            "width": 112
+          },
+          "name": "Food \u0026 Wine",
+          "publishingPrinciples": "https://www.foodandwine.com/about-us-6373913#toc-editorial-policies",
+          "sameAs": [
+            "https://www.facebook.com/foodandwine",
+            "https://www.instagram.com/foodandwine/?hl=en",
+            "https://www.pinterest.com/foodandwine/",
+            "https://flipboard.com/@foodandwine",
+            "https://www.youtube.com/channel/UCKH_4hkRSyUSHDIFMzlGCRA",
+            "https://en.wikipedia.org/wiki/Food_%26_Wine"
+          ],
+          "url": "https://www.foodandwine.com"
+        },
+        "recipeCategory": [
+          "Dinner",
+          "Entree"
+        ],
+        "recipeCuisine": [
+          "Indian"
+        ],
+        "recipeIngredient": [
+          "1 1/2 cups plain whole-milk strained (Greek-style) yogurt ",
+          "4 teaspoons ground cumin",
+          "3 large garlic cloves, minced (about 1 tablespoon)",
+          "1 (2-inch) piece fresh ginger, minced (about 1 tablespoon)",
+          "1 tablespoon ground coriander",
+          "1 1/2 teaspoons kosher salt",
+          "3/4 teaspoon paprika",
+          "1/2 teaspoon ground cardamom",
+          "1 1/2 pounds boneless, skinless chicken thighs (about 6 thighs), trimmed and cut into 3/4-inch pieces",
+          "1/4 cup canola oil",
+          "2 yellow onions, thinly sliced (about 4 1/2 cups)",
+          "1/4 cup chopped raw cashews ",
+          "1 1/2 cups water",
+          "1/4 teaspoon garam masala",
+          "1/4 teaspoon wild mountain cumin seeds (optional)",
+          "Chopped fresh cilantro, for garnish",
+          "Naan and/or cooked basmati rice, for serving"
+        ],
+        "recipeInstructions": [
+          {
+            "@type": "HowToStep",
+            "text": "Whisk together yogurt, ground cumin, garlic, ginger, coriander, salt, paprika, and cardamom in a large bowl. Stir in chicken until evenly coated in yogurt mixture. Set aside at room temperature until ready to cook, or cover and refrigerate for up to 1 day."
+          },
+          {
+            "@type": "HowToStep",
+            "text": "Heat oil in a large Dutch oven over medium-high until shimmering. Stir in onions; cook, stirring often, until onions are golden brown, about 10 minutes. Add cashews; cook, stirring constantly, until nuts are browned in spots, 1 to 2 minutes."
+          },
+          {
+            "@type": "HowToStep",
+            "text": "Remove Dutch oven from heat; transfer onions and cashews to a blender using a slotted spoon, reserving oil in Dutch oven. Add 1 1/2 cups water to blender; process until smooth, about 1 minute, scraping down sides of blender as needed."
+          },
+          {
+            "@type": "HowToStep",
+            "image": [
+              {
+                "@type": "ImageObject",
+                "contentUrl": "https://www.foodandwine.com/thmb/92Ft6LQ7Bi29CrlBCuKdyVUuCT0=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/Chicken-Korma-FT-MAG-RECIPE-0925-10bc404f210748dfa35321d184ec3941.jpg",
+                "creditText": "Morgan Hunt Glaze / Food Styling by Margaret Monroe Dickey / Prop Styling by Julia Bayless"
+              }
+            ],
+            "text": "Heat reserved oil in Dutch oven over medium; add chicken and yogurt mixture, and stir to coat with oil. Cover and cook, undisturbed, until chicken is mostly cooked through and oil starts to separate, 12 to 15 minutes. Stir in blended onion mixture; cook, uncovered, stirring often, until chicken is cooked through and sauce thickens, 10 to 12 minutes. Remove from heat; sprinkle with garam masala, wild mountain cumin seeds (if using), and cilantro. Serve with naan and/or cooked rice."
+          }
+        ],
+        "recipeYield": "4",
+        "review": [
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Dan Sizemore"
+            },
+            "reviewBody": "I followed this exactly, and it was great. But I have some notes and questions. I would change things slightly when I make it again. First of all--the picture shows a yellow colored dish, yet all the spices are reddish brown and indeed the final dish was a creamy colored sauce. Still delicious, but maybe a bit of turmeric is needed to achieve that color. The text talks about \"caramelized\" onions. in my long experience of caramelizing onions--it cannot be done in 10 minutes. (a quick google search will confirm that at least 20 min. are needed and up to an hour for a deeply caramelized result, over lower heat. I stopped (about 17 min) when the onions were nicely browned but definitely not caramelized. The first sentence in the recipe says that caramelized onions and cashews are pureed with yogurt--but at no time in the directions is the yogurt pureed--no matter-- the onion/cashew sauce is delicious.--but how about chicken broth instead of water? Finally, the immediately cooked dish was WAY too cumin forward for my taste--but wait--I didn't do more than taste it. I put it into the fridge, and the next morning the cumin taste had mellowed and was perfect. An overnight melding of the spices is essential in my opinion. Would I change things? Yes--for me as a cardamom lover, I would double it, also more ginger and more garlic. The paprika is essential. I used a high quality Spanish smoked paprika--and maybe a bit more would be good. I did use the wild mountain cumin from the source suggested in the recipe. It was reasonably priced and arrived in 2 days. (also where I got the paprika) Korma is traditionally one of the mildest curries, and I don't think it needed any heat, as another reviewer suggested, but it could easily be added. All in all, this is a dynamite recipe, and would impress any guest or family. It will be one of my essential rotation entrees.",
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            }
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Gloria"
+            },
+            "datePublished": "2025-08-13T23:23:56.138Z",
+            "reviewBody": "Add heat, recipe it needs a little tweeking. I will make it again.",
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "4"
+            }
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Jennifer Osachoff"
+            },
+            "datePublished": "2026-08-21T18:41:23.892Z",
+            "reviewBody": "This was the first time I have made chicken Korma and I was disappointed in the final result. Followed the recipe exactly but have the following issues: (1) need considerably less yogurt - it was too much for the recipe; (2) much too much water in the onion/cashew sauce - so much that is was impossible to boil it off in the end; (3) not enough spice - definitely too bland; (4) wrong colour - totally beige as some else has commented. Clearly the photo didn't match the recipe. Having said all that, I will definitely make Korma again but will alter this recipe to make it more authentic and flavourful.",
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "3"
+            }
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Brushjl"
+            },
+            "datePublished": "2026-08-11T00:39:40.844Z",
+            "reviewBody": "ok, but nothing remarkable",
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "4"
+            }
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Martha E"
+            },
+            "datePublished": "2025-11-06T13:56:20.384Z",
+            "reviewBody": "This was nice. My 93-yr old mother would like it, but I felt it was a bit bland. When I make again, I'm going to hot it up with some red pepper flakes - and possibly throw some tomatoes (in some form or other) and turmeric into the mix so it doesn't look so blah (the photo is misleading) and has a little more depth of flavor. It was better the next day, but still in need of some care.",
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "4"
+            }
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Regina"
+            },
+            "datePublished": "2025-09-29T16:51:19.416Z",
+            "reviewBody": "I think I would add some minced jalapeño either with the onions (and purée them into the sauce) or add the minced jalapeño when you add the onion sauce",
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "3"
+            }
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "AmicablePlate1012"
+            },
+            "datePublished": "2025-09-28T00:18:22.482Z",
+            "reviewBody": "I substituted chicken broth recommended by another reviewer and added a little saffron. Otherwise the only change was that I added the garam marsala and cumin powder last 5 minutes of cooking because I didnt have seeds. Came out fabulous, just not buttery like I am used to from our favorite restaurant",
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "4"
+            }
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "BrightScoop2675"
+            },
+            "datePublished": "2025-09-11T19:55:32.048Z",
+            "reviewBody": "This was delicious. The only change I made was using whole milk (not Greek, not strained) yogurt and I didn't have the wild mountain cumin seeds. The combination of cashews, yogurt, and all those spices made a sensational sauce. Served with homemade naan.",
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            }
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "ConsiderateGouda2676"
+            },
+            "datePublished": "2025-09-06T23:16:10.882Z",
+            "reviewBody": "This particular recipe fell flat for me. There's a lot of chicken Korma variations out there, but this lacked flavor and tasted bland. Will not make again.",
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "2"
+            }
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "name": "Lisa"
+            },
+            "datePublished": "2025-09-03T20:12:37.012Z",
+            "reviewBody": "Made as directed and quite tasty.. BUT, the color of the finished dish is not the gorgeous saffron hue of the photo; it's more like a pale tan color which didn't have the most appetizing look. Aside from filters, why is the pic so much brighter and rich in color?",
+            "reviewRating": {
+              "@type": "Rating",
+              "ratingValue": "5"
+            }
+          }
+        ],
+        "totalTime": "PT55M",
+        "video": {
+          "@type": "VideoObject",
+          "contentUrl": "https://cdn.jwplayer.com/videos/Tp8rGmrH-eFraYBD7.mp4",
+          "description": "Creamy chicken with a citrusy and smoky flavor that's perfect for dinner any night of the week. In this video, learn how to make chicken korma, a comforting curry of Greek yogurt, cashews, and warm spices, giving the dish a rich flavor without the heat. Serve up the chicken korma with warm naan or rice for a hearty dinner.",
+          "duration": "PT48S",
+          "name": "How to Make Chicken Korma",
+          "thumbnailUrl": "https://cdn.jwplayer.com/v2/media/Tp8rGmrH/thumbnails/RNxnObG2.jpg?width=1280",
+          "uploadDate": "2025-09-10T12:48:01-04:00"
+        }
+      }
+    ]
+  ]
+}

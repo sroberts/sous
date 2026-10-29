@@ -108,6 +108,38 @@ func stripBullet(s string) string {
 }
 
 var (
+	leadingDotRE = regexp.MustCompile(`^\.(\d)`)
+	capsHeadRE   = regexp.MustCompile(`^[\p{Lu}][\p{Lu}\s&'’/,-]{2,48}:?$`)
+)
+
+// ingredientHeading turns an all-capitals ingredient line ("CHILE-LIME SLAW"),
+// which some sites use for a component, into a "# Chile-Lime Slaw" section.
+func ingredientHeading(s string) (string, bool) {
+	if !capsHeadRE.MatchString(s) || strings.ContainsAny(s, "0123456789") {
+		return s, false
+	}
+	words := strings.Fields(strings.TrimSuffix(strings.ToLower(s), ":"))
+	for i, w := range words {
+		parts := strings.Split(w, "-")
+		for j, p := range parts {
+			if r := []rune(p); len(r) > 0 {
+				parts[j] = strings.ToUpper(string(r[0])) + string(r[1:])
+			}
+		}
+		words[i] = strings.Join(parts, "-")
+	}
+	return "# " + strings.Join(words, " "), true
+}
+
+var doubleParenRE = regexp.MustCompile(`\(\(([^()]*)\)\)`)
+
+// singleParens undoes the doubled parentheses WP Recipe Maker writes around
+// ingredient notes: "spaghetti ((340g))" becomes "spaghetti (340g)".
+func singleParens(s string) string {
+	return doubleParenRE.ReplaceAllString(s, "($1)")
+}
+
+var (
 	unnumberMatch = regexp.MustCompile(`^(\d+)\s+\S`)
 	unnumberStrip = regexp.MustCompile(`^\d+\s+`)
 	stepPrefixRE  = regexp.MustCompile(`(?i)^step\s*(\d+)\s*[:.)\-–—]?\s*`)
@@ -119,6 +151,39 @@ var (
 // is safe.
 func Unnumber(steps []string) []string {
 	return stripSequential(steps, unnumberMatch, unnumberStrip)
+}
+
+var inlineNumberRE = regexp.MustCompile(`(?:^|\s)(\d{1,2})\.\s+`)
+
+// splitInlineNumbered splits a step that holds a whole numbered method
+// ("1. Preheat… 2. In a skillet…"), as some recipe plugins publish it, into
+// one step per number. It only splits when the numbers run 1, 2, 3… in order,
+// so "Bake for 2. Then" style text is left alone.
+func splitInlineNumbered(steps []string) []string {
+	var out []string
+	for _, s := range steps {
+		locs := inlineNumberRE.FindAllStringSubmatchIndex(s, -1)
+		var cuts [][2]int // where each number starts, and where its text starts
+		next := 1
+		for _, l := range locs {
+			if n, _ := strconv.Atoi(s[l[2]:l[3]]); n == next {
+				cuts = append(cuts, [2]int{l[0], l[1]})
+				next++
+			}
+		}
+		if len(cuts) < 2 || strings.TrimSpace(s[:cuts[0][0]]) != "" {
+			out = append(out, s)
+			continue
+		}
+		for i, c := range cuts {
+			end := len(s)
+			if i+1 < len(cuts) {
+				end = cuts[i+1][0]
+			}
+			out = append(out, strings.TrimSpace(s[c[1]:end]))
+		}
+	}
+	return out
 }
 
 // stripStepPrefixes drops "Step 1:" labels under the same rule.

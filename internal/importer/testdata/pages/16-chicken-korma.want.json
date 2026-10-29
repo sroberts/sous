@@ -1,0 +1,58 @@
+{
+  "draft": {
+    "title": "Chicken Korma",
+    "source_url": "https://www.foodandwine.com/chicken-korma-11785879",
+    "description": "Creamy chicken korma simmers tender pieces of chicken in a gentle curry of yogurt, cashews, and warm spices, delivering rich flavor without the heat.",
+    "yield_text": "4",
+    "total_minutes": 55,
+    "nutrition_text": "Calories: 692 kcal · Fat: 33 g · Saturated fat: 6 g · Unsaturated fat: 0 g · Cholesterol: 212 mg · Sodium: 926 mg · Carbohydrates: 46 g · Fiber: 6 g · Sugar: 16 g · Protein: 58 g",
+    "ingredients": [
+      "1 1/2 cups plain whole-milk strained (Greek-style) yogurt",
+      "4 teaspoons ground cumin",
+      "3 large garlic cloves, minced (about 1 tablespoon)",
+      "1 (2-inch) piece fresh ginger, minced (about 1 tablespoon)",
+      "1 tablespoon ground coriander",
+      "1 1/2 teaspoons kosher salt",
+      "3/4 teaspoon paprika",
+      "1/2 teaspoon ground cardamom",
+      "1 1/2 pounds boneless, skinless chicken thighs (about 6 thighs), trimmed and cut into 3/4-inch pieces",
+      "1/4 cup canola oil",
+      "2 yellow onions, thinly sliced (about 4 1/2 cups)",
+      "1/4 cup chopped raw cashews",
+      "1 1/2 cups water",
+      "1/4 teaspoon garam masala",
+      "1/4 teaspoon wild mountain cumin seeds (optional)",
+      "Chopped fresh cilantro, for garnish",
+      "Naan and/or cooked basmati rice, for serving"
+    ],
+    "steps": [
+      "Whisk together yogurt, ground cumin, garlic, ginger, coriander, salt, paprika, and cardamom in a large bowl. Stir in chicken until evenly coated in yogurt mixture. Set aside at room temperature until ready to cook, or cover and refrigerate for up to 1 day.",
+      "Heat oil in a large Dutch oven over medium-high until shimmering. Stir in onions; cook, stirring often, until onions are golden brown, about 10 minutes. Add cashews; cook, stirring constantly, until nuts are browned in spots, 1 to 2 minutes.",
+      "Remove Dutch oven from heat; transfer onions and cashews to a blender using a slotted spoon, reserving oil in Dutch oven. Add 1 1/2 cups water to blender; process until smooth, about 1 minute, scraping down sides of blender as needed.",
+      "Heat reserved oil in Dutch oven over medium; add chicken and yogurt mixture, and stir to coat with oil. Cover and cook, undisturbed, until chicken is mostly cooked through and oil starts to separate, 12 to 15 minutes. Stir in blended onion mixture; cook, uncovered, stirring often, until chicken is cooked through and sauce thickens, 10 to 12 minutes. Remove from heat; sprinkle with garam masala, wild mountain cumin seeds (if using), and cilantro. Serve with naan and/or cooked rice."
+    ]
+  },
+  "images": [
+    {
+      "url": "https://www.foodandwine.com/thmb/92Ft6LQ7Bi29CrlBCuKdyVUuCT0=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/Chicken-Korma-FT-MAG-RECIPE-0925-10bc404f210748dfa35321d184ec3941.jpg",
+      "width": 1500,
+      "height": 1000,
+      "rank": 0
+    }
+  ],
+  "report": {
+    "method": "json-ld",
+    "found": [
+      "title",
+      "description",
+      "ingredients",
+      "steps",
+      "times",
+      "yield",
+      "nutrition",
+      "image"
+    ],
+    "missing": [],
+    "warnings": []
+  }
+}

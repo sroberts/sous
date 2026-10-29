@@ -1,0 +1,109 @@
+{
+  "source_url": "https://www.bonappetit.com/recipe/chickpea-pancakes-with-greens-and-cheese",
+  "fetched_url": "https://www.bonappetit.com/recipe/chickpea-pancakes-with-greens-and-cheese",
+  "status": 200,
+  "server": "cloudflare",
+  "size": 1319934,
+  "title": "Chickpea Pancakes With Greens and Cheese Recipe | Bon Appétit",
+  "og_title": "Chickpea Pancakes With Greens and Cheese",
+  "og_site_name": "Bon Appétit",
+  "og_image": "https://assets.bonappetit.com/photos/601de206fa147fe6ff9102db/16:9/w_1280,c_limit/Lunch-Chickpea-Pancakes-greens-cheese.jpg",
+  "twitter_image": "https://assets.bonappetit.com/photos/601de206fa147fe6ff9102db/16:9/w_1280,c_limit/Lunch-Chickpea-Pancakes-greens-cheese.jpg?mbid=social_retweet",
+  "canonical": "https://www.bonappetit.com/recipe/chickpea-pancakes-with-greens-and-cheese",
+  "markers": [
+    "captcha"
+  ],
+  "jsonld": [
+    {
+      "@context": "http://schema.org",
+      "@type": "Recipe",
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingCount": 107,
+        "ratingValue": 4.5
+      },
+      "alternativeHeadline": "This recipe covers pretty much all of our working-from-home lunch criteria: it’s cheesy, packed with greens and protein, and topped with hot sauce.",
+      "articleBody": "These cheesy, green-y, and utterly satisfying chickpea pancakes were inspired by Healthyish contributor Aliza Abarbanel’s favorite work-from-home comfort lunch. “I’ve filled these pancakes with just about every leftover in the fridge, from cooked greens to roasted mushrooms to marinated lentils, but melty cheese remains a constant,” she says. Gluten-free and packed with protein, chickpea flour pancakes come in many variations across the world, from Indian besan chilla to French socca to Italian farinata. If you don’t feel like or have time to make pancake batter during your lunch break (though we highly recommend it!) large flour or alt-flour tortillas work wonderfully as a substitute; just fold the cooked greens and cheese inside the tortillas and heat directly in the skillet to melt the cheese.",
+      "author": [
+        {
+          "@type": "Person",
+          "name": "Chris Morocco",
+          "sameAs": "https://www.bonappetit.com/contributor/chris-morocco"
+        }
+      ],
+      "dateModified": "2021-02-09T06:00:00.000-05:00",
+      "datePublished": "2021-02-09T06:00:00.000-05:00",
+      "description": "This recipe covers pretty much all of our working-from-home lunch criteria: it’s cheesy, packed with greens and protein, and topped with hot sauce.",
+      "headline": "Chickpea Pancakes With Greens and Cheese",
+      "image": [
+        "https://assets.bonappetit.com/photos/601de206fa147fe6ff9102db/16:9/w_2000,h_1125,c_limit/Lunch-Chickpea-Pancakes-greens-cheese.jpg",
+        "https://assets.bonappetit.com/photos/601de206fa147fe6ff9102db/4:3/w_1500,h_1125,c_limit/Lunch-Chickpea-Pancakes-greens-cheese.jpg",
+        "https://assets.bonappetit.com/photos/601de206fa147fe6ff9102db/1:1/w_1125,h_1125,c_limit/Lunch-Chickpea-Pancakes-greens-cheese.jpg"
+      ],
+      "inLanguage": "en-US",
+      "isAccessibleForFree": true,
+      "isPartOf": {
+        "@type": "CreativeWork",
+        "name": "Bon Appétit"
+      },
+      "keywords": [
+        "pancake",
+        "chickpea flour",
+        "brussels sprout",
+        "kale",
+        "quick",
+        "easy",
+        "weeknight meals",
+        "main",
+        "vegetarian",
+        "nut-free",
+        "healthyish",
+        "lunch",
+        "dinner",
+        "web"
+      ],
+      "name": "Chickpea Pancakes With Greens and Cheese",
+      "publisher": {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "logo": {
+          "@type": "ImageObject",
+          "height": "100px",
+          "url": "https://www.bonappetit.com/verso/static/bonappetit-us/assets/logo-seo.png",
+          "width": "479px"
+        },
+        "name": "Bon Appétit",
+        "url": "https://www.bonappetit.com"
+      },
+      "recipeIngredient": [
+        "½ cup chickpea flour",
+        "3 Tbsp. plus 4 tsp. olive oil, divided",
+        "Kosher salt",
+        "½ medium red onion, thinly sliced",
+        "4 garlic cloves, smashed",
+        "1 cup brussels sprouts, thinly sliced",
+        "1 small bunch Tuscan kale or other kale, ribs and stems removed, thinly sliced",
+        "2 tsp. hot sauce, plus more for serving",
+        "4 oz. sharp cheddar, coarsely grated",
+        "Plain yogurt (for serving)"
+      ],
+      "recipeInstructions": [
+        {
+          "@type": "HowToStep",
+          "text": "Preheat oven to 350°. Whisk chickpea flour and ½ cup plus 2 Tbsp. cold water in a small bowl. Whisk in 1 Tbsp. oil and a pinch of salt. Let sit at least 10 minutes and up to 1 hour to allow flour to hydrate."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Meanwhile, heat 2 Tbsp. oil in a large nonstick skillet over medium-high. Add onion, garlic, and brussels sprouts; cook, tossing occasionally, until softened and lightly browned, about 3 minutes. Add kale and cook, tossing often, until tender, about 3 minutes. Add 2 tsp. hot sauce, season with salt, and toss well. Transfer to a medium bowl; wipe out skillet."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Swirl 1 tsp. oil in skillet to coat; heat over medium-high. Pour ¼ cup batter into center of skillet and swirl to form a thin 6\"–7\"-diameter pancake. Cook until well browned underneath and crispy around edges, about 2 minutes. Flip pancake and cook just until second side is lightly browned, about 1 minute. Transfer to a rimmed baking sheet. Repeat process with remaining batter and 3 tsp. oil to make 4 total. Divide vegetables between 2 pancakes and top with cheese and remaining 2 pancakes. Bake until cheese is melted, 6–8 minutes. Serve topped with yogurt and more hot sauce."
+        }
+      ],
+      "recipeYield": "2 servings",
+      "thumbnailUrl": "https://assets.bonappetit.com/photos/601de206fa147fe6ff9102db/1:1/w_1125,h_1125,c_limit/Lunch-Chickpea-Pancakes-greens-cheese.jpg",
+      "url": "https://www.bonappetit.com/recipe/chickpea-pancakes-with-greens-and-cheese"
+    }
+  ]
+}

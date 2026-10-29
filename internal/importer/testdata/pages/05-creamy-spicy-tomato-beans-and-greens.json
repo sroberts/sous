@@ -1,0 +1,467 @@
+{
+  "source_url": "https://cooking.nytimes.com/recipes/1025325-creamy-spicy-tomato-beans-and-greens",
+  "fetched_url": "https://cooking.nytimes.com/recipes/1025325-creamy-spicy-tomato-beans-and-greens",
+  "status": 200,
+  "server": "envoy",
+  "size": 677197,
+  "title": "Creamy, Spicy Tomato Beans and Greens Recipe",
+  "og_title": "Creamy, Spicy Tomato Beans and Greens Recipe • 5★",
+  "og_site_name": "NYT Cooking",
+  "og_image": "https://static01.nyt.com/images/2024/04/24/multimedia/aw-tomato-beansrex-mwfq/aw-tomato-beansrex-mwfq-facebookJumbo.jpg",
+  "twitter_image": "https://static01.nyt.com/images/2024/04/24/multimedia/aw-tomato-beansrex-mwfq/aw-tomato-beansrex-mwfq-facebookJumbo.jpg",
+  "canonical": "https://cooking.nytimes.com/recipes/1025325-creamy-spicy-tomato-beans-and-greens",
+  "markers": [
+    "not-free"
+  ],
+  "jsonld": [
+    {
+      "@context": "https://schema.org",
+      "@id": "urn:nyt:ScoopRecipe:53b9fad409ac5655999a32bd08843c56",
+      "@type": "Recipe",
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingCount": 13948,
+        "ratingValue": 5
+      },
+      "author": {
+        "@id": "nyt://person/83f84ca6-ddf8-575b-8fb3-36652c638f74",
+        "@type": "Person",
+        "image": [
+          {
+            "@id": "nyt://image/2a02a140-0ad2-54d8-b9d9-c5bdfc5d613d#superJumbo",
+            "@type": "ImageObject",
+            "contentUrl": "https://static01.nyt.com/images/2022/10/06/reader-center/author-alexa-weibel/author-alexa-weibel-superJumbo.png",
+            "dateModified": "2022-10-06T16:51:05.107Z",
+            "datePublished": "2022-10-06T16:51:05.107Z",
+            "height": "1000",
+            "uploadDate": "2022-10-06T16:51:05.107Z",
+            "url": "https://static01.nyt.com/images/2022/10/06/reader-center/author-alexa-weibel/author-alexa-weibel-superJumbo.png",
+            "width": "1000"
+          },
+          {
+            "@id": "nyt://image/2a02a140-0ad2-54d8-b9d9-c5bdfc5d613d#mediumSquareAt3X",
+            "@type": "ImageObject",
+            "contentUrl": "https://static01.nyt.com/images/2022/10/06/reader-center/author-alexa-weibel/author-alexa-weibel-mediumSquareAt3X.png",
+            "dateModified": "2022-10-06T16:51:05.107Z",
+            "datePublished": "2022-10-06T16:51:05.107Z",
+            "height": "1000",
+            "uploadDate": "2022-10-06T16:51:05.107Z",
+            "url": "https://static01.nyt.com/images/2022/10/06/reader-center/author-alexa-weibel/author-alexa-weibel-mediumSquareAt3X.png",
+            "width": "1000"
+          }
+        ],
+        "name": "Alexa Weibel",
+        "sameAs": "https://www.nytimes.com/by/alexa-weibel",
+        "url": "https://cooking.nytimes.com/author/alexa-weibel"
+      },
+      "cookTime": "PT20M",
+      "copyrightHolder": {
+        "@id": "https://cooking.nytimes.com/#publisher",
+        "@type": "Organization",
+        "name": "NYT Cooking"
+      },
+      "copyrightYear": 2024,
+      "dateModified": "2024-04-24T00:00:00Z",
+      "datePublished": "2024-04-24T00:00:00Z",
+      "description": "This weeknight wonder is for those who delight in turning a modest can of beans into a spectacular dinner. Inspired by the flavors of red pesto, this recipe calls for simmering cannellini beans with staple ingredients like onion, garlic, crushed red pepper, tomato paste and heavy cream, as well as sun-dried tomatoes and salty Pecorino, until the results taste complex and rich. Top the beans with a lemony arugula salad that is peppered with fried bread crumbs for a dish that is crunchy, chewy, crispy and creamy in every bite.",
+      "image": [
+        {
+          "@id": "nyt://image/d34c6823-c563-5f91-8f4b-c4643d1b0d82#videoSixteenByNineJumbo1600",
+          "@type": "ImageObject",
+          "contentUrl": "https://static01.nyt.com/images/2024/04/24/multimedia/aw-tomato-beansrex-mwfq/aw-tomato-beansrex-mwfq-videoSixteenByNineJumbo1600-v2.jpg",
+          "creditText": "Kelly Marshall for The New York Times. Food Stylist: Samantha Seneviratne.",
+          "dateModified": "2026-09-23T18:59:20.108Z",
+          "datePublished": "2024-04-22T15:50:08.000Z",
+          "height": "900",
+          "uploadDate": "2024-04-22T15:50:08.000Z",
+          "url": "https://static01.nyt.com/images/2024/04/24/multimedia/aw-tomato-beansrex-mwfq/aw-tomato-beansrex-mwfq-videoSixteenByNineJumbo1600-v2.jpg",
+          "width": "1600"
+        },
+        {
+          "@id": "nyt://image/d34c6823-c563-5f91-8f4b-c4643d1b0d82#googleFourByThree",
+          "@type": "ImageObject",
+          "contentUrl": "https://static01.nyt.com/images/2024/04/24/multimedia/aw-tomato-beansrex-mwfq/aw-tomato-beansrex-mwfq-googleFourByThree.jpg",
+          "creditText": "Kelly Marshall for The New York Times. Food Stylist: Samantha Seneviratne.",
+          "dateModified": "2026-09-23T18:59:20.108Z",
+          "datePublished": "2024-04-22T15:50:08.000Z",
+          "height": "600",
+          "uploadDate": "2024-04-22T15:50:08.000Z",
+          "url": "https://static01.nyt.com/images/2024/04/24/multimedia/aw-tomato-beansrex-mwfq/aw-tomato-beansrex-mwfq-googleFourByThree.jpg",
+          "width": "800"
+        },
+        {
+          "@id": "nyt://image/d34c6823-c563-5f91-8f4b-c4643d1b0d82#mediumSquareAt3X",
+          "@type": "ImageObject",
+          "contentUrl": "https://static01.nyt.com/images/2024/04/24/multimedia/aw-tomato-beansrex-mwfq/aw-tomato-beansrex-mwfq-mediumSquareAt3X.jpg",
+          "creditText": "Kelly Marshall for The New York Times. Food Stylist: Samantha Seneviratne.",
+          "dateModified": "2026-09-23T18:59:20.108Z",
+          "datePublished": "2024-04-22T15:50:08.000Z",
+          "height": "1800",
+          "uploadDate": "2024-04-22T15:50:08.000Z",
+          "url": "https://static01.nyt.com/images/2024/04/24/multimedia/aw-tomato-beansrex-mwfq/aw-tomato-beansrex-mwfq-mediumSquareAt3X.jpg",
+          "width": "1800"
+        },
+        {
+          "@id": "nyt://image/d34c6823-c563-5f91-8f4b-c4643d1b0d82#facebookJumbo",
+          "@type": "ImageObject",
+          "contentUrl": "https://static01.nyt.com/images/2024/04/24/multimedia/aw-tomato-beansrex-mwfq/aw-tomato-beansrex-mwfq-facebookJumbo.jpg",
+          "creditText": "Kelly Marshall for The New York Times. Food Stylist: Samantha Seneviratne.",
+          "dateModified": "2026-09-23T18:59:20.108Z",
+          "datePublished": "2024-04-22T15:50:08.000Z",
+          "height": "550",
+          "uploadDate": "2024-04-22T15:50:08.000Z",
+          "url": "https://static01.nyt.com/images/2024/04/24/multimedia/aw-tomato-beansrex-mwfq/aw-tomato-beansrex-mwfq-facebookJumbo.jpg",
+          "width": "1050"
+        }
+      ],
+      "isAccessibleForFree": false,
+      "keywords": "Arugula, Budget, Cannellini Bean, Easy, Heavy Cream, One Pot, Panko, Parmesan, Pecorino Romano, Quick, Skillet, Stovetop, Sun-Dried Tomato, Tomato Paste, Weeknight",
+      "mainEntityOfPage": {
+        "@id": "//cooking.nytimes.com/recipes/1025325-creamy-spicy-tomato-beans-and-greens",
+        "@type": "WebPage",
+        "name": "Creamy, Spicy Tomato Beans and Greens "
+      },
+      "name": "Creamy, Spicy Tomato Beans and Greens ",
+      "nutrition": {
+        "@type": "NutritionInformation",
+        "calories": "1063.75",
+        "carbohydrateContent": "110.1 grams",
+        "cholesterolContent": "90.1 milligrams",
+        "fatContent": "55.2 grams",
+        "fiberContent": "16.8 grams",
+        "proteinContent": "37.2 grams",
+        "saturatedFatContent": "21.4 grams",
+        "sodiumContent": "1692.3 milligrams",
+        "sugarContent": "12.7 grams",
+        "transFatContent": "0.8 grams",
+        "unsaturatedFatContent": "5.4 grams"
+      },
+      "prepTime": "PT20M",
+      "publisher": {
+        "@id": "https://cooking.nytimes.com/#publisher",
+        "@type": "Organization",
+        "name": "NYT Cooking"
+      },
+      "recipeCategory": "Beans, Dinner, Main Course",
+      "recipeIngredient": [
+        "6 tablespoons olive oil",
+        "⅔ cup panko bread crumbs",
+        "Salt and black pepper",
+        "1 medium yellow onion, minced",
+        "4 garlic cloves, minced",
+        "½ teaspoon crushed red pepper",
+        "⅓ cup tomato paste",
+        "2 (14-ounce) cans cannellini beans or other creamy white beans, rinsed",
+        "1 cup heavy cream",
+        "½ cup chopped jarred sun-dried tomatoes in oil",
+        "⅔ cup finely grated Pecorino or Parmesan",
+        "4 (packed) cups/3 ounces baby arugula",
+        "2 teaspoons finely grated lemon zest plus 4 teaspoons juice (from 1 lemon)",
+        "Toasted bread (optional), for serving"
+      ],
+      "recipeInstructions": [
+        {
+          "@type": "HowToStep",
+          "text": "In a medium skillet, heat 2 tablespoons olive oil over medium. Stir in the panko, season with salt and pepper, and cook, stirring frequently and shaking the pan, until toasted and golden, about 3 minutes. Transfer seasoned panko to a paper-towel lined plate, then wipe out the skillet.",
+          "url": "https://cooking.nytimes.com/recipes/1025325-creamy-spicy-tomato-beans-and-greens#recipe-step-1"
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Add another 2 tablespoons olive oil to the skillet and heat over medium. Add the onion, garlic and crushed red pepper, season with salt and pepper, and cook, stirring frequently, until softened, about 4 minutes.",
+          "url": "https://cooking.nytimes.com/recipes/1025325-creamy-spicy-tomato-beans-and-greens#recipe-step-2"
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Add the tomato paste and stir until darkened and mixture is combined, about 3 minutes.",
+          "url": "https://cooking.nytimes.com/recipes/1025325-creamy-spicy-tomato-beans-and-greens#recipe-step-3"
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Stir in beans, heavy cream, sun-dried tomatoes and ⅓ cup water, and simmer, stirring occasionally, until flavors meld, about 5 minutes. Stir in half the cheese, then season to taste with salt and pepper.",
+          "url": "https://cooking.nytimes.com/recipes/1025325-creamy-spicy-tomato-beans-and-greens#recipe-step-4"
+        },
+        {
+          "@type": "HowToStep",
+          "text": "In a medium bowl, toss the arugula with the seasoned panko, lemon zest and juice, plus the remaining ⅓ cup cheese and 2 tablespoons olive oil; season with salt and pepper. Pile the greens at the center of the bean mixture. Serve with toasted bread, if desired.",
+          "url": "https://cooking.nytimes.com/recipes/1025325-creamy-spicy-tomato-beans-and-greens#recipe-step-5"
+        }
+      ],
+      "recipeYield": "4 servings",
+      "review": [
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "On repeat"
+          },
+          "datePublished": "2026-10-26T17:25:35Z",
+          "reviewBody": "I make this recipe so often I know it by heart now.\nAlways gets complements every time!"
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Liz"
+          },
+          "datePublished": "2026-10-26T03:42:59Z",
+          "reviewBody": "This is good but VERY heavy. Substitute the heavy cream for something lighter."
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Gail"
+          },
+          "datePublished": "2026-10-25T19:24:55Z",
+          "reviewBody": "This is delicious.  Followed the recipe with no alterations, however the outcome is quite pale not as deeply brown as pictured.  Don't know why."
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Suzanne"
+          },
+          "datePublished": "2026-10-24T22:39:03Z",
+          "reviewBody": "This is sooooo good!"
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Wims"
+          },
+          "datePublished": "2026-10-24T06:49:46Z",
+          "reviewBody": "I made this recipe as listed except I had some spinach mixed in with the arugula because that's the only way I can get arugula. I ate it on top of toasted multi-grain sourdough. It is absolutely DELICIOUS! The beans are similar to the \"Marry Me\" bean recipe, but the taste profile is very different because of the lemony greens \u0026 toasted panko. Highly recommended.\n\nI may make it again using half and half next time but will probably otherwise not modify the recipe because it's basically perfect!"
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Marsha"
+          },
+          "datePublished": "2026-10-18T19:45:25Z",
+          "reviewBody": "This is one of the best bean recipes I've cooked in a long time.  Everyone loved it! I didn't have the sun-dried tomatoes so I substituted Red Roasted Peppers in oil and it was so good."
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Becky"
+          },
+          "datePublished": "2026-10-17T18:48:19Z",
+          "reviewBody": "Tasted wonderful! Maybe add a little less lemon next time."
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Michele"
+          },
+          "datePublished": "2026-10-17T10:44:19Z",
+          "reviewBody": "I expected a lot more from these beans after reading all of the comments bordering on rapture. They were passable but I absolutely did not experience the blissful harmonizing of exquisite flavors that others describe. I also found this dish took far longer to prepare than 40 minutes — you’re toasting breadcrumbs, zesting and juicing lemons, peeling and dicing garlic and onions,chopping up messy sun-dried tomatoes in oil . . . These things all take time. Personally I didn’t find it to be worth the effort or the calories."
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Ruth Mason"
+          },
+          "datePublished": "2026-10-15T16:22:51Z",
+          "reviewBody": "Can i substitue yogurt for heavy cream?"
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Josiane Polizzano"
+          },
+          "datePublished": "2026-10-13T18:00:00Z",
+          "reviewBody": "Love making this!  It’s delicious every time!  It makes a lovely presentation and is just as good left over"
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Katie K"
+          },
+          "datePublished": "2026-10-12T22:35:24Z",
+          "reviewBody": "I substituted pinto beans and cheddar cheese. Crumbled tortilla chips would work on the top, too. I told my kids it was cheese beans and they ate it."
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Piper"
+          },
+          "datePublished": "2026-10-12T21:51:11Z",
+          "reviewBody": "Very satisfying meal !"
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Paytons_Mom"
+          },
+          "datePublished": "2026-10-12T00:24:11Z",
+          "reviewBody": "Going against the grain here - I followed the recipe but found it to be a bit dry. Next time I'll add more water or maybe some veg broth. It is tasty, though!"
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Debbie"
+          },
+          "datePublished": "2026-10-11T22:47:37Z",
+          "reviewBody": "Very good dish, but, as other people have commented, there is just a tad too much of different ingredients. I don't think the salad needs all of that cheese or even all of that panko. I will cut both in half next time I cook this. I also used less cream (2/3 cup), and it still came out good. Very heavy dish even with the subtractions. I also used a full teaspoon of red pepper flakes, because I'm spicy like that."
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Sarah"
+          },
+          "datePublished": "2026-10-11T19:43:11Z",
+          "reviewBody": "I can’t get myself to like sun-dried tomatoes for some reason. I love tomatoes. I love sunshine. But the two combined nope. So I’ve never confessed that but I had to get that off my chest. Instead I used a tb of miso paste. It was great!"
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Ann"
+          },
+          "datePublished": "2024-06-24T09:29:21Z",
+          "reviewBody": "To make this vegan:\nI used a can of coconut cream instead of cow cream \u0026 added about a teaspoon of whole grain mustard and a tablespoon of nutritional yeast to the beans.\nI added about a teaspoon each of nutritional yeast \u0026 paprika to the bread crumbs \u0026 mixed the arugula with a good glug of the sundried tomato’s oil.\nDevine! Bright! Rich! Will be a staple!"
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Dee"
+          },
+          "datePublished": "2024-07-17T13:44:24Z",
+          "reviewBody": "This is delicious! I used approximately 1/2 cup of Greek yogurt mixed with 1/2 cup of 1% low fat milk and it was a great substitute for heavy cream, and baby spinach instead of arugula. I’ll make this again."
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Sarah"
+          },
+          "datePublished": "2024-09-22T13:47:22Z",
+          "reviewBody": "This is simple and amazing!  My husband thinks it should be renamed “Marry Me Beans.”\n\nMy own substitutions - chopped tomatoes instead of sundried and half and half instead of cream. The lemon in the arugula is such a great counterpoint to the richness of the sauce.  And leftovers were fantastic - it smelled like our favorite Italian restaurant on the Upper West Side."
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Nikki"
+          },
+          "datePublished": "2024-09-29T16:30:06Z",
+          "reviewBody": "I’ve made this twice - first time as the recipe is written, and I thought the full 1 cup of cream was both overwhelmingly heavy and unnecessary. \n\nSecond time, I cut the cream to 1/4 cup and doubled the amount of sundried tomatoes, and it was *fantastic*. My family is always trying to get more legumes in our diet, so this one (with these modifications) will go into regular rotation."
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Linda"
+          },
+          "datePublished": "2024-10-25T01:58:00Z",
+          "reviewBody": "This is a beautiful recipe, with so much unnecessary added fats (oil and cream). I change the macros on this by using only a teaspoon of oil (a tiny coating) and then make a cream out of 1/2 cup of pumpkin seeds  with hot water to cover, blended well to a cream, in lieu of heavy cream.  Pumpkin seeds add fiber, polyunsatured fats, and 5 more grams of protein per serve but still make it creamy. And instead of 650 calories per serve, it's at about 450--with a lot more protein and fiber."
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "hh"
+          },
+          "datePublished": "2024-07-21T07:28:47Z",
+          "reviewBody": "Made it with whole milk and great northern beans. DELICIOUS!! My favorite NY Times recipe ever!"
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Sam H"
+          },
+          "datePublished": "2024-07-23T12:41:37Z",
+          "reviewBody": "For anyone looking to add some more plant protein some crumbled up tempeh works great in this!"
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Sarah Linney"
+          },
+          "datePublished": "2024-11-13T01:37:29Z",
+          "reviewBody": "I'm new to cooking-- and I made this!! And it's delicious and beautiful! I'm so thrilled!"
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Karen"
+          },
+          "datePublished": "2024-04-26T04:49:10Z",
+          "reviewBody": "This is yummy comfort food—and relatively healthy.  The white beans add creaminess, so there doesn’t need to be a huge amount of cream and cheese.  The arugula and lemon salad add a fresh tang, and the bread crumbs a great crunch.  I used Pecorino Romano because I thought that the flavor of Parmesan might be too subtle for the dish.   I’ll definitely make it again."
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Olivia"
+          },
+          "datePublished": "2024-07-13T02:04:40Z",
+          "reviewBody": "This was delicious. 10 out of 10. I used finely grated Pecorino instead of Parmesan since someone said it would be more flavorful. I also wanted to make it healthier so used 2% milk mixed with cornstarch instead of heavy cream. I accidentally bought Pecorino seasoned breadcrumbs and it was delicious. I would probably use them again. I would definitely recommend making this dish and am excited to make it for my vegetarian friends."
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Jason Zimmerman"
+          },
+          "datePublished": "2024-10-04T20:32:17Z",
+          "reviewBody": "This is so good!!! Of all the NYT recipes, this is the one I make again, and again, and again… immensely satisfying and so simple. I really like the flavor of a little bay leaf in here, so add a couple, three. The lemony arugula breadcrumb salad is fantastic (actually keeps for a day in the fridge, much to my surprise). Can’t overstate how much I enjoy this recipe!"
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Susan Bass"
+          },
+          "datePublished": "2024-08-04T12:06:19Z",
+          "reviewBody": "I have made this a few times and find it to be delicious! The only thing I do differently is to grate the lemon into the cooked breadcrumbs, and drs the arugula with the olive oil and lemon juice. I serve the beans topped with the lemony arugula, and then top with the crumbs."
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Pozy"
+          },
+          "datePublished": "2024-09-04T00:32:33Z",
+          "reviewBody": "This is the ultimate comfort food for a bad day. I never have cream. I use milk. It’s fine. I often don’t have sun fried tomatoes. Also fine with fresh grape tomatoes or a brick of crushed tomatoes. This dish is straight up yum. Eat it with a hearty rye for the best beans on toast ever."
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Karen"
+          },
+          "datePublished": "2024-08-29T23:06:45Z",
+          "reviewBody": "Following Ann in the vegan direction: can’t do coconut so subbed a box of silken tofu blender’d up with couple tablespoons nutritional yeast and a tsp mustard for the cream and cheese elements. Yum."
+        },
+        {
+          "@type": "Review",
+          "author": {
+            "@type": "Person",
+            "name": "Paula"
+          },
+          "datePublished": "2025-02-06T15:44:54Z",
+          "reviewBody": "I like how commenters say it's great AFTER they put their own spin on a recipe, totally changing it....IMHO make it the way it's written the first time, then decide if it needs a spin..."
+        }
+      ],
+      "suitableForDiet": "VegetarianDiet",
+      "totalTime": "PT40M",
+      "url": "//cooking.nytimes.com/recipes/1025325-creamy-spicy-tomato-beans-and-greens"
+    }
+  ]
+}

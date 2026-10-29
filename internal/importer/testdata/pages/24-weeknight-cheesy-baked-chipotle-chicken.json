@@ -1,0 +1,413 @@
+{
+  "source_url": "https://www.halfbakedharvest.com/chipotle-chicken-tacos/",
+  "fetched_url": "https://www.halfbakedharvest.com/chipotle-chicken-tacos/",
+  "status": 200,
+  "server": "cloudflare",
+  "size": 672079,
+  "title": "Crispy Chipotle Chicken Tacos with Cilantro Lime Ranch. - Half Baked Harvest",
+  "og_title": "Crispy Chipotle Chicken Tacos with Cilantro Lime Ranch.",
+  "og_site_name": "Half Baked Harvest",
+  "og_image": "https://www.halfbakedharvest.com/wp-content/uploads/2020/02/Crispy-Chipotle-Chicken-Tacos-with-Cilantro-Lime-Ranch-1.jpg",
+  "og_image_width": 1200,
+  "og_image_height": 1800,
+  "canonical": "https://www.halfbakedharvest.com/chipotle-chicken-tacos/",
+  "markers": [
+    "captcha",
+    "enable javascript"
+  ],
+  "jsonld": [
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@id": "https://www.halfbakedharvest.com/chipotle-chicken-tacos/#article",
+          "@type": "Article",
+          "articleSection": [
+            "American",
+            "Back to School",
+            "Chicken",
+            "Cinco de Mayo",
+            "Cuisine + Inspiration",
+            "Diet-Specific",
+            "Fall",
+            "Gluten-Free",
+            "Healthy-ish",
+            "Holidays + Seasonal",
+            "Main Course",
+            "Mexican",
+            "One Pot",
+            "Quick + Easy",
+            "Recipes",
+            "Spring",
+            "Summer",
+            "Tacos",
+            "Type of Meal",
+            "Video",
+            "Winter"
+          ],
+          "author": {
+            "@id": "https://www.halfbakedharvest.com/#/schema/person/9b2904ad2a2c76cbcd62517659d460f7",
+            "name": "Tieghan Gerard"
+          },
+          "commentCount": 974,
+          "dateModified": "2025-08-04T19:14:26+00:00",
+          "datePublished": "2020-02-13T09:00:35+00:00",
+          "headline": "Crispy Chipotle Chicken Tacos with Cilantro Lime Ranch.",
+          "image": {
+            "@id": "https://www.halfbakedharvest.com/chipotle-chicken-tacos/#primaryimage"
+          },
+          "inLanguage": "en-US",
+          "isPartOf": {
+            "@id": "https://www.halfbakedharvest.com/chipotle-chicken-tacos/"
+          },
+          "keywords": [
+            "dinner",
+            "family",
+            "Mexican",
+            "quick",
+            "simple. easy",
+            "tacos"
+          ],
+          "potentialAction": [
+            {
+              "@type": "CommentAction",
+              "name": "Comment",
+              "target": [
+                "https://www.halfbakedharvest.com/chipotle-chicken-tacos/#respond"
+              ]
+            }
+          ],
+          "publisher": {
+            "@id": "https://www.halfbakedharvest.com/#organization"
+          },
+          "thumbnailUrl": "https://www.halfbakedharvest.com/wp-content/uploads/2020/02/Crispy-Chipotle-Chicken-Tacos-with-Cilantro-Lime-Ranch-1.jpg",
+          "wordCount": 1355
+        },
+        {
+          "@id": "https://www.halfbakedharvest.com/chipotle-chicken-tacos/",
+          "@type": "WebPage",
+          "breadcrumb": {
+            "@id": "https://www.halfbakedharvest.com/chipotle-chicken-tacos/#breadcrumb"
+          },
+          "dateModified": "2025-08-04T19:14:26+00:00",
+          "datePublished": "2020-02-13T09:00:35+00:00",
+          "description": "Weeknight style Crispy Chipotle Chicken Tacos with Cilantro Lime Ranch...and all the toppings...because loaded tacos are just better!",
+          "image": {
+            "@id": "https://www.halfbakedharvest.com/chipotle-chicken-tacos/#primaryimage"
+          },
+          "inLanguage": "en-US",
+          "isPartOf": {
+            "@id": "https://www.halfbakedharvest.com/#website"
+          },
+          "name": "Crispy Chipotle Chicken Tacos with Cilantro Lime Ranch. - Half Baked Harvest",
+          "potentialAction": [
+            {
+              "@type": "ReadAction",
+              "target": [
+                "https://www.halfbakedharvest.com/chipotle-chicken-tacos/"
+              ]
+            }
+          ],
+          "primaryImageOfPage": {
+            "@id": "https://www.halfbakedharvest.com/chipotle-chicken-tacos/#primaryimage"
+          },
+          "thumbnailUrl": "https://www.halfbakedharvest.com/wp-content/uploads/2020/02/Crispy-Chipotle-Chicken-Tacos-with-Cilantro-Lime-Ranch-1.jpg",
+          "url": "https://www.halfbakedharvest.com/chipotle-chicken-tacos/"
+        },
+        {
+          "@id": "https://www.halfbakedharvest.com/chipotle-chicken-tacos/#primaryimage",
+          "@type": "ImageObject",
+          "caption": "Crispy Chipotle Chicken Tacos with Cilantro Lime Ranch | halfbakedharvest.com",
+          "contentUrl": "https://www.halfbakedharvest.com/wp-content/uploads/2020/02/Crispy-Chipotle-Chicken-Tacos-with-Cilantro-Lime-Ranch-1.jpg",
+          "height": 1800,
+          "inLanguage": "en-US",
+          "url": "https://www.halfbakedharvest.com/wp-content/uploads/2020/02/Crispy-Chipotle-Chicken-Tacos-with-Cilantro-Lime-Ranch-1.jpg",
+          "width": 1200
+        },
+        {
+          "@id": "https://www.halfbakedharvest.com/chipotle-chicken-tacos/#breadcrumb",
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "item": "https://www.halfbakedharvest.com/",
+              "name": "Home",
+              "position": 1
+            },
+            {
+              "@type": "ListItem",
+              "item": "https://www.halfbakedharvest.com/recipe-index/",
+              "name": "Recipe Index",
+              "position": 2
+            },
+            {
+              "@type": "ListItem",
+              "item": "https://www.halfbakedharvest.com/category/recipes/cuisine-inspiration/",
+              "name": "Cuisine + Inspiration",
+              "position": 3
+            },
+            {
+              "@type": "ListItem",
+              "item": "https://www.halfbakedharvest.com/category/recipes/cuisine-inspiration/mexican/",
+              "name": "Mexican",
+              "position": 4
+            },
+            {
+              "@type": "ListItem",
+              "name": "Crispy Chipotle Chicken Tacos with Cilantro Lime Ranch.",
+              "position": 5
+            }
+          ]
+        },
+        {
+          "@id": "https://www.halfbakedharvest.com/#website",
+          "@type": "WebSite",
+          "description": "Made with Love",
+          "inLanguage": "en-US",
+          "name": "Half Baked Harvest",
+          "potentialAction": [
+            {
+              "@type": "SearchAction",
+              "query-input": {
+                "@type": "PropertyValueSpecification",
+                "valueName": "search_term_string",
+                "valueRequired": true
+              },
+              "target": {
+                "@type": "EntryPoint",
+                "urlTemplate": "https://www.halfbakedharvest.com/?s={search_term_string}"
+              }
+            }
+          ],
+          "publisher": {
+            "@id": "https://www.halfbakedharvest.com/#organization"
+          },
+          "url": "https://www.halfbakedharvest.com/"
+        },
+        {
+          "@id": "https://www.halfbakedharvest.com/#organization",
+          "@type": "Organization",
+          "image": {
+            "@id": "https://www.halfbakedharvest.com/#/schema/logo/image/"
+          },
+          "logo": {
+            "@id": "https://www.halfbakedharvest.com/#/schema/logo/image/",
+            "@type": "ImageObject",
+            "caption": "Half Baked Harvest",
+            "contentUrl": "https://halfbakedharvest.com/wp-content/uploads/2026/04/half-baked-harvest-yoast-black.png",
+            "height": 1000,
+            "inLanguage": "en-US",
+            "url": "https://halfbakedharvest.com/wp-content/uploads/2026/04/half-baked-harvest-yoast-black.png",
+            "width": 1000
+          },
+          "name": "Half Baked Harvest",
+          "sameAs": [
+            "https://www.facebook.com/hbharvest",
+            "https://x.com/hbharvest",
+            "http://instagram.com/halfbakedharvest",
+            "https://pinterest.com/hbharvest/",
+            "https://www.youtube.com/user/tieghangerard/videos"
+          ],
+          "url": "https://www.halfbakedharvest.com/"
+        },
+        {
+          "@id": "https://www.halfbakedharvest.com/#/schema/person/9b2904ad2a2c76cbcd62517659d460f7",
+          "@type": "Person",
+          "image": {
+            "@id": "https://secure.gravatar.com/avatar/7036495bc5ea357403212cff0b64834c57cfbd3ed04ba77bfdf88b1b027f1d84?s=96\u0026d=mm\u0026r=pg",
+            "@type": "ImageObject",
+            "caption": "Tieghan Gerard",
+            "contentUrl": "https://secure.gravatar.com/avatar/7036495bc5ea357403212cff0b64834c57cfbd3ed04ba77bfdf88b1b027f1d84?s=96\u0026d=mm\u0026r=pg",
+            "inLanguage": "en-US",
+            "url": "https://secure.gravatar.com/avatar/7036495bc5ea357403212cff0b64834c57cfbd3ed04ba77bfdf88b1b027f1d84?s=96\u0026d=mm\u0026r=pg"
+          },
+          "name": "Tieghan Gerard",
+          "sameAs": [
+            "https://www.halfbakedharvest.com/meet-tieghan/"
+          ]
+        },
+        {
+          "@id": "https://www.halfbakedharvest.com/chipotle-chicken-tacos/#recipe",
+          "@type": "Recipe",
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingCount": "1479",
+            "ratingValue": "4.25",
+            "reviewCount": "8"
+          },
+          "author": {
+            "@id": "https://www.halfbakedharvest.com/#/schema/person/9b2904ad2a2c76cbcd62517659d460f7"
+          },
+          "cookTime": "PT25M",
+          "datePublished": "2020-02-13T09:00:35+00:00",
+          "description": "Crunchy on the outside...spicy and cheesy inside. Serve each taco with a creamy, cooling cilantro lime ranch sauce, and a mix of your favorite taco toppings.",
+          "image": [
+            "https://www.halfbakedharvest.com/wp-content/uploads/2020/02/Crispy-Chipotle-Chicken-Tacos-with-Cilantro-Lime-Ranch-1.jpg",
+            "https://www.halfbakedharvest.com/wp-content/uploads/2020/02/Crispy-Chipotle-Chicken-Tacos-with-Cilantro-Lime-Ranch-1-500x500.jpg",
+            "https://www.halfbakedharvest.com/wp-content/uploads/2020/02/Crispy-Chipotle-Chicken-Tacos-with-Cilantro-Lime-Ranch-1-500x375.jpg",
+            "https://www.halfbakedharvest.com/wp-content/uploads/2020/02/Crispy-Chipotle-Chicken-Tacos-with-Cilantro-Lime-Ranch-1-480x270.jpg"
+          ],
+          "isPartOf": {
+            "@id": "https://www.halfbakedharvest.com/chipotle-chicken-tacos/#article"
+          },
+          "mainEntityOfPage": "https://www.halfbakedharvest.com/chipotle-chicken-tacos/",
+          "name": "Weeknight Cheesy Baked Chipotle Chicken Tacos with Cilantro Lime Ranch.",
+          "nutrition": {
+            "@type": "NutritionInformation",
+            "calories": "544 kcal",
+            "servingSize": "1 serving"
+          },
+          "prepTime": "PT15M",
+          "recipeIngredient": [
+            "2 tablespoons extra virgin olive oil",
+            "1 pound ground chicken, beef, or turkey",
+            "1 yellow onion, chopped",
+            "2-3 teaspoons chipotle chili powder, use to your taste",
+            "2 teaspoons smoked paprika",
+            "1 1/2 teaspoons ground cumin",
+            "1 teaspoon garlic powder",
+            "1/4-1/2 teaspoon crushed red pepper, use to your taste",
+            "1/2 teaspoon dried oregano",
+            "1 teaspoon kosher salt",
+            "1/4 cup fresh cilantro, chopped",
+            "12 hard shell tacos ((see notes for homemade option))",
+            "2 cups shredded Mexican cheese",
+            "1 cup sour cream or plain Greek yogurt",
+            "3/4 cup fresh cilantro, finely chopped",
+            "1 teaspoon garlic powder",
+            "1 teaspoon onion powder",
+            "1/4 cup pickled jalapeños, chopped + 2 tablespoons brine",
+            "juice from 2 limes",
+            "1 teaspoon kosher salt"
+          ],
+          "recipeInstructions": [
+            {
+              "@type": "HowToStep",
+              "name": "1. Preheat the oven to 425 degrees F. 2. In a large skillet, heat the olive oil over high heat. When the oil shimmers, add the ground chicken and onion. Cook, breaking up the meat as it cooks, until the chicken is browned, about 5 minutes. Add the chipotle chili powder, paprika, cumin, garlic powder, red pepper flakes, oregano, and salt. Add 3/4 cup water. Reduce the heat to medium and simmer until the sauce has thickened slightly around the chicken, about 10 minutes. Remove from the heat and stir in the cilantro. 3. Line the taco shells up on a sheet pan or in a 9x13 inch baking dish. Transfer to the oven and bake 5 minutes. Evenly divide the meat among each taco shell and top with cheese. Bake 10 minutes, until the cheese has melted. 4. Meanwhile, make the ranch. Combine all ingredients in a glass jar and shake or stir until creamy. 5. Serve the tacos topped with ranch, avocado, red onion, and any other desired toppings.",
+              "text": "1. Preheat the oven to 425 degrees F. 2. In a large skillet, heat the olive oil over high heat. When the oil shimmers, add the ground chicken and onion. Cook, breaking up the meat as it cooks, until the chicken is browned, about 5 minutes. Add the chipotle chili powder, paprika, cumin, garlic powder, red pepper flakes, oregano, and salt. Add 3/4 cup water. Reduce the heat to medium and simmer until the sauce has thickened slightly around the chicken, about 10 minutes. Remove from the heat and stir in the cilantro. 3. Line the taco shells up on a sheet pan or in a 9x13 inch baking dish. Transfer to the oven and bake 5 minutes. Evenly divide the meat among each taco shell and top with cheese. Bake 10 minutes, until the cheese has melted. 4. Meanwhile, make the ranch. Combine all ingredients in a glass jar and shake or stir until creamy. 5. Serve the tacos topped with ranch, avocado, red onion, and any other desired toppings.",
+              "url": "https://www.halfbakedharvest.com/chipotle-chicken-tacos/#wprm-recipe-87308-step-0-0"
+            }
+          ],
+          "recipeYield": [
+            "6"
+          ],
+          "review": [
+            {
+              "@type": "Review",
+              "author": {
+                "@type": "Person",
+                "name": "Rachael R"
+              },
+              "datePublished": "2026-10-18",
+              "reviewBody": "Made this last night and the whole family love them. I actually prefer them to my usual baked chipotle chicken crispy tacos, and they were much quicker. We added sliced avocado to the tacos and then the sauce, served it with corn/black bean salad.",
+              "reviewRating": {
+                "@type": "Rating",
+                "ratingValue": "5"
+              }
+            },
+            {
+              "@type": "Review",
+              "author": {
+                "@type": "Person",
+                "name": "Katherine"
+              },
+              "datePublished": "2026-10-17",
+              "reviewBody": "These are a weekly dinner for us. I've probably cooked them more than any recipe! My 5yo loves them (I cut the chipotle down to 1T) and they're so fast to throw together after work, yet feel decadent and delicious.",
+              "reviewRating": {
+                "@type": "Rating",
+                "ratingValue": "5"
+              }
+            },
+            {
+              "@type": "Review",
+              "author": {
+                "@type": "Person",
+                "name": "Casey Kafena"
+              },
+              "datePublished": "2026-09-15",
+              "reviewBody": "Everything I have made from hafbakedharvest has been wonderful but I thought this was just okay. The sauce was delicious but without it, I didn’t feel like it was anything special.",
+              "reviewRating": {
+                "@type": "Rating",
+                "ratingValue": "3"
+              }
+            },
+            {
+              "@type": "Review",
+              "author": {
+                "@type": "Person",
+                "name": "Gloria"
+              },
+              "datePublished": "2026-09-08",
+              "reviewBody": "These are the bomb!! My daughter first made them for me and I was obsessed! Could have them once (or twice) a week! There is just something about the flavor! So so good! I’ve eaten several of your recipes! None disappoint!☺️",
+              "reviewRating": {
+                "@type": "Rating",
+                "ratingValue": "5"
+              }
+            },
+            {
+              "@type": "Review",
+              "author": {
+                "@type": "Person",
+                "name": "Kate"
+              },
+              "datePublished": "2026-08-31",
+              "reviewBody": "Made exactly as written with premade taco shells. I used avocado and corn/bean/pepper salad. Excellent will make again!!!",
+              "reviewRating": {
+                "@type": "Rating",
+                "ratingValue": "5"
+              }
+            },
+            {
+              "@type": "Review",
+              "author": {
+                "@type": "Person",
+                "name": "Abby Bannon"
+              },
+              "datePublished": "2026-08-06",
+              "reviewBody": "I usually love recipes from Half Baked Harvest, I tried this last night and it was not my favorite. The only flavor that came from the taco meat was spice. It was so spicy I could not even eat it. \r\n\r\nI wouldnt recommend this one",
+              "reviewRating": {
+                "@type": "Rating",
+                "ratingValue": "1"
+              }
+            },
+            {
+              "@type": "Review",
+              "author": {
+                "@type": "Person",
+                "name": "Jack Auten"
+              },
+              "datePublished": "2026-07-25",
+              "reviewBody": "Too much cilantro",
+              "reviewRating": {
+                "@type": "Rating",
+                "ratingValue": "1"
+              }
+            },
+            {
+              "@type": "Review",
+              "author": {
+                "@type": "Person",
+                "name": "Thomas Doran"
+              },
+              "datePublished": "2026-07-23",
+              "reviewBody": "I haven't actually made these yet, but they sound absolutely DEE-STANKIN-LISHUS, and with the way that my wife LOVES Mexican food, I know for a stone-cold fact that these are going to be a huge success. Not only that, but I have a feeling that she's going to love them so much, that I'm going to get VERY good at making them in the future!!! I will log back on here after we try them for the first time to let you know how it went.",
+              "reviewRating": {
+                "@type": "Rating",
+                "ratingValue": "5"
+              }
+            }
+          ],
+          "totalTime": "PT40M",
+          "video": {
+            "@type": "VideoObject",
+            "contentUrl": "https://content.jwplatform.com/videos/GZE5uT7z.mp4",
+            "description": "Weeknight style Crispy Chipotle Chicken Tacos with Cilantro Lime Ranch...and all the toppings...because loaded tacos are just better!",
+            "name": "Crispy Chipotle Chicken Tacos With Cilantro Lime Ranch-399188596",
+            "thumbnailUrl": "https://content.jwplatform.com/thumbs/GZE5uT7z-720.jpg",
+            "uploadDate": "2021-04-15T16:22:11+00:00"
+          }
+        }
+      ]
+    }
+  ]
+}

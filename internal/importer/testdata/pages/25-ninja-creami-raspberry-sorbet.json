@@ -1,0 +1,268 @@
+{
+  "source_url": "https://www.foodbanjo.com/ninja-creami-raspberry-sorbet/",
+  "fetched_url": "https://www.foodbanjo.com/ninja-creami-raspberry-sorbet/",
+  "status": 200,
+  "server": "cloudflare",
+  "size": 385598,
+  "title": "Ninja Creami Raspberry Sorbet - Food Banjo",
+  "og_title": "Ninja Creami Raspberry Sorbet - Food Banjo",
+  "og_site_name": "Food Banjo",
+  "og_image": "https://www.foodbanjo.com/wp-content/uploads/2026/06/ninja-creami-raspberry-sorbet-1200fp.jpg",
+  "og_image_width": 1200,
+  "og_image_height": 1200,
+  "canonical": "https://www.foodbanjo.com/ninja-creami-raspberry-sorbet/",
+  "jsonld": [
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@id": "https://www.foodbanjo.com/ninja-creami-raspberry-sorbet/#article",
+          "@type": "Article",
+          "articleSection": [
+            "Ninja Creami Recipes"
+          ],
+          "author": {
+            "@id": "https://www.foodbanjo.com/#/schema/person/c107a61f13c9c1db5175a7a439e5c073",
+            "name": "Aimee"
+          },
+          "commentCount": 0,
+          "dateModified": "2026-06-30T12:48:15+00:00",
+          "datePublished": "2026-06-30T12:47:32+00:00",
+          "headline": "Ninja Creami Raspberry Sorbet",
+          "image": {
+            "@id": "https://www.foodbanjo.com/ninja-creami-raspberry-sorbet/#primaryimage"
+          },
+          "inLanguage": "en-US",
+          "isPartOf": {
+            "@id": "https://www.foodbanjo.com/ninja-creami-raspberry-sorbet/"
+          },
+          "potentialAction": [
+            {
+              "@type": "CommentAction",
+              "name": "Comment",
+              "target": [
+                "https://www.foodbanjo.com/ninja-creami-raspberry-sorbet/#respond"
+              ]
+            }
+          ],
+          "publisher": {
+            "@id": "https://www.foodbanjo.com/#organization"
+          },
+          "thumbnailUrl": "https://www.foodbanjo.com/wp-content/uploads/2026/06/ninja-creami-raspberry-sorbet-1200fp.jpg",
+          "wordCount": 594
+        },
+        {
+          "@id": "https://www.foodbanjo.com/ninja-creami-raspberry-sorbet/",
+          "@type": "WebPage",
+          "breadcrumb": {
+            "@id": "https://www.foodbanjo.com/ninja-creami-raspberry-sorbet/#breadcrumb"
+          },
+          "dateModified": "2026-06-30T12:48:15+00:00",
+          "datePublished": "2026-06-30T12:47:32+00:00",
+          "description": "Ninja Creami raspberry sorbet is so refreshing. It can be made with fresh or frozen raspberries, so you can make it any time of year!",
+          "image": {
+            "@id": "https://www.foodbanjo.com/ninja-creami-raspberry-sorbet/#primaryimage"
+          },
+          "inLanguage": "en-US",
+          "isPartOf": {
+            "@id": "https://www.foodbanjo.com/#website"
+          },
+          "name": "Ninja Creami Raspberry Sorbet - Food Banjo",
+          "potentialAction": [
+            {
+              "@type": "ReadAction",
+              "target": [
+                "https://www.foodbanjo.com/ninja-creami-raspberry-sorbet/"
+              ]
+            }
+          ],
+          "primaryImageOfPage": {
+            "@id": "https://www.foodbanjo.com/ninja-creami-raspberry-sorbet/#primaryimage"
+          },
+          "thumbnailUrl": "https://www.foodbanjo.com/wp-content/uploads/2026/06/ninja-creami-raspberry-sorbet-1200fp.jpg",
+          "url": "https://www.foodbanjo.com/ninja-creami-raspberry-sorbet/"
+        },
+        {
+          "@id": "https://www.foodbanjo.com/ninja-creami-raspberry-sorbet/#primaryimage",
+          "@type": "ImageObject",
+          "caption": "Ninja Creami raspberry sorbet",
+          "contentUrl": "https://www.foodbanjo.com/wp-content/uploads/2026/06/ninja-creami-raspberry-sorbet-1200fp.jpg",
+          "height": 1200,
+          "inLanguage": "en-US",
+          "url": "https://www.foodbanjo.com/wp-content/uploads/2026/06/ninja-creami-raspberry-sorbet-1200fp.jpg",
+          "width": 1200
+        },
+        {
+          "@id": "https://www.foodbanjo.com/ninja-creami-raspberry-sorbet/#breadcrumb",
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "item": "https://www.foodbanjo.com/",
+              "name": "Home",
+              "position": 1
+            },
+            {
+              "@type": "ListItem",
+              "item": "https://www.foodbanjo.com/category/ninja-creami-recipes/",
+              "name": "Ninja Creami Recipes",
+              "position": 2
+            },
+            {
+              "@type": "ListItem",
+              "name": "Ninja Creami Raspberry Sorbet",
+              "position": 3
+            }
+          ]
+        },
+        {
+          "@id": "https://www.foodbanjo.com/#website",
+          "@type": "WebSite",
+          "description": "Air fryer recipes and delicious recipes",
+          "inLanguage": "en-US",
+          "name": "Food Banjo",
+          "potentialAction": [
+            {
+              "@type": "SearchAction",
+              "query-input": {
+                "@type": "PropertyValueSpecification",
+                "valueName": "search_term_string",
+                "valueRequired": true
+              },
+              "target": {
+                "@type": "EntryPoint",
+                "urlTemplate": "https://www.foodbanjo.com/?s={search_term_string}"
+              }
+            }
+          ],
+          "publisher": {
+            "@id": "https://www.foodbanjo.com/#organization"
+          },
+          "url": "https://www.foodbanjo.com/"
+        },
+        {
+          "@id": "https://www.foodbanjo.com/#organization",
+          "@type": "Organization",
+          "image": {
+            "@id": "https://www.foodbanjo.com/#/schema/logo/image/"
+          },
+          "logo": {
+            "@id": "https://www.foodbanjo.com/#/schema/logo/image/",
+            "@type": "ImageObject",
+            "caption": "Food Banjo",
+            "contentUrl": "https://www.foodbanjo.com/wp-content/uploads/2022/02/foodbanjo-pink2022-square.jpg",
+            "height": 297,
+            "inLanguage": "en-US",
+            "url": "https://www.foodbanjo.com/wp-content/uploads/2022/02/foodbanjo-pink2022-square.jpg",
+            "width": 297
+          },
+          "name": "Food Banjo",
+          "sameAs": [
+            "http://www.facebook.com/foodbanjo",
+            "http://instagram.com/foodbanjo",
+            "http://www.pinterest.com/foodbanjo"
+          ],
+          "url": "https://www.foodbanjo.com/"
+        },
+        {
+          "@id": "https://www.foodbanjo.com/#/schema/person/c107a61f13c9c1db5175a7a439e5c073",
+          "@type": "Person",
+          "description": "Aimee is a writer, photographer, and recipe creator at Food Banjo. She adores seafood and dislikes cilantro.",
+          "name": "Aimee",
+          "sameAs": [
+            "https://www.foodbanjo.com/about/"
+          ]
+        },
+        {
+          "@id": "https://www.foodbanjo.com/ninja-creami-raspberry-sorbet/#recipe",
+          "@type": "Recipe",
+          "author": {
+            "@id": "https://www.foodbanjo.com/#/schema/person/c107a61f13c9c1db5175a7a439e5c073"
+          },
+          "datePublished": "2026-06-30T12:47:32+00:00",
+          "description": "Ninja Creami raspberry sorbet is so refreshing. It can be made with fresh or frozen raspberries, so you can make it any time of year!",
+          "image": [
+            "https://www.foodbanjo.com/wp-content/uploads/2026/06/ninja-creami-raspberry-sorbet-1200fp.jpg",
+            "https://www.foodbanjo.com/wp-content/uploads/2026/06/ninja-creami-raspberry-sorbet-1200fp-500x500.jpg",
+            "https://www.foodbanjo.com/wp-content/uploads/2026/06/ninja-creami-raspberry-sorbet-1200fp-500x375.jpg",
+            "https://www.foodbanjo.com/wp-content/uploads/2026/06/ninja-creami-raspberry-sorbet-1200fp-480x270.jpg"
+          ],
+          "isPartOf": {
+            "@id": "https://www.foodbanjo.com/ninja-creami-raspberry-sorbet/#article"
+          },
+          "keywords": "ninja creami raspberry sorbet, ninja creami sorbet, ninja creami sorbet recipe, raspberry sorbet, raspberry sorbet ninja creami",
+          "mainEntityOfPage": "https://www.foodbanjo.com/ninja-creami-raspberry-sorbet/",
+          "name": "Ninja Creami Raspberry Sorbet",
+          "nutrition": {
+            "@type": "NutritionInformation",
+            "calories": "81 kcal",
+            "carbohydrateContent": "20 g",
+            "fatContent": "0.4 g",
+            "fiberContent": "4 g",
+            "proteinContent": "1 g",
+            "saturatedFatContent": "0.02 g",
+            "servingSize": "1 serving",
+            "sodiumContent": "3 mg",
+            "sugarContent": "15 g",
+            "unsaturatedFatContent": "0.24 g"
+          },
+          "prepTime": "PT10M",
+          "recipeCategory": [
+            "Ninja Creami"
+          ],
+          "recipeCuisine": [
+            "American"
+          ],
+          "recipeIngredient": [
+            "2 cups raspberries (fresh or frozen)",
+            "2/3 cup hot water",
+            "1/4 cup sugar",
+            "2 Tablespoons lemon juice"
+          ],
+          "recipeInstructions": [
+            {
+              "@type": "HowToStep",
+              "name": "Heat water, then add sugar. Stir until dissolved.",
+              "text": "Heat water, then add sugar. Stir until dissolved.",
+              "url": "https://www.foodbanjo.com/ninja-creami-raspberry-sorbet/#wprm-recipe-25832-step-0-0"
+            },
+            {
+              "@type": "HowToStep",
+              "name": "Add water, raspberries, and fresh lemon juice to the blender. Blend until smooth.",
+              "text": "Add water, raspberries, and fresh lemon juice to the blender. Blend until smooth.",
+              "url": "https://www.foodbanjo.com/ninja-creami-raspberry-sorbet/#wprm-recipe-25832-step-0-1"
+            },
+            {
+              "@type": "HowToStep",
+              "name": "Strain mixture through a fine mesh strainer to remove seeds (optional but recommended).",
+              "text": "Strain mixture through a fine mesh strainer to remove seeds (optional but recommended).",
+              "url": "https://www.foodbanjo.com/ninja-creami-raspberry-sorbet/#wprm-recipe-25832-step-0-2"
+            },
+            {
+              "@type": "HowToStep",
+              "name": "Pour into Ninja Creami container and freeze on a level surface for at least 18 hours.",
+              "text": "Pour into Ninja Creami container and freeze on a level surface for at least 18 hours.",
+              "url": "https://www.foodbanjo.com/ninja-creami-raspberry-sorbet/#wprm-recipe-25832-step-0-3"
+            },
+            {
+              "@type": "HowToStep",
+              "name": "Remove from freezer and run a little warm water along the outer edge for 30 seconds (or leave on the counter for 7-10 minutes to thaw).",
+              "text": "Remove from freezer and run a little warm water along the outer edge for 30 seconds (or leave on the counter for 7-10 minutes to thaw).",
+              "url": "https://www.foodbanjo.com/ninja-creami-raspberry-sorbet/#wprm-recipe-25832-step-0-4"
+            },
+            {
+              "@type": "HowToStep",
+              "name": "Process on the sorbet setting. If needed, respin until you reach your desired texture.",
+              "text": "Process on the sorbet setting. If needed, respin until you reach your desired texture.",
+              "url": "https://www.foodbanjo.com/ninja-creami-raspberry-sorbet/#wprm-recipe-25832-step-0-5"
+            }
+          ],
+          "recipeYield": [
+            "4"
+          ],
+          "totalTime": "PT1095M"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "draft": {
+    "title": "Creamy, Spicy Tomato Beans and Greens",
+    "source_url": "https://cooking.nytimes.com/recipes/1025325-creamy-spicy-tomato-beans-and-greens",
+    "description": "This weeknight wonder is for those who delight in turning a modest can of beans into a spectacular dinner. Inspired by the flavors of red pesto, this recipe calls for simmering cannellini beans with staple ingredients like onion, garlic, crushed red pepper, tomato paste and heavy cream, as well as sun-dried tomatoes and salty Pecorino, until the results taste complex and rich. Top the beans with a lemony arugula salad that is peppered with fried bread crumbs for a dish that is crunchy, chewy, crispy and creamy in every bite.",
+    "yield_text": "4 servings",
+    "prep_minutes": 20,
+    "cook_minutes": 20,
+    "total_minutes": 40,
+    "nutrition_text": "Calories: 1063.75 · Fat: 55.2 grams · Saturated fat: 21.4 grams · Trans fat: 0.8 grams · Unsaturated fat: 5.4 grams · Cholesterol: 90.1 milligrams · Sodium: 1692.3 milligrams · Carbohydrates: 110.1 grams · Fiber: 16.8 grams · Sugar: 12.7 grams · Protein: 37.2 grams",
+    "ingredients": [
+      "6 tablespoons olive oil",
+      "⅔ cup panko bread crumbs",
+      "Salt and black pepper",
+      "1 medium yellow onion, minced",
+      "4 garlic cloves, minced",
+      "½ teaspoon crushed red pepper",
+      "⅓ cup tomato paste",
+      "2 (14-ounce) cans cannellini beans or other creamy white beans, rinsed",
+      "1 cup heavy cream",
+      "½ cup chopped jarred sun-dried tomatoes in oil",
+      "⅔ cup finely grated Pecorino or Parmesan",
+      "4 (packed) cups/3 ounces baby arugula",
+      "2 teaspoons finely grated lemon zest plus 4 teaspoons juice (from 1 lemon)",
+      "Toasted bread (optional), for serving"
+    ],
+    "steps": [
+      "In a medium skillet, heat 2 tablespoons olive oil over medium. Stir in the panko, season with salt and pepper, and cook, stirring frequently and shaking the pan, until toasted and golden, about 3 minutes. Transfer seasoned panko to a paper-towel lined plate, then wipe out the skillet.",
+      "Add another 2 tablespoons olive oil to the skillet and heat over medium. Add the onion, garlic and crushed red pepper, season with salt and pepper, and cook, stirring frequently, until softened, about 4 minutes.",
+      "Add the tomato paste and stir until darkened and mixture is combined, about 3 minutes.",
+      "Stir in beans, heavy cream, sun-dried tomatoes and ⅓ cup water, and simmer, stirring occasionally, until flavors meld, about 5 minutes. Stir in half the cheese, then season to taste with salt and pepper.",
+      "In a medium bowl, toss the arugula with the seasoned panko, lemon zest and juice, plus the remaining ⅓ cup cheese and 2 tablespoons olive oil; season with salt and pepper. Pile the greens at the center of the bean mixture. Serve with toasted bread, if desired."
+    ]
+  },
+  "images": [
+    {
+      "url": "https://static01.nyt.com/images/2024/04/24/multimedia/aw-tomato-beansrex-mwfq/aw-tomato-beansrex-mwfq-mediumSquareAt3X.jpg",
+      "width": 1800,
+      "height": 1800,
+      "rank": 0
+    },
+    {
+      "url": "https://static01.nyt.com/images/2024/04/24/multimedia/aw-tomato-beansrex-mwfq/aw-tomato-beansrex-mwfq-videoSixteenByNineJumbo1600-v2.jpg",
+      "width": 1600,
+      "height": 900,
+      "rank": 1
+    },
+    {
+      "url": "https://static01.nyt.com/images/2024/04/24/multimedia/aw-tomato-beansrex-mwfq/aw-tomato-beansrex-mwfq-facebookJumbo.jpg",
+      "width": 1050,
+      "height": 550,
+      "rank": 2
+    },
+    {
+      "url": "https://static01.nyt.com/images/2024/04/24/multimedia/aw-tomato-beansrex-mwfq/aw-tomato-beansrex-mwfq-googleFourByThree.jpg",
+      "width": 800,
+      "height": 600,
+      "rank": 3
+    }
+  ],
+  "report": {
+    "method": "json-ld",
+    "found": [
+      "title",
+      "description",
+      "ingredients",
+      "steps",
+      "times",
+      "yield",
+      "nutrition",
+      "image"
+    ],
+    "missing": [],
+    "warnings": [
+      "The site marks this for subscribers; check it's complete."
+    ]
+  }
+}
