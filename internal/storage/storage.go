@@ -5,11 +5,27 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"embed"
+	"errors"
 	"fmt"
+	"io/fs"
 	"log/slog"
+	"net/url"
+	"os"
+	"path"
+	"path/filepath"
+	"sort"
+	"strconv"
+	"strings"
 
-	_ "modernc.org/sqlite" // registers the "sqlite" driver
+	"modernc.org/sqlite" // also registers the "sqlite" driver
+	sqlite3 "modernc.org/sqlite/lib"
 )
+
+//go:embed migrations/*.sql
+var migrationFS embed.FS
+
+const dbName = "sous.db"
 
 // Store is the open storage directory. W is the single writer connection;
 // R is a small pool of query_only readers.
@@ -18,7 +34,8 @@ type Store struct {
 	W   *sql.DB // MaxOpenConns 1, _txlock=immediate
 	R   *sql.DB // 4 connections, PRAGMA query_only
 
-	log *slog.Logger
+	log     *slog.Logger
+	version int
 }
 
 // TooNewError is returned by Open when the database's user_version is newer
@@ -32,9 +49,59 @@ func (e *TooNewError) Error() string {
 	return fmt.Sprintf("database schema version %d is newer than this binary supports (%d)", e.Have, e.Want)
 }
 
+type migration struct {
+	version int
+	name    string
+	sql     string
+}
+
+var migrations = mustLoadMigrations()
+
+func mustLoadMigrations() []migration {
+	entries, err := fs.ReadDir(migrationFS, "migrations")
+	if err != nil {
+		panic(err)
+	}
+	var ms []migration
+	for _, e := range entries {
+		num, _, ok := strings.Cut(e.Name(), "_")
+		n, err := strconv.Atoi(num)
+		if !ok || err != nil || n <= 0 {
+			panic("storage: bad migration name " + e.Name())
+		}
+		b, err := migrationFS.ReadFile(path.Join("migrations", e.Name()))
+		if err != nil {
+			panic(err)
+		}
+		ms = append(ms, migration{version: n, name: e.Name(), sql: string(b)})
+	}
+	sort.Slice(ms, func(i, j int) bool { return ms[i].version < ms[j].version })
+	for i, m := range ms {
+		if m.version != i+1 {
+			panic(fmt.Sprintf("storage: migration %s out of sequence", m.name))
+		}
+	}
+	return ms
+}
+
 // LatestVersion is the highest embedded migration number.
 func LatestVersion() int {
-	return 0
+	return len(migrations)
+}
+
+func dsn(file string, params ...string) string {
+	u := "file:" + (&url.URL{Path: file}).EscapedPath()
+	if len(params) > 0 {
+		u += "?" + strings.Join(params, "&")
+	}
+	return u
+}
+
+var commonPragmas = []string{
+	"_pragma=foreign_keys(1)",
+	"_pragma=busy_timeout(5000)",
+	"_pragma=synchronous(FULL)",
+	"_pragma=temp_store(MEMORY)",
 }
 
 // Open prepares dir for use: creates images/ and tmp/, empties tmp/, checks
@@ -44,34 +111,204 @@ func LatestVersion() int {
 // temp_store(MEMORY), and runs pending migrations, each in its own
 // transaction, logging "migrated" with from and to versions.
 func Open(ctx context.Context, dir string, log *slog.Logger) (*Store, error) {
-	panic("TODO")
+	if log == nil {
+		log = slog.Default()
+	}
+	for _, d := range []string{"images", "tmp"} {
+		if err := os.MkdirAll(filepath.Join(dir, d), 0o700); err != nil {
+			return nil, err
+		}
+	}
+	if err := clearDir(filepath.Join(dir, "tmp")); err != nil {
+		return nil, fmt.Errorf("clear tmp: %w", err)
+	}
+
+	file := filepath.Join(dir, dbName)
+	have, err := peekVersion(ctx, file)
+	if err != nil {
+		return nil, err
+	}
+	if have > LatestVersion() {
+		return nil, &TooNewError{Have: have, Want: LatestVersion()}
+	}
+
+	s := &Store{Dir: dir, log: log}
+	wparams := append([]string{"_pragma=journal_mode(WAL)", "_txlock=immediate"}, commonPragmas...)
+	s.W, err = sql.Open("sqlite", dsn(file, wparams...))
+	if err != nil {
+		return nil, err
+	}
+	s.W.SetMaxOpenConns(1)
+	s.W.SetMaxIdleConns(1)
+	s.W.SetConnMaxLifetime(0)
+	s.W.SetConnMaxIdleTime(0)
+	if err := s.W.PingContext(ctx); err != nil {
+		s.W.Close()
+		return nil, fmt.Errorf("open database: %w", err)
+	}
+
+	if err := s.migrate(ctx); err != nil {
+		s.W.Close()
+		return nil, err
+	}
+
+	rparams := append([]string{"_pragma=query_only(1)"}, commonPragmas...)
+	s.R, err = sql.Open("sqlite", dsn(file, rparams...))
+	if err != nil {
+		s.W.Close()
+		return nil, err
+	}
+	s.R.SetMaxOpenConns(4)
+	s.R.SetMaxIdleConns(4)
+	if err := s.R.PingContext(ctx); err != nil {
+		s.R.Close()
+		s.W.Close()
+		return nil, fmt.Errorf("open database: %w", err)
+	}
+	return s, nil
+}
+
+// peekVersion reads user_version without applying any pragma, so a newer
+// database is never converted (for example to WAL) before being refused.
+func peekVersion(ctx context.Context, file string) (int, error) {
+	if _, err := os.Stat(file); errors.Is(err, fs.ErrNotExist) {
+		return 0, nil
+	} else if err != nil {
+		return 0, err
+	}
+	db, err := sql.Open("sqlite", dsn(file, "mode=ro"))
+	if err != nil {
+		return 0, err
+	}
+	defer db.Close()
+	var v int
+	if err := db.QueryRowContext(ctx, "PRAGMA user_version").Scan(&v); err != nil {
+		return 0, fmt.Errorf("read schema version: %w", err)
+	}
+	return v, nil
+}
+
+func (s *Store) migrate(ctx context.Context) error {
+	if err := s.W.QueryRowContext(ctx, "PRAGMA user_version").Scan(&s.version); err != nil {
+		return fmt.Errorf("read schema version: %w", err)
+	}
+	// Re-checked under the writer in case the file changed since the peek.
+	if s.version > LatestVersion() {
+		return &TooNewError{Have: s.version, Want: LatestVersion()}
+	}
+	for _, m := range migrations[s.version:] {
+		from := s.version
+		err := s.Write(ctx, func(tx *sql.Tx) error {
+			if _, err := tx.ExecContext(ctx, m.sql); err != nil {
+				return err
+			}
+			_, err := tx.ExecContext(ctx, fmt.Sprintf("PRAGMA user_version = %d", m.version))
+			return err
+		})
+		if err != nil {
+			return fmt.Errorf("migration %s: %w", m.name, err)
+		}
+		s.version = m.version
+		s.log.Info("migrated", "from", from, "to", m.version, "migration", m.name)
+	}
+	return nil
+}
+
+func clearDir(dir string) error {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+	for _, e := range entries {
+		if err := os.RemoveAll(filepath.Join(dir, e.Name())); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Close closes R, checkpoints the WAL into sous.db with
 // wal_checkpoint(TRUNCATE) on W (SQLITE_BUSY is logged as a warning, not
 // returned), then closes W.
 func (s *Store) Close() error {
-	panic("TODO")
+	var errs []error
+	if s.R != nil {
+		errs = append(errs, s.R.Close())
+	}
+	var busy, logFrames, checkpointed int
+	err := s.W.QueryRow("PRAGMA wal_checkpoint(TRUNCATE)").Scan(&busy, &logFrames, &checkpointed)
+	switch {
+	case isBusy(err):
+		s.log.Warn("wal checkpoint busy", "err", err)
+	case err != nil:
+		errs = append(errs, fmt.Errorf("wal checkpoint: %w", err))
+	case busy != 0:
+		s.log.Warn("wal checkpoint busy", "log_frames", logFrames, "checkpointed", checkpointed)
+	}
+	errs = append(errs, s.W.Close())
+	return errors.Join(errs...)
+}
+
+func isBusy(err error) bool {
+	var se *sqlite.Error
+	return errors.As(err, &se) && se.Code()&0xff == sqlite3.SQLITE_BUSY
 }
 
 // Read runs fn in a read-only transaction on R.
 func (s *Store) Read(ctx context.Context, fn func(*sql.Tx) error) error {
-	panic("TODO")
+	tx, err := s.R.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if err := fn(tx); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 // Write runs fn in an immediate transaction on W, committing if fn returns
 // nil and rolling back otherwise.
 func (s *Store) Write(ctx context.Context, fn func(*sql.Tx) error) error {
-	panic("TODO")
+	tx, err := s.W.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if err := fn(tx); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 // SchemaVersion is the database's user_version after Open's migrations.
 func (s *Store) SchemaVersion() int {
-	return 0
+	return s.version
 }
 
 // SizeBytes is the total size of the files under Dir: the database, its WAL
 // and shared memory, and the images.
 func (s *Store) SizeBytes() (int64, error) {
-	return 0, nil
+	var total int64
+	err := filepath.WalkDir(s.Dir, func(_ string, d fs.DirEntry, err error) error {
+		if err != nil {
+			// Files can vanish mid-walk (tmp uploads, -shm); skip them.
+			if errors.Is(err, fs.ErrNotExist) {
+				return nil
+			}
+			return err
+		}
+		if !d.Type().IsRegular() {
+			return nil
+		}
+		info, err := d.Info()
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil
+		} else if err != nil {
+			return err
+		}
+		total += info.Size()
+		return nil
+	})
+	return total, err
 }
