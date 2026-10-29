@@ -200,12 +200,14 @@
     if (!ok) return;
     dirty = false;
     await refreshIndex();
-    const title = form.title;
+    // Leaving the page clears the id prop, so Undo needs its own copy.
+    const { title } = form;
+    const trashed = id;
     go('/');
     toast(`${title} is in the trash.`, {
       label: 'Undo',
       run: async () => {
-        await api.restoreRecipe(id);
+        await api.restoreRecipe(trashed);
         await refreshIndex();
       },
     });
