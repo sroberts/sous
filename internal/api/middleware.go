@@ -11,7 +11,7 @@ import (
 // CallerHeader carries the resolved username from WithIdentity to the
 // handler it wraps. Any client-sent value is removed first, so the handler
 // can trust it.
-const CallerHeader = "Sous-Internal-Caller"
+const CallerHeader = identity.CallerHeader
 
 // WithIdentity resolves the caller with res and stores it on the request
 // context (identity.WithCaller) before calling next. A resolution failure is

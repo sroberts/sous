@@ -39,15 +39,15 @@ func (s *Service) List(ctx context.Context, c identity.Caller, q ListQuery) (Pag
 	}
 	for _, t := range q.Tag {
 		if t = strings.TrimSpace(t); t != "" {
-			// tags.name is COLLATE NOCASE, so = is case-insensitive.
+			// fold, not NOCASE: NOCASE ignores case for ASCII only.
 			sp.filter(`EXISTS (SELECT 1 FROM recipe_tags rt JOIN tags t ON t.id = rt.tag_id
-				WHERE rt.recipe_id = r.id AND t.name = ?)`, t)
+				WHERE rt.recipe_id = r.id AND fold(t.name) = ?)`, strings.ToLower(t))
 		}
 	}
 	for _, ing := range q.Ingredient {
 		if ing = strings.TrimSpace(ing); ing != "" {
 			sp.filter(`EXISTS (SELECT 1 FROM recipe_ingredients ri
-				WHERE ri.recipe_id = r.id AND instr(lower(ri.item), ?) > 0)`, strings.ToLower(ing))
+				WHERE ri.recipe_id = r.id AND instr(fold(ri.item), ?) > 0)`, strings.ToLower(ing))
 		}
 	}
 	if q.Favorite {

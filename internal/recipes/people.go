@@ -2,10 +2,13 @@ package recipes
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"regexp"
 	"strings"
+	"unicode"
 
 	"github.com/sroberts/sous/internal/identity"
 )
@@ -36,9 +39,19 @@ func (s *Service) ListPeople(ctx context.Context, c identity.Caller) ([]Person, 
 
 var slugRE = regexp.MustCompile(`[^a-z0-9-]+`)
 
-// slug is the username derived from a display name.
+// slug is the username derived from a display name. Usernames stay ASCII
+// because browsers refuse non-Latin-1 header values, and the UI sends the
+// username in X-Sous-Person. A name with letters but none of them ASCII
+// ("李明") gets a stable "p-" form instead of being rejected.
 func slug(name string) string {
-	return strings.Trim(slugRE.ReplaceAllString(strings.ToLower(name), "-"), "-")
+	if s := strings.Trim(slugRE.ReplaceAllString(strings.ToLower(name), "-"), "-"); s != "" {
+		return s
+	}
+	if !strings.ContainsFunc(name, func(r rune) bool { return unicode.IsLetter(r) || unicode.IsDigit(r) }) {
+		return ""
+	}
+	sum := sha256.Sum256([]byte(name))
+	return "p-" + hex.EncodeToString(sum[:4])
 }
 
 // CreatePerson adds a local person named name. It needs no caller. The

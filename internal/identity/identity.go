@@ -96,3 +96,8 @@ const (
 	HeaderVia      = "X-Sous-Via"
 	CookiePerson   = "sous_person"
 )
+
+// CallerHeader is the one name for the internal header that carries a
+// resolved username from api.WithIdentity to the MCP tools. Both sides refer
+// to it here, so the header WithIdentity strips is always the one MCP trusts.
+const CallerHeader = "Sous-Internal-Caller"

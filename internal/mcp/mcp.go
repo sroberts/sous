@@ -19,7 +19,7 @@ import (
 // HeaderCaller carries the resolved username from api.WithIdentity to the
 // tools, which see the HTTP request only as req.Extra.Header. WithIdentity is
 // the trust boundary: it must delete any client-sent copy before setting it.
-const HeaderCaller = "Sous-Internal-Caller"
+const HeaderCaller = identity.CallerHeader
 
 const instructions = `Sous is a household's shared recipe collection. You can search, read, create, edit, delete and restore recipes, and set your own favourite and want-to-cook flags.
 Every write is attributed to the person this connection names (the X-Sous-Person header, or the Outpost login) and is recorded in the change log as made via MCP.
