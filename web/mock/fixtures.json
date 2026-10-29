@@ -1,0 +1,206 @@
+[
+  {
+    "title": "Braised Chicken Thighs with Leeks and Mustard",
+    "source_url": null,
+    "yield_text": "Serves 4",
+    "prep_minutes": 15, "cook_minutes": 40, "total_minutes": 55,
+    "tags": ["Poultry", "Weeknight"],
+    "favorite": true, "want_to_cook": false,
+    "notes": "Sample recipe written for Sous development. Thighs can be browned a day ahead.",
+    "ingredients": [
+      "8 bone-in, skin-on chicken thighs",
+      "1 teaspoon kosher salt",
+      "2 tablespoons olive oil",
+      "3 leeks, white and light green parts, sliced and rinsed",
+      "3 cloves garlic, sliced",
+      "1/2 cup dry white wine",
+      "1 cup chicken stock",
+      "2 tablespoons Dijon mustard",
+      "1/4 cup crème fraîche",
+      "2 sprigs thyme"
+    ],
+    "steps": [
+      "Pat the chicken dry and season all over with the salt.",
+      "Heat the oil in a wide braiser over medium-high heat. Brown the thighs skin side down until deep golden, about 8 minutes, then turn and cook 2 minutes more. Move to a plate.",
+      "Pour off all but 2 tablespoons of fat. Add the leeks and garlic and cook, stirring, until soft and just starting to colour, 6 to 8 minutes.",
+      "Add the wine and scrape up the browned bits. Simmer until nearly gone, about 3 minutes, then stir in the stock, mustard, and thyme.",
+      "Return the chicken skin side up, nestling it into the leeks. Braise uncovered in a 375°F oven for 25 minutes.",
+      "Stir the crème fraîche into the sauce around the chicken and serve."
+    ]
+  },
+  {
+    "title": "Weeknight Dal with Spinach",
+    "source_url": null,
+    "yield_text": "Serves 4 to 6",
+    "prep_minutes": 10, "cook_minutes": 35, "total_minutes": 45,
+    "tags": ["Vegetarian", "Weeknight", "Indian"],
+    "favorite": false, "want_to_cook": true,
+    "notes": "Sample recipe written for Sous development.",
+    "ingredients": [
+      "# For the dal",
+      "1 1/2 cups red lentils, rinsed",
+      "5 cups water",
+      "1 teaspoon ground turmeric",
+      "1 teaspoon kosher salt",
+      "4 cups baby spinach",
+      "# For the tadka",
+      "3 tablespoons ghee",
+      "1 teaspoon cumin seeds",
+      "1 small onion, finely chopped",
+      "2 cloves garlic, grated",
+      "1 tablespoon grated ginger",
+      "1/2 teaspoon chile flakes"
+    ],
+    "steps": [
+      "# The dal:",
+      "Bring the lentils, water, and turmeric to a boil in a large pot. Skim, lower the heat, and simmer until the lentils collapse, 20 to 25 minutes.",
+      "Stir in the salt and spinach and cook until wilted, about 2 minutes.",
+      "# The tadka:",
+      "Heat the ghee in a small pan until shimmering. Add the cumin seeds and let them sizzle for 30 seconds.",
+      "Add the onion and cook until golden, about 6 minutes, then the garlic, ginger, and chile for 1 minute more.",
+      "Pour the tadka over the dal and stir it through at the table."
+    ]
+  },
+  {
+    "title": "Brown Butter Cornbread",
+    "source_url": null,
+    "yield_text": "One 10-inch skillet",
+    "prep_minutes": 10, "cook_minutes": 25, "total_minutes": 35,
+    "tags": ["Bread", "Sides"],
+    "favorite": true, "want_to_cook": false,
+    "notes": "Sample recipe written for Sous development.",
+    "ingredients": [
+      "8 tablespoons unsalted butter",
+      "1 1/4 cups (175g) fine cornmeal",
+      "3/4 cup (95g) all-purpose flour",
+      "2 tablespoons sugar",
+      "2 teaspoons baking powder",
+      "1/2 teaspoon baking soda",
+      "1 teaspoon kosher salt",
+      "1 1/2 cups buttermilk",
+      "2 large eggs"
+    ],
+    "steps": [
+      "Put a 10-inch cast-iron skillet in the oven and heat to 425°F.",
+      "Melt the butter in a small pan and cook, swirling, until it smells nutty and the solids are brown, about 5 minutes.",
+      "Whisk the dry ingredients together. Whisk the buttermilk and eggs, then stir them in with all but 1 tablespoon of the butter.",
+      "Brush the hot skillet with the last of the butter, pour in the batter, and bake until the top is golden, 20 to 25 minutes."
+    ]
+  },
+  {
+    "title": "Charred Broccoli with Lemon and Chile",
+    "source_url": null,
+    "yield_text": "Serves 4 as a side",
+    "prep_minutes": 10, "cook_minutes": 20, "total_minutes": 30,
+    "tags": ["Sides", "Vegetarian"],
+    "favorite": false, "want_to_cook": false,
+    "ingredients": [
+      "2 heads broccoli, cut into long florets",
+      "3 tablespoons olive oil",
+      "3/4 teaspoon kosher salt",
+      "1 lemon",
+      "1/2 teaspoon chile flakes",
+      "1/4 cup grated Parmesan"
+    ],
+    "steps": [
+      "Heat the oven to 450°F with a sheet pan inside.",
+      "Toss the broccoli with the oil and salt, spread it on the hot pan, and roast until charred at the edges, 18 to 20 minutes.",
+      "Finish with the zest and juice of the lemon, the chile, and the Parmesan."
+    ]
+  },
+  {
+    "title": "Overnight Steel-Cut Oats",
+    "source_url": null,
+    "yield_text": "Serves 2",
+    "prep_minutes": 5, "cook_minutes": 10, "total_minutes": null,
+    "time_text": "Overnight, plus 10 minutes",
+    "tags": ["Breakfast"],
+    "favorite": false, "want_to_cook": true,
+    "ingredients": [
+      "1 cup steel-cut oats",
+      "3 cups water",
+      "Pinch of salt",
+      "Maple syrup and toasted walnuts, for serving"
+    ],
+    "steps": [
+      "Bring the water to a boil, stir in the oats and salt, then turn off the heat, cover, and leave overnight.",
+      "In the morning, simmer for 10 minutes, stirring, until creamy. Serve with maple syrup and walnuts."
+    ]
+  },
+  {
+    "title": "Pork Shoulder Ragù",
+    "source_url": null,
+    "yield_text": "Serves 6 to 8",
+    "prep_minutes": 20, "cook_minutes": 180, "total_minutes": 200,
+    "tags": ["Pork", "Pasta"],
+    "favorite": true, "want_to_cook": false,
+    "ingredients": [
+      "3 pounds boneless pork shoulder, in 2-inch pieces",
+      "2 teaspoons kosher salt",
+      "2 tablespoons olive oil",
+      "1 onion, finely chopped",
+      "1 carrot, finely chopped",
+      "1 celery stalk, finely chopped",
+      "4 cloves garlic, smashed",
+      "2 tablespoons tomato paste",
+      "1 cup red wine",
+      "1 (28-ounce) can whole peeled tomatoes",
+      "1 pound pappardelle"
+    ],
+    "steps": [
+      "Season the pork with the salt. Brown it in batches in the oil in a Dutch oven, about 10 minutes per batch.",
+      "Lower the heat, add the onion, carrot, celery, and garlic, and cook until soft, 8 minutes. Stir in the tomato paste for 1 minute.",
+      "Add the wine and reduce by half, then the tomatoes, crushing them by hand. Return the pork.",
+      "Cover and braise in a 300°F oven until the pork falls apart, 2 1/2 to 3 hours. Shred it into the sauce.",
+      "Cook the pappardelle, toss with the ragù and a splash of pasta water, and serve."
+    ]
+  },
+  {
+    "title": "Olive Oil Chocolate Cake",
+    "source_url": null,
+    "yield_text": "One 9-inch cake",
+    "prep_minutes": 15, "cook_minutes": 40, "total_minutes": 55,
+    "tags": ["Dessert"],
+    "favorite": false, "want_to_cook": false,
+    "ingredients": [
+      "# Cake",
+      "3/4 cup olive oil, plus more for the pan",
+      "1/2 cup (45g) cocoa powder",
+      "1/2 cup boiling water",
+      "1 cup (200g) sugar",
+      "3 large eggs",
+      "1 1/2 cups (150g) almond flour",
+      "1/2 teaspoon baking soda",
+      "# To serve",
+      "Softly whipped cream"
+    ],
+    "steps": [
+      "Heat the oven to 325°F. Oil a 9-inch springform pan and line the base with parchment.",
+      "Whisk the cocoa into the boiling water until smooth, then let it cool slightly.",
+      "Beat the sugar, oil, and eggs until pale and thick, about 3 minutes. Fold in the cocoa mixture, almond flour, and baking soda.",
+      "Bake until the top is set and a skewer comes out with moist crumbs, 40 to 45 minutes. Cool in the pan."
+    ]
+  },
+  {
+    "title": "Mussels in Saffron Broth",
+    "source_url": null,
+    "yield_text": "Serves 2 as a main",
+    "prep_minutes": 15, "cook_minutes": 12, "total_minutes": 27,
+    "tags": ["Seafood"],
+    "favorite": false, "want_to_cook": true,
+    "ingredients": [
+      "2 pounds mussels, scrubbed",
+      "2 tablespoons butter",
+      "2 shallots, thinly sliced",
+      "Pinch of saffron",
+      "3/4 cup dry white wine",
+      "1/4 cup chopped parsley",
+      "Crusty bread, for serving"
+    ],
+    "steps": [
+      "Melt the butter in a wide pot and cook the shallots until soft, 4 minutes. Crumble in the saffron.",
+      "Add the wine, bring to a boil, then add the mussels. Cover and steam, shaking the pot, until they open, 5 to 6 minutes.",
+      "Discard any that stay shut. Scatter with parsley and serve with bread for the broth."
+    ]
+  }
+]

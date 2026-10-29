@@ -1,3 +1,12 @@
 # One-time Mela export: personal data, too large for GitHub
 *.melarecipes
 .DS_Store
+
+# Web UI
+web/node_modules/
+web/mock-local/
+internal/ui/dist/
+.impeccable/mocks/
+.impeccable/review/
+.impeccable/questions/*
+!.impeccable/questions/roll.json

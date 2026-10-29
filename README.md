@@ -41,6 +41,24 @@ Status: design. No code yet. The foundation is specified in
 - **REST and MCP** have parity. MCP agents get full read/write, attributed
   like any other change.
 
+## Developing the web UI
+
+The UI lives in `web/` (Svelte 5 + Vite) and builds into `internal/ui/dist`
+for the Go binary to embed. Until the service exists, the Vite dev server
+answers `/v1` with a mock API (`web/mock/`).
+
+```sh
+cd web && npm install && npm run dev
+```
+
+The mock serves a few sample recipes from `web/mock/fixtures.json`. To design
+against the real library instead, extract the Mela export into the
+gitignored `web/mock-local/`:
+
+```sh
+uv run --no-project scripts/mela-sample/sample.py Recipes.melarecipes web/mock-local
+```
+
 ## Mela import
 
 A one-time, throwaway script loads the Mela export through the REST API. The
