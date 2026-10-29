@@ -1,0 +1,177 @@
+[
+  {
+    "n": 1,
+    "title": "Basil Chicken Curry Zucchini Noodle Bowls",
+    "url": "https://www.halfbakedharvest.com/basil-chicken-curry-zucchini-noodle-bowl/",
+    "publisher": "Half Baked Harvest",
+    "expect": "WordPress recipe plugin; JSON-LD likely in `@graph`"
+  },
+  {
+    "n": 2,
+    "title": "Garlic Noodles",
+    "url": "https://thewoksoflife.com/garlic-noodles/",
+    "publisher": "The Woks of Life",
+    "expect": "WordPress recipe plugin"
+  },
+  {
+    "n": 3,
+    "title": "Viral TikTok Baked Salmon Sushi Cups",
+    "url": "https://kalejunkie.com/viral-tiktok-baked-salmon-sushi-cups/",
+    "publisher": "KaleJunkie",
+    "expect": "blog JSON-LD"
+  },
+  {
+    "n": 4,
+    "title": "Albóndigas in Red Chile Sauce",
+    "url": "https://www.bonappetit.com/recipe/albondigas-in-red-chile-sauce",
+    "publisher": "Bon Appétit",
+    "expect": "Condé Nast JSON-LD; non-ASCII title"
+  },
+  {
+    "n": 5,
+    "title": "Creamy, Spicy Tomato Beans and Greens",
+    "url": "https://cooking.nytimes.com/recipes/1025325-creamy-spicy-tomato-beans-and-greens",
+    "publisher": "NYT Cooking",
+    "expect": "paywall and bot blocking"
+  },
+  {
+    "n": 6,
+    "title": "Gatorade Bread",
+    "url": "https://www.reddit.com/r/tumblr/comments/jy26xm/all_hail_the_gatorade_bread/",
+    "publisher": "Reddit",
+    "expect": "**no structured data**: falls back to pasting text"
+  },
+  {
+    "n": 7,
+    "title": "Lexington-Style Red Coleslaw",
+    "url": "https://www.seriouseats.com/lexington-style-red-coleslaw-recipe",
+    "publisher": "Serious Eats",
+    "expect": "Dotdash Meredith JSON-LD; type list"
+  },
+  {
+    "n": 8,
+    "title": "Mustard Slaw",
+    "url": "https://www.foodandwine.com/recipes/mustard-slaw",
+    "publisher": "Food & Wine",
+    "expect": "Dotdash Meredith"
+  },
+  {
+    "n": 9,
+    "title": "North Carolina Dipped Fried Chicken",
+    "url": "https://www.splendidtable.org/story/2017/04/11/north-carolina-dipped-fried-chicken",
+    "publisher": "The Splendid Table",
+    "expect": "older article page; maybe no `Recipe` markup"
+  },
+  {
+    "n": 10,
+    "title": "Chickpea and Chorizo Tostadas",
+    "url": "https://www.bonappetit.com/recipe/chickpea-and-chorizo-tostadas",
+    "publisher": "Bon Appétit",
+    "expect": "Condé Nast"
+  },
+  {
+    "n": 11,
+    "title": "Curried Lentil-Tomato Soup",
+    "url": "https://web.archive.org/web/20231120222809/https://www.myrecipes.com/recipe/curried-lentil-tomato-soup",
+    "publisher": "MyRecipes (archived)",
+    "expect": "**Wayback wrapper**; the source should be the original URL, and archived image URLs need rewriting"
+  },
+  {
+    "n": 12,
+    "title": "Grilled Fish Tacos with Chile-Lime Slaw and Avocado-Tomatillo Salsa",
+    "url": "https://sunset.com/recipe/grilled-fish-tacos-chile-lime-slaw-avocado-tomatillo-salsa",
+    "publisher": "Sunset",
+    "expect": "multiple components: sections"
+  },
+  {
+    "n": 13,
+    "title": "Crispy Gnocchi on a Skewer with Charred Bell Peppers & Basil Pesto",
+    "url": "https://www.splendidtable.org/story/2022/06/29/crispy-gnocchi-on-a-skewer-with-charred-bell-peppers-basil-pesto",
+    "publisher": "The Splendid Table",
+    "expect": "article page; sections"
+  },
+  {
+    "n": 14,
+    "title": "Cheeseburger Fried Rice",
+    "url": "https://www.bonappetit.com/recipe/cheeseburger-fried-rice",
+    "publisher": "Bon Appétit",
+    "expect": "Condé Nast"
+  },
+  {
+    "n": 15,
+    "title": "Carrot and Smoked Salmon Salad",
+    "url": "https://www.americastestkitchen.com/recipes/14183-carrot-and-smoked-salmon-salad",
+    "publisher": "America's Test Kitchen",
+    "expect": "**paywall**"
+  },
+  {
+    "n": 16,
+    "title": "Chicken Korma",
+    "url": "https://www.foodandwine.com/chicken-korma-11785879",
+    "publisher": "Food & Wine",
+    "expect": "newer Dotdash URL shape"
+  },
+  {
+    "n": 17,
+    "title": "Beef and Barley Stew",
+    "url": "https://www.bonappetit.com/recipe/beef-and-barley-stew",
+    "publisher": "Bon Appétit",
+    "expect": "Condé Nast"
+  },
+  {
+    "n": 18,
+    "title": "Rotisserie Chicken Salad with Charred Scallion Dressing",
+    "url": "https://www.epicurious.com/recipes/food/views/rotisserie-chicken-salad-with-charred-scallion-dressing",
+    "publisher": "Epicurious",
+    "expect": "Condé Nast"
+  },
+  {
+    "n": 19,
+    "title": "Khalta Harra",
+    "url": "https://sunset.com/recipe/chile-spice-mix",
+    "publisher": "Sunset",
+    "expect": "spice mix; the URL slug doesn't match the title; may have no times or yield"
+  },
+  {
+    "n": 20,
+    "title": "Spice-Roasted Halibut with Herbs and Tahini Salad",
+    "url": "https://www.foodandwine.com/recipes/spice-roasted-halibut-with-herbs-and-tahini-salad",
+    "publisher": "Food & Wine",
+    "expect": "sections"
+  },
+  {
+    "n": 21,
+    "title": "Baked Tortellini with Kale Pesto",
+    "url": "https://www.foodnetwork.com/recipes/food-network-kitchen/baked-tortellini-with-kale-pesto-3562862",
+    "publisher": "Food Network",
+    "expect": "JSON-LD; heavy page"
+  },
+  {
+    "n": 22,
+    "title": "Baked Sausages with Apples Sheet Pan Dinner",
+    "url": "https://www.jocooks.com/recipes/baked-sausages-apples-sheet-pan-dinner/",
+    "publisher": "Jo Cooks",
+    "expect": "WordPress recipe plugin"
+  },
+  {
+    "n": 23,
+    "title": "Chickpea Pancakes with Greens and Cheese",
+    "url": "https://www.bonappetit.com/recipe/chickpea-pancakes-with-greens-and-cheese",
+    "publisher": "Bon Appétit",
+    "expect": "Condé Nast"
+  },
+  {
+    "n": 24,
+    "title": "Weeknight Cheesy Baked Chipotle Chicken Tacos with Cilantro Lime Ranch",
+    "url": "https://www.halfbakedharvest.com/chipotle-chicken-tacos/",
+    "publisher": "Half Baked Harvest",
+    "expect": "WordPress recipe plugin; long title"
+  },
+  {
+    "n": 25,
+    "title": "Ninja Creami Raspberry Sorbet",
+    "url": "https://www.foodbanjo.com/ninja-creami-raspberry-sorbet/",
+    "publisher": "Food Banjo",
+    "expect": "blog JSON-LD; appliance-specific steps"
+  }
+]
