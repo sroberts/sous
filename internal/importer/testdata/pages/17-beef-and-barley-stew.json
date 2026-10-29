@@ -1,0 +1,113 @@
+{
+  "source_url": "https://www.bonappetit.com/recipe/beef-and-barley-stew",
+  "fetched_url": "https://www.bonappetit.com/recipe/beef-and-barley-stew",
+  "status": 200,
+  "server": "cloudflare",
+  "size": 1309343,
+  "title": "Beef and Barley Stew Recipe | Bon Appétit",
+  "og_title": "Beef and Barley Stew",
+  "og_site_name": "Bon Appétit",
+  "og_image": "https://assets.bonappetit.com/photos/6734d80c0ee52e6076f0ab3e/16:9/w_1280,c_limit/dis-beef-barley-stew-LEDE_091824_3713_VOG_final.jpg",
+  "twitter_image": "https://assets.bonappetit.com/photos/6734d80c0ee52e6076f0ab3e/16:9/w_1280,c_limit/dis-beef-barley-stew-LEDE_091824_3713_VOG_final.jpg?mbid=social_retweet",
+  "canonical": "https://www.bonappetit.com/recipe/beef-and-barley-stew",
+  "markers": [
+    "captcha"
+  ],
+  "jsonld": [
+    {
+      "@context": "http://schema.org",
+      "@type": "Recipe",
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingCount": 13,
+        "ratingValue": 4.2
+      },
+      "alternativeHeadline": "This hearty, comforting stew comes together in just one pot and in a fraction of the time as most traditional beef and barley soup recipes.",
+      "articleBody": "Beef and barley soup is a comfort food classic, but the amount of time it takes to transform tough cuts of beef into shreddy morsels makes it far from a weeknight affair. (Think three to four hours.) Enter: This quick, truly weeknight-friendly version of the winter staple that goes from pot to bowl in a little more than an hour thanks to a couple clever shortcuts. For starters, ¼\" pieces of stew meat are called into action in place of the typical larger chunks for quicker cooking. When picking out which cut of beef to use, look for packages labeled “stew meat.” These are precut cubes of meat that are too tough for searing and serving right away—typically chuck roast or top/bottom round—but become meltingly tender as they simmer away on the stove; they’re perfect for this recipe. Just note that you might need to cut them into smaller cubes depending on how large they are. Also helpful: Getting a head start by searing the beef, then cooking it alongside a plethora of veggies so they steam and soften long before any stock is added. The resulting stew is intensely savory, specked with barley, and loaded with tender pieces of beef.",
+      "author": [
+        {
+          "@type": "Person",
+          "name": "Jesse Szewczyk",
+          "sameAs": "https://www.bonappetit.com/contributor/jesse-szewczyk"
+        }
+      ],
+      "dateModified": "2024-11-19T05:00:00.000-05:00",
+      "datePublished": "2024-11-19T05:00:00.000-05:00",
+      "description": "This hearty, comforting stew comes together in just one pot and in a fraction of the time as most traditional beef and barley soup recipes.",
+      "headline": "Beef and Barley Stew",
+      "image": [
+        "https://assets.bonappetit.com/photos/6734d80c0ee52e6076f0ab3e/16:9/w_4992,h_2808,c_limit/dis-beef-barley-stew-LEDE_091824_3713_VOG_final.jpg",
+        "https://assets.bonappetit.com/photos/6734d80c0ee52e6076f0ab3e/4:3/w_4250,h_3188,c_limit/dis-beef-barley-stew-LEDE_091824_3713_VOG_final.jpg",
+        "https://assets.bonappetit.com/photos/6734d80c0ee52e6076f0ab3e/1:1/w_3333,h_3333,c_limit/dis-beef-barley-stew-LEDE_091824_3713_VOG_final.jpg"
+      ],
+      "inLanguage": "en-US",
+      "isAccessibleForFree": true,
+      "isPartOf": {
+        "@type": "CreativeWork",
+        "name": "Bon Appétit"
+      },
+      "keywords": [
+        "main",
+        "dinner",
+        "dairy-free",
+        "nut-free",
+        "weeknight meals",
+        "make ahead",
+        "easy",
+        "one-pot meals",
+        "simmer",
+        "winter",
+        "stew",
+        "beef chuck",
+        "barley",
+        "web"
+      ],
+      "name": "Beef and Barley Stew",
+      "publisher": {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "logo": {
+          "@type": "ImageObject",
+          "height": "100px",
+          "url": "https://www.bonappetit.com/verso/static/bonappetit-us/assets/logo-seo.png",
+          "width": "479px"
+        },
+        "name": "Bon Appétit",
+        "url": "https://www.bonappetit.com"
+      },
+      "recipeIngredient": [
+        "1 Tbsp. Diamond Crystal or 1¾ tsp. Morton kosher salt, plus more",
+        "1 tsp. freshly ground pepper, plus more",
+        "1½ lb. beef stew meat (such as boneless chuck), cut into ¼\" cubes",
+        "1 Tbsp. vegetable oil",
+        "1 large red onion, finely chopped, plus more thinly sliced for serving",
+        "3 medium carrots, peeled, cut into ¼\"-thick rounds",
+        "2 medium celery stalks, finely chopped",
+        "8 garlic cloves, finely grated",
+        "¼ cup double-concentrated tomato paste",
+        "4 cups low-sodium beef broth",
+        "1 cup pearl barley",
+        "2 Tbsp. Worcestershire sauce",
+        "Parsley leaves with tender stems (for serving)"
+      ],
+      "recipeInstructions": [
+        {
+          "@type": "HowToStep",
+          "text": "Sprinkle 1 Tbsp. Diamond Crystal or 1¾ tsp. Morton kosher salt and 1 tsp. freshly ground pepper all over 1½ lb. beef stew meat, cut into ¼\" cubes. Heat 1 Tbsp. vegetable oil in a medium Dutch oven or other heavy pot over high. Arrange meat in a single layer (it will be packed tight) and cook, stirring once or twice, until deeply browned in spots, 7–9 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Add 1 large red onion, finely chopped, 3 medium carrots, peeled, cut into ¼\"-thick rounds, and 2 medium celery stalks, finely chopped, and cook, stirring often, until starting to soften and brown slightly, 5–7 minutes. Add 8 garlic cloves, finely grated, and ¼ cup double-concentrated tomato paste; cook, stirring often, until vegetables are evenly coated in paste, about 2 minutes. Add 4 cups low-sodium beef broth, 1 cup pearl barley, 2 Tbsp. Worcestershire sauce, and 4 cups water. Bring to a boil, then reduce heat to medium, and simmer briskly, stirring often to prevent burning and adding more water as needed if liquid is reducing too quickly (it should be brothy and stew-like), until meat and barley are tender, 45–60 minutes. Taste stew; season with more salt and pepper if needed."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Ladle stew among bowls and top with parsley leaves with tender stems and thinly sliced red onion.\nDo Ahead: Stew (without parsley and sliced red onion) can be made 3 days ahead. Let cool; cover and chill.\nEditor’s note: Head this way for more of our favorite barley recipes →"
+        }
+      ],
+      "recipeYield": "4 servings",
+      "thumbnailUrl": "https://assets.bonappetit.com/photos/6734d80c0ee52e6076f0ab3e/2:3/w_2222,h_3333,c_limit/dis-beef-barley-stew-LEDE_091824_3713_VOG_final.jpg",
+      "totalTime": "1 hour 15 minutes",
+      "url": "https://www.bonappetit.com/recipe/beef-and-barley-stew"
+    }
+  ]
+}

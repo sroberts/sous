@@ -1,0 +1,82 @@
+{
+  "draft": {
+    "title": "Weeknight Cheesy Baked Chipotle Chicken Tacos with Cilantro Lime Ranch",
+    "source_url": "https://www.halfbakedharvest.com/chipotle-chicken-tacos/",
+    "description": "Crunchy on the outside...spicy and cheesy inside. Serve each taco with a creamy, cooling cilantro lime ranch sauce, and a mix of your favorite taco toppings.",
+    "yield_text": "6",
+    "prep_minutes": 15,
+    "cook_minutes": 25,
+    "total_minutes": 40,
+    "nutrition_text": "Serving: 1 serving · Calories: 544 kcal",
+    "ingredients": [
+      "2 tablespoons extra virgin olive oil",
+      "1 pound ground chicken, beef, or turkey",
+      "1 yellow onion, chopped",
+      "2-3 teaspoons chipotle chili powder, use to your taste",
+      "2 teaspoons smoked paprika",
+      "1 1/2 teaspoons ground cumin",
+      "1 teaspoon garlic powder",
+      "1/4-1/2 teaspoon crushed red pepper, use to your taste",
+      "1/2 teaspoon dried oregano",
+      "1 teaspoon kosher salt",
+      "1/4 cup fresh cilantro, chopped",
+      "12 hard shell tacos (see notes for homemade option)",
+      "2 cups shredded Mexican cheese",
+      "1 cup sour cream or plain Greek yogurt",
+      "3/4 cup fresh cilantro, finely chopped",
+      "1 teaspoon garlic powder",
+      "1 teaspoon onion powder",
+      "1/4 cup pickled jalapeños, chopped + 2 tablespoons brine",
+      "juice from 2 limes",
+      "1 teaspoon kosher salt"
+    ],
+    "steps": [
+      "Preheat the oven to 425 degrees F.",
+      "In a large skillet, heat the olive oil over high heat. When the oil shimmers, add the ground chicken and onion. Cook, breaking up the meat as it cooks, until the chicken is browned, about 5 minutes. Add the chipotle chili powder, paprika, cumin, garlic powder, red pepper flakes, oregano, and salt. Add 3/4 cup water. Reduce the heat to medium and simmer until the sauce has thickened slightly around the chicken, about 10 minutes. Remove from the heat and stir in the cilantro.",
+      "Line the taco shells up on a sheet pan or in a 9x13 inch baking dish. Transfer to the oven and bake 5 minutes. Evenly divide the meat among each taco shell and top with cheese. Bake 10 minutes, until the cheese has melted.",
+      "Meanwhile, make the ranch. Combine all ingredients in a glass jar and shake or stir until creamy.",
+      "Serve the tacos topped with ranch, avocado, red onion, and any other desired toppings."
+    ]
+  },
+  "images": [
+    {
+      "url": "https://www.halfbakedharvest.com/wp-content/uploads/2020/02/Crispy-Chipotle-Chicken-Tacos-with-Cilantro-Lime-Ranch-1.jpg",
+      "width": 1200,
+      "height": 1800,
+      "rank": 0
+    },
+    {
+      "url": "https://www.halfbakedharvest.com/wp-content/uploads/2020/02/Crispy-Chipotle-Chicken-Tacos-with-Cilantro-Lime-Ranch-1-500x500.jpg",
+      "width": null,
+      "height": null,
+      "rank": 1
+    },
+    {
+      "url": "https://www.halfbakedharvest.com/wp-content/uploads/2020/02/Crispy-Chipotle-Chicken-Tacos-with-Cilantro-Lime-Ranch-1-500x375.jpg",
+      "width": null,
+      "height": null,
+      "rank": 2
+    },
+    {
+      "url": "https://www.halfbakedharvest.com/wp-content/uploads/2020/02/Crispy-Chipotle-Chicken-Tacos-with-Cilantro-Lime-Ranch-1-480x270.jpg",
+      "width": null,
+      "height": null,
+      "rank": 3
+    }
+  ],
+  "report": {
+    "method": "json-ld",
+    "found": [
+      "title",
+      "description",
+      "ingredients",
+      "steps",
+      "times",
+      "yield",
+      "nutrition",
+      "image"
+    ],
+    "missing": [],
+    "warnings": []
+  }
+}

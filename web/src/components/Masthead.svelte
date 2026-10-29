@@ -1,5 +1,5 @@
 <script>
-  import { Search, Plus, ChevronDown, Check } from '@lucide/svelte';
+  import { Search, Plus, Link2, ChevronDown, Check } from '@lucide/svelte';
   import { route, go, link } from '../lib/router.svelte.js';
   import { session, choosePerson } from '../lib/session.svelte.js';
 
@@ -43,7 +43,10 @@
     <input bind:this={field} type="search" placeholder="Search recipes, tags, ingredients" value={q} oninput={search} autocomplete="off" />
     <kbd>⌘K</kbd>
   </label>
-  <a class="btn primary new" href="/new" use:link><Plus aria-hidden="true" />New recipe</a>
+  <div class="add">
+    <a class="btn" href="/import" use:link aria-current={route.name === 'import' ? 'page' : undefined}><Link2 aria-hidden="true" />Import</a>
+    <a class="btn primary" href="/new" use:link><Plus aria-hidden="true" />New recipe</a>
+  </div>
   <div class="who">
     <button class="who-btn" aria-haspopup="menu" aria-expanded={menuOpen} onclick={() => (menuOpen = !menuOpen)}>
       {#if session.person}
@@ -96,6 +99,7 @@
     gap: var(--space-1);
   }
   nav a {
+    white-space: nowrap;
     padding: 7px 12px;
     border-radius: 3px;
     font-size: var(--ui);
@@ -117,6 +121,8 @@
     align-items: center;
     gap: var(--space-2);
     width: min(440px, 34vw);
+    min-width: 12rem;
+    flex-shrink: 1;
     height: 40px;
     padding: 0 var(--space-3);
     border: 2px solid var(--ink);
@@ -146,7 +152,11 @@
     border-radius: 3px;
     padding: 1px 5px;
   }
-  .new {
+  .add {
+    display: flex;
+    gap: var(--space-2);
+  }
+  .add .btn {
     min-height: 40px;
   }
   .who {
@@ -203,7 +213,7 @@
   }
 
   @media (max-width: 1080px) {
-    .new {
+    .add {
       display: none;
     }
   }

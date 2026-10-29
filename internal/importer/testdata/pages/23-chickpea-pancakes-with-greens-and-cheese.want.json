@@ -1,0 +1,72 @@
+{
+  "draft": {
+    "title": "Chickpea Pancakes With Greens and Cheese",
+    "source_url": "https://www.bonappetit.com/recipe/chickpea-pancakes-with-greens-and-cheese",
+    "description": "This recipe covers pretty much all of our working-from-home lunch criteria: it’s cheesy, packed with greens and protein, and topped with hot sauce.",
+    "yield_text": "2 servings",
+    "ingredients": [
+      "½ cup chickpea flour",
+      "3 Tbsp. plus 4 tsp. olive oil, divided",
+      "Kosher salt",
+      "½ medium red onion, thinly sliced",
+      "4 garlic cloves, smashed",
+      "1 cup brussels sprouts, thinly sliced",
+      "1 small bunch Tuscan kale or other kale, ribs and stems removed, thinly sliced",
+      "2 tsp. hot sauce, plus more for serving",
+      "4 oz. sharp cheddar, coarsely grated",
+      "Plain yogurt (for serving)"
+    ],
+    "steps": [
+      "Preheat oven to 350°. Whisk chickpea flour and ½ cup plus 2 Tbsp. cold water in a small bowl. Whisk in 1 Tbsp. oil and a pinch of salt. Let sit at least 10 minutes and up to 1 hour to allow flour to hydrate.",
+      "Meanwhile, heat 2 Tbsp. oil in a large nonstick skillet over medium-high. Add onion, garlic, and brussels sprouts; cook, tossing occasionally, until softened and lightly browned, about 3 minutes. Add kale and cook, tossing often, until tender, about 3 minutes. Add 2 tsp. hot sauce, season with salt, and toss well. Transfer to a medium bowl; wipe out skillet.",
+      "Swirl 1 tsp. oil in skillet to coat; heat over medium-high. Pour ¼ cup batter into center of skillet and swirl to form a thin 6\"–7\"-diameter pancake. Cook until well browned underneath and crispy around edges, about 2 minutes. Flip pancake and cook just until second side is lightly browned, about 1 minute. Transfer to a rimmed baking sheet. Repeat process with remaining batter and 3 tsp. oil to make 4 total. Divide vegetables between 2 pancakes and top with cheese and remaining 2 pancakes. Bake until cheese is melted, 6–8 minutes. Serve topped with yogurt and more hot sauce."
+    ]
+  },
+  "images": [
+    {
+      "url": "https://assets.bonappetit.com/photos/601de206fa147fe6ff9102db/16:9/w_2000,h_1125,c_limit/Lunch-Chickpea-Pancakes-greens-cheese.jpg",
+      "width": null,
+      "height": null,
+      "rank": 0
+    },
+    {
+      "url": "https://assets.bonappetit.com/photos/601de206fa147fe6ff9102db/4:3/w_1500,h_1125,c_limit/Lunch-Chickpea-Pancakes-greens-cheese.jpg",
+      "width": null,
+      "height": null,
+      "rank": 1
+    },
+    {
+      "url": "https://assets.bonappetit.com/photos/601de206fa147fe6ff9102db/16:9/w_1280,c_limit/Lunch-Chickpea-Pancakes-greens-cheese.jpg",
+      "width": null,
+      "height": null,
+      "rank": 2
+    },
+    {
+      "url": "https://assets.bonappetit.com/photos/601de206fa147fe6ff9102db/16:9/w_1280,c_limit/Lunch-Chickpea-Pancakes-greens-cheese.jpg?mbid=social_retweet",
+      "width": null,
+      "height": null,
+      "rank": 3
+    },
+    {
+      "url": "https://assets.bonappetit.com/photos/601de206fa147fe6ff9102db/1:1/w_1125,h_1125,c_limit/Lunch-Chickpea-Pancakes-greens-cheese.jpg",
+      "width": null,
+      "height": null,
+      "rank": 4
+    }
+  ],
+  "report": {
+    "method": "json-ld",
+    "found": [
+      "title",
+      "description",
+      "ingredients",
+      "steps",
+      "yield",
+      "image"
+    ],
+    "missing": [
+      "times"
+    ],
+    "warnings": []
+  }
+}

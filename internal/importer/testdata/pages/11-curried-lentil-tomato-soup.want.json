@@ -1,0 +1,58 @@
+{
+  "draft": {
+    "title": "Curried Lentil-Tomato Soup",
+    "source_url": "https://www.myrecipes.com/recipe/curried-lentil-tomato-soup",
+    "description": "If it's buried under bacon, then you know it's got to be good. This is a yummy comfort food perfect for the winter months and appropriate for all members of your family.",
+    "yield_text": "6 servings (serving size: about 1 cup soup and 2 teaspoons bacon)",
+    "nutrition_text": "Calories: 218 calories · Fat: 3.7 g · Saturated fat: 1.9 g · Cholesterol: 11 mg · Sodium: 445 mg · Carbohydrates: 32.8 g · Fiber: 10.6 g · Protein: 13.5 g",
+    "ingredients": [
+      "4 center-cut bacon slices",
+      "1 ½ cups chopped sweet onion (1 onion)",
+      "4 garlic cloves, finely chopped",
+      "3 cups fat-free, lower-sodium chicken broth",
+      "1 cup dried lentils",
+      "½ cup chopped carrot",
+      "½ cup chopped celery",
+      "2 teaspoons curry powder",
+      "½ teaspoon ground ginger",
+      "¼ teaspoon ground cinnamon",
+      "2 (14.5-ounce) cans no-salt-added stewed tomatoes, undrained",
+      "½ cup half-and-half",
+      "2 tablespoons dry sherry"
+    ],
+    "steps": [
+      "Cook bacon in a large nonstick skillet over medium heat until crisp. Remove bacon from pan; crumble. Add onion and garlic to drippings in pan; sauté 3 minutes. Transfer onion mixture to a 4-quart electric slow cooker. Stir in broth and next 7 ingredients (through tomatoes). Cover and cook on LOW for 8 hours.",
+      "Stir in half-and-half and sherry. Ladle soup into bowls; sprinkle with crumbled bacon."
+    ]
+  },
+  "images": [
+    {
+      "url": "https://web.archive.org/web/20231120222809im_/https://imagesvc.meredithcorp.io/v3/mm/image?url=https%3A%2F%2Fstatic.onecms.io%2Fwp-content%2Fuploads%2Fsites%2F19%2F2012%2F10%2F09%2Fcurried-lentil-tomato-soup-oh-1000.jpg",
+      "width": 1000,
+      "height": 1000,
+      "rank": 0
+    },
+    {
+      "url": "https://web.archive.org/web/20231120222809im_/https://imagesvc.meredithcorp.io/v3/mm/image?q=60\u0026c=sc\u0026poi=%5B0%2C0%5D\u0026w=1000\u0026h=500\u0026url=https%3A%2F%2Fstatic.onecms.io%2Fwp-content%2Fuploads%2Fsites%2F19%2F2012%2F10%2F09%2Fcurried-lentil-tomato-soup-oh-1000.jpg",
+      "width": 1000,
+      "height": 500,
+      "rank": 1
+    }
+  ],
+  "report": {
+    "method": "json-ld",
+    "found": [
+      "title",
+      "description",
+      "ingredients",
+      "steps",
+      "yield",
+      "nutrition",
+      "image"
+    ],
+    "missing": [
+      "times"
+    ],
+    "warnings": []
+  }
+}

@@ -1,0 +1,133 @@
+{
+  "source_url": "https://www.bonappetit.com/recipe/chickpea-and-chorizo-tostadas",
+  "fetched_url": "https://www.bonappetit.com/recipe/chickpea-and-chorizo-tostadas",
+  "status": 200,
+  "server": "cloudflare",
+  "size": 1484766,
+  "title": "Chickpea and Chorizo Tostadas Recipe | Bon Appétit",
+  "og_title": "Chickpea and Chorizo Tostadas",
+  "og_site_name": "Bon Appétit",
+  "og_image": "https://assets.bonappetit.com/photos/5a8474a38e5ab504d767b0c6/16:9/w_1280,c_limit/chorizo-chickpea-tostadas-16x9.jpg",
+  "twitter_image": "https://assets.bonappetit.com/photos/5a8474a38e5ab504d767b0c6/16:9/w_1280,c_limit/chorizo-chickpea-tostadas-16x9.jpg?mbid=social_retweet",
+  "canonical": "https://www.bonappetit.com/recipe/chickpea-and-chorizo-tostadas",
+  "markers": [
+    "captcha"
+  ],
+  "jsonld": [
+    {
+      "@context": "http://schema.org",
+      "@type": "Recipe",
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingCount": 31,
+        "ratingValue": 4.6
+      },
+      "alternativeHeadline": "Crunchy, creamy, chorizo-y—these quick tostadas hit all the notes, whether you're serving them as a snack or an easy weeknight dinner.",
+      "articleBody": "Crunchy, creamy, chorizo-y—these quick tostadas hit all the notes. If you normally throw the stems from a bunch of cilantro or parsley straight into the garbage...DON'T! They're delicious, and can be diced finely and stirred into all kinds of things—like the lime yogurt in this recipe—to add herb-y flavor and crunch.",
+      "author": [
+        {
+          "@type": "Person",
+          "name": "Lauren Schaefer",
+          "sameAs": "https://www.bonappetit.com/contributor/lauren-schaefer"
+        }
+      ],
+      "dateModified": "2018-03-29T06:00:00.000-04:00",
+      "datePublished": "2018-03-29T06:00:00.000-04:00",
+      "description": "Crunchy, creamy, chorizo-y—these quick tostadas hit all the notes, whether you're serving them as a snack or an easy weeknight dinner.",
+      "headline": "Chickpea and Chorizo Tostadas",
+      "image": [
+        "https://assets.bonappetit.com/photos/5a8474a38e5ab504d767b0c6/16:9/w_7680,h_4320,c_limit/chorizo-chickpea-tostadas-16x9.jpg",
+        "https://assets.bonappetit.com/photos/5a8474a38e5ab504d767b0c6/4:3/w_5763,h_4322,c_limit/chorizo-chickpea-tostadas-16x9.jpg",
+        "https://assets.bonappetit.com/photos/5a8474a38e5ab504d767b0c6/1:1/w_4322,h_4322,c_limit/chorizo-chickpea-tostadas-16x9.jpg"
+      ],
+      "inLanguage": "en-US",
+      "isAccessibleForFree": true,
+      "isPartOf": {
+        "@type": "CreativeWork",
+        "name": "Bon Appétit"
+      },
+      "keywords": [
+        "tostada",
+        "chorizo",
+        "chickpea",
+        "quick",
+        "easy",
+        "weeknight meals",
+        "main",
+        "gluten-free",
+        "nut-free",
+        "sauté",
+        "dinner",
+        "basically",
+        "web"
+      ],
+      "name": "Chickpea and Chorizo Tostadas",
+      "publisher": {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "logo": {
+          "@type": "ImageObject",
+          "height": "100px",
+          "url": "https://www.bonappetit.com/verso/static/bonappetit-us/assets/logo-seo.png",
+          "width": "479px"
+        },
+        "name": "Bon Appétit",
+        "url": "https://www.bonappetit.com"
+      },
+      "recipeIngredient": [
+        "1 15-oz. can chickpeas",
+        "1 lime",
+        "¼ cup plain whole milk Greek yogurt",
+        "1 tsp. kosher salt, divided",
+        "8 sprigs cilantro",
+        "2 links fresh chorizo (about 8 oz. total)",
+        "4 tostada shells"
+      ],
+      "recipeInstructions": [
+        {
+          "@type": "HowToStep",
+          "text": "Rinse and drain 15 oz. chickpeas in a colander. Measure out ½ cup; reserve remaining chickpeas for another use."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Finely grate zest of 1 lime with a microplane or grater into a small bowl."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Cut lime in half and squeeze juice from one half into bowl with zest. Cut remaining half into 2 wedges; set aside for serving."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Gather 8 cilantro sprigs on cutting board. Starting at the stem end, finely chop stems until you get to the leaves; reserve leaves for serving. Add stems to bowl with lime."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Add ¼ cup yogurt and ½ tsp. salt to bowl and mix with a spoon to combine."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Remove casing from 2 chorizo links; discard. Heat a medium nonstick skillet over medium-low. Cook chorizo, breaking it up with a wooden spoon, until partially cooked, about 3 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Add reserved chickpeas and remaining ½ tsp. salt and mash together with back of spoon until chorizo is cooked through and crispy, 7–10 minutes. Remove from heat."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Spread reserved crema over 4 tostada shells."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Top crema with chorizo mixture."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Top with reserved cilantro leaves and serve with reserved lime wedges alongside."
+        }
+      ],
+      "recipeYield": "Makes 4",
+      "thumbnailUrl": "https://assets.bonappetit.com/photos/5a8474a38e5ab504d767b0c6/1:1/w_4322,h_4322,c_limit/chorizo-chickpea-tostadas-16x9.jpg",
+      "url": "https://www.bonappetit.com/recipe/chickpea-and-chorizo-tostadas"
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "draft": {
+    "title": "Chickpea and Chorizo Tostadas",
+    "source_url": "https://www.bonappetit.com/recipe/chickpea-and-chorizo-tostadas",
+    "description": "Crunchy, creamy, chorizo-y—these quick tostadas hit all the notes, whether you're serving them as a snack or an easy weeknight dinner.",
+    "yield_text": "Makes 4",
+    "ingredients": [
+      "1 15-oz. can chickpeas",
+      "1 lime",
+      "¼ cup plain whole milk Greek yogurt",
+      "1 tsp. kosher salt, divided",
+      "8 sprigs cilantro",
+      "2 links fresh chorizo (about 8 oz. total)",
+      "4 tostada shells"
+    ],
+    "steps": [
+      "Rinse and drain 15 oz. chickpeas in a colander. Measure out ½ cup; reserve remaining chickpeas for another use.",
+      "Finely grate zest of 1 lime with a microplane or grater into a small bowl.",
+      "Cut lime in half and squeeze juice from one half into bowl with zest. Cut remaining half into 2 wedges; set aside for serving.",
+      "Gather 8 cilantro sprigs on cutting board. Starting at the stem end, finely chop stems until you get to the leaves; reserve leaves for serving. Add stems to bowl with lime.",
+      "Add ¼ cup yogurt and ½ tsp. salt to bowl and mix with a spoon to combine.",
+      "Remove casing from 2 chorizo links; discard. Heat a medium nonstick skillet over medium-low. Cook chorizo, breaking it up with a wooden spoon, until partially cooked, about 3 minutes.",
+      "Add reserved chickpeas and remaining ½ tsp. salt and mash together with back of spoon until chorizo is cooked through and crispy, 7–10 minutes. Remove from heat.",
+      "Spread reserved crema over 4 tostada shells.",
+      "Top crema with chorizo mixture.",
+      "Top with reserved cilantro leaves and serve with reserved lime wedges alongside."
+    ]
+  },
+  "images": [
+    {
+      "url": "https://assets.bonappetit.com/photos/5a8474a38e5ab504d767b0c6/16:9/w_7680,h_4320,c_limit/chorizo-chickpea-tostadas-16x9.jpg",
+      "width": null,
+      "height": null,
+      "rank": 0
+    },
+    {
+      "url": "https://assets.bonappetit.com/photos/5a8474a38e5ab504d767b0c6/4:3/w_5763,h_4322,c_limit/chorizo-chickpea-tostadas-16x9.jpg",
+      "width": null,
+      "height": null,
+      "rank": 1
+    },
+    {
+      "url": "https://assets.bonappetit.com/photos/5a8474a38e5ab504d767b0c6/1:1/w_4322,h_4322,c_limit/chorizo-chickpea-tostadas-16x9.jpg",
+      "width": null,
+      "height": null,
+      "rank": 2
+    },
+    {
+      "url": "https://assets.bonappetit.com/photos/5a8474a38e5ab504d767b0c6/16:9/w_1280,c_limit/chorizo-chickpea-tostadas-16x9.jpg",
+      "width": null,
+      "height": null,
+      "rank": 3
+    },
+    {
+      "url": "https://assets.bonappetit.com/photos/5a8474a38e5ab504d767b0c6/16:9/w_1280,c_limit/chorizo-chickpea-tostadas-16x9.jpg?mbid=social_retweet",
+      "width": null,
+      "height": null,
+      "rank": 4
+    }
+  ],
+  "report": {
+    "method": "json-ld",
+    "found": [
+      "title",
+      "description",
+      "ingredients",
+      "steps",
+      "yield",
+      "image"
+    ],
+    "missing": [
+      "times"
+    ],
+    "warnings": []
+  }
+}

@@ -1,0 +1,411 @@
+{
+  "source_url": "https://kalejunkie.com/viral-tiktok-baked-salmon-sushi-cups/",
+  "fetched_url": "https://kalejunkie.com/viral-tiktok-baked-salmon-sushi-cups/",
+  "status": 200,
+  "server": "cloudflare",
+  "size": 400963,
+  "title": "Viral TikTok Baked Salmon Sushi Cups - Kalejunkie",
+  "og_title": "Viral TikTok Baked Salmon Sushi Cups",
+  "og_site_name": "Kalejunkie",
+  "og_image": "https://kalejunkie.com/wp-content/uploads/2022/11/BakedSalmonSushiCups_Shot5_22.jpg",
+  "og_image_width": 1500,
+  "og_image_height": 2251,
+  "canonical": "https://kalejunkie.com/viral-tiktok-baked-salmon-sushi-cups/",
+  "markers": [
+    "captcha",
+    "enable javascript"
+  ],
+  "jsonld": [
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@id": "https://kalejunkie.com/viral-tiktok-baked-salmon-sushi-cups/#article",
+          "@type": "Article",
+          "articleSection": [
+            "Copycat",
+            "Dinner",
+            "Lunch",
+            "Side Dishes"
+          ],
+          "author": {
+            "@id": "https://kalejunkie.com/#/schema/person/979f332da51ec0e52d4375c5f688d7f3",
+            "name": "Nicole Modic"
+          },
+          "commentCount": 44,
+          "dateModified": "2022-11-26T06:20:39-08:00",
+          "datePublished": "2022-11-26T05:30:00-08:00",
+          "headline": "Viral TikTok Baked Salmon Sushi Cups",
+          "image": {
+            "@id": "https://kalejunkie.com/viral-tiktok-baked-salmon-sushi-cups/#primaryimage"
+          },
+          "inLanguage": "en-US",
+          "isPartOf": {
+            "@id": "https://kalejunkie.com/viral-tiktok-baked-salmon-sushi-cups/"
+          },
+          "potentialAction": [
+            {
+              "@type": "CommentAction",
+              "name": "Comment",
+              "target": [
+                "https://kalejunkie.com/viral-tiktok-baked-salmon-sushi-cups/#respond"
+              ]
+            }
+          ],
+          "publisher": {
+            "@id": "https://kalejunkie.com/#organization"
+          },
+          "thumbnailUrl": "https://kalejunkie.com/wp-content/uploads/2022/11/BakedSalmonSushiCups_Shot5_22.jpg",
+          "wordCount": 1337
+        },
+        {
+          "@id": "https://kalejunkie.com/viral-tiktok-baked-salmon-sushi-cups/",
+          "@type": "WebPage",
+          "breadcrumb": {
+            "@id": "https://kalejunkie.com/viral-tiktok-baked-salmon-sushi-cups/#breadcrumb"
+          },
+          "dateModified": "2022-11-26T06:20:39-08:00",
+          "datePublished": "2022-11-26T05:30:00-08:00",
+          "description": "These baked salmon sushi cups are a take on the viral sushi bake trend, and are a delicious and fun take on the sushi bake trend!",
+          "image": {
+            "@id": "https://kalejunkie.com/viral-tiktok-baked-salmon-sushi-cups/#primaryimage"
+          },
+          "inLanguage": "en-US",
+          "isPartOf": {
+            "@id": "https://kalejunkie.com/#website"
+          },
+          "name": "Viral TikTok Baked Salmon Sushi Cups - Kalejunkie",
+          "potentialAction": [
+            {
+              "@type": "ReadAction",
+              "target": [
+                "https://kalejunkie.com/viral-tiktok-baked-salmon-sushi-cups/"
+              ]
+            }
+          ],
+          "primaryImageOfPage": {
+            "@id": "https://kalejunkie.com/viral-tiktok-baked-salmon-sushi-cups/#primaryimage"
+          },
+          "thumbnailUrl": "https://kalejunkie.com/wp-content/uploads/2022/11/BakedSalmonSushiCups_Shot5_22.jpg",
+          "url": "https://kalejunkie.com/viral-tiktok-baked-salmon-sushi-cups/"
+        },
+        {
+          "@id": "https://kalejunkie.com/viral-tiktok-baked-salmon-sushi-cups/#primaryimage",
+          "@type": "ImageObject",
+          "caption": "A tray of the viral baked salmon sushi cups, sitting on a countertop, with chopsticks holding up one of the cups",
+          "contentUrl": "https://kalejunkie.com/wp-content/uploads/2022/11/BakedSalmonSushiCups_Shot5_22.jpg",
+          "height": 2251,
+          "inLanguage": "en-US",
+          "url": "https://kalejunkie.com/wp-content/uploads/2022/11/BakedSalmonSushiCups_Shot5_22.jpg",
+          "width": 1500
+        },
+        {
+          "@id": "https://kalejunkie.com/viral-tiktok-baked-salmon-sushi-cups/#breadcrumb",
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "item": "https://kalejunkie.com/",
+              "name": "Home",
+              "position": 1
+            },
+            {
+              "@type": "ListItem",
+              "item": "https://kalejunkie.com/category/recipe/",
+              "name": "Recipe",
+              "position": 2
+            },
+            {
+              "@type": "ListItem",
+              "item": "https://kalejunkie.com/category/recipe/lunch/",
+              "name": "Lunch",
+              "position": 3
+            },
+            {
+              "@type": "ListItem",
+              "name": "Viral TikTok Baked Salmon Sushi Cups",
+              "position": 4
+            }
+          ]
+        },
+        {
+          "@id": "https://kalejunkie.com/#website",
+          "@type": "WebSite",
+          "description": "Healthy Recipes That Make You Feel Good",
+          "inLanguage": "en-US",
+          "name": "KaleJunkie",
+          "potentialAction": [
+            {
+              "@type": "SearchAction",
+              "query-input": {
+                "@type": "PropertyValueSpecification",
+                "valueName": "search_term_string",
+                "valueRequired": true
+              },
+              "target": {
+                "@type": "EntryPoint",
+                "urlTemplate": "https://kalejunkie.com/?s={search_term_string}"
+              }
+            }
+          ],
+          "publisher": {
+            "@id": "https://kalejunkie.com/#organization"
+          },
+          "url": "https://kalejunkie.com/"
+        },
+        {
+          "@id": "https://kalejunkie.com/#organization",
+          "@type": "Organization",
+          "image": {
+            "@id": "https://kalejunkie.com/#/schema/logo/image/"
+          },
+          "logo": {
+            "@id": "https://kalejunkie.com/#/schema/logo/image/",
+            "@type": "ImageObject",
+            "caption": "KaleJunkie",
+            "contentUrl": "https://kalejunkie.com/wp-content/uploads/2025/07/kale-junkie-logo.svg",
+            "height": 56,
+            "inLanguage": "en-US",
+            "url": "https://kalejunkie.com/wp-content/uploads/2025/07/kale-junkie-logo.svg",
+            "width": 314
+          },
+          "name": "KaleJunkie",
+          "sameAs": [
+            "https://www.facebook.com/kalejunkie/",
+            "https://www.instagram.com/kalejunkie/",
+            "https://www.pinterest.com/kalejunkie1/",
+            "https://www.youtube.com/channel/UCQ3zkuzOkcCw82VfsM6XYYA",
+            "https://www.tiktok.com/@kalejunkie"
+          ],
+          "url": "https://kalejunkie.com/"
+        },
+        {
+          "@id": "https://kalejunkie.com/#/schema/person/979f332da51ec0e52d4375c5f688d7f3",
+          "@type": "Person",
+          "name": "Nicole Modic",
+          "sameAs": [
+            "https://kalejunkie.com/about/"
+          ],
+          "url": "https://kalejunkie.com/about/"
+        },
+        {
+          "@id": "https://kalejunkie.com/viral-tiktok-baked-salmon-sushi-cups/#recipe",
+          "@type": "Recipe",
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingCount": "25",
+            "ratingValue": "4.76",
+            "reviewCount": "6"
+          },
+          "author": {
+            "@id": "https://kalejunkie.com/#/schema/person/979f332da51ec0e52d4375c5f688d7f3"
+          },
+          "datePublished": "2022-11-26T13:30:00+00:00",
+          "description": "If you think the perfect, portable lunch doesn\u0026#039;t exist, then think again, because this recipe is about to blow your mind. That\u0026#039;s right, my Baked Salmon Sushi Cups are a delicious, on-the-go way to enjoy all of the flavors you love about sushi, but with a fun twist. These cups are loaded with tender salmon, sushi rice, and your favorite garnishes for an exciting take on the sushi bake trend. Plus, this recipe happens to be naturally gluten-free- woohoo!",
+          "image": [
+            "https://kalejunkie.com/wp-content/uploads/2022/11/BakedSalmonSushiCups_Shot5_22.jpg",
+            "https://kalejunkie.com/wp-content/uploads/2022/11/BakedSalmonSushiCups_Shot5_22-500x500.jpg",
+            "https://kalejunkie.com/wp-content/uploads/2022/11/BakedSalmonSushiCups_Shot5_22-500x375.jpg",
+            "https://kalejunkie.com/wp-content/uploads/2022/11/BakedSalmonSushiCups_Shot5_22-480x270.jpg"
+          ],
+          "isPartOf": {
+            "@id": "https://kalejunkie.com/viral-tiktok-baked-salmon-sushi-cups/#article"
+          },
+          "keywords": "Dairy Free, gluten-free, Nut Free, Refined Sugar Free",
+          "mainEntityOfPage": "https://kalejunkie.com/viral-tiktok-baked-salmon-sushi-cups/",
+          "name": "Viral TikTok Baked Salmon Sushi Cups",
+          "nutrition": {
+            "@type": "NutritionInformation",
+            "calories": "129 kcal",
+            "carbohydrateContent": "5 g",
+            "cholesterolContent": "32 mg",
+            "fatContent": "6 g",
+            "fiberContent": "0.4 g",
+            "proteinContent": "12 g",
+            "saturatedFatContent": "1 g",
+            "servingSize": "1 serving",
+            "sodiumContent": "214 mg",
+            "sugarContent": "0.1 g",
+            "transFatContent": "0.004 g",
+            "unsaturatedFatContent": "5 g"
+          },
+          "recipeCategory": [
+            "Main Course",
+            "Side Dish",
+            "Snack"
+          ],
+          "recipeCuisine": [
+            "American",
+            "Japanese"
+          ],
+          "recipeIngredient": [
+            "1 1/2 Pounds Salmon (with the skin removed and cubed)",
+            "1 Pinch Sea Salt",
+            "2 Tablespoons Soy Sauce or Coconut Aminos",
+            "2 Tablespoons Kewpie Mayo (or try my homemade mayo recipe!)",
+            "1 1/2 Cups Cooked Sushi Rice",
+            "1 Teaspoon Rice Vinegar",
+            "12 Nori Squares",
+            "1 Squeeze Kewpie Mayo",
+            "1 Tablespoon Sesame Seeds",
+            "1/4 Cup Green Onions (chopped)"
+          ],
+          "recipeInstructions": [
+            {
+              "@type": "HowToStep",
+              "name": "Preheat oven",
+              "text": "Start by preheating your oven to 400 F and lightly greasing a standard size muffin tin.",
+              "url": "https://kalejunkie.com/viral-tiktok-baked-salmon-sushi-cups/#wprm-recipe-17764-step-0-0"
+            },
+            {
+              "@type": "HowToStep",
+              "name": "Prepare salmon",
+              "text": "Next, add your cubed salmon, sea salt, soy sauce, and mayo to a large bowl. Toss to coat well, until all of the ingredients are fully combined.",
+              "url": "https://kalejunkie.com/viral-tiktok-baked-salmon-sushi-cups/#wprm-recipe-17764-step-0-1"
+            },
+            {
+              "@type": "HowToStep",
+              "name": "Prepare rice",
+              "text": "Then, add your cooked rice to a bowl and add in your vinegar. Mix until all of the rice is coated in the vinegar.",
+              "url": "https://kalejunkie.com/viral-tiktok-baked-salmon-sushi-cups/#wprm-recipe-17764-step-0-2"
+            },
+            {
+              "@type": "HowToStep",
+              "name": "Prepare nori",
+              "text": "Prepare your nori sheets by laying them out on a countertop. If using large nori sheets, cut them into squares small enough to fit into each cavity of your muffin tin.",
+              "url": "https://kalejunkie.com/viral-tiktok-baked-salmon-sushi-cups/#wprm-recipe-17764-step-0-3"
+            },
+            {
+              "@type": "HowToStep",
+              "name": "Add Rice",
+              "text": "Add about 2-3 tablespoons of your rice mixture to each nori sheet, then fold and place inside the muffin tin. Repeat until all of the cavities of your muffin tin are filled.",
+              "url": "https://kalejunkie.com/viral-tiktok-baked-salmon-sushi-cups/#wprm-recipe-17764-step-0-4"
+            },
+            {
+              "@type": "HowToStep",
+              "name": "Top with Salmon",
+              "text": "Then, top each nori cup with your salmon mixture. This will be about 2 tablespoons, depending on how big your salmon is!",
+              "url": "https://kalejunkie.com/viral-tiktok-baked-salmon-sushi-cups/#wprm-recipe-17764-step-0-5"
+            },
+            {
+              "@type": "HowToStep",
+              "name": "Bake",
+              "text": "Finally, bake your cups for 15 minutes, or until the salmon is cooked to your liking.",
+              "url": "https://kalejunkie.com/viral-tiktok-baked-salmon-sushi-cups/#wprm-recipe-17764-step-0-6"
+            },
+            {
+              "@type": "HowToStep",
+              "name": "Garnish and enjoy",
+              "text": "Once done, remove from the oven, top with your garnishes of choice, serve, and enjoy! These cups are best eaten the same day, but can be stored in an airtight container, in the fridge, for up to two days.",
+              "url": "https://kalejunkie.com/viral-tiktok-baked-salmon-sushi-cups/#wprm-recipe-17764-step-0-7"
+            }
+          ],
+          "recipeYield": [
+            "12",
+            "12 Cups"
+          ],
+          "review": [
+            {
+              "@type": "Review",
+              "author": {
+                "@type": "Person",
+                "name": "Georgette"
+              },
+              "datePublished": "2024-10-22",
+              "reviewBody": "Absolutely fantastic! What would you recommend if your trying to omit rice?",
+              "reviewRating": {
+                "@type": "Rating",
+                "ratingValue": "5"
+              }
+            },
+            {
+              "@type": "Review",
+              "author": {
+                "@type": "Person",
+                "name": "Sarah"
+              },
+              "datePublished": "2024-10-20",
+              "reviewBody": "These",
+              "reviewRating": {
+                "@type": "Rating",
+                "ratingValue": "5"
+              }
+            },
+            {
+              "@type": "Review",
+              "author": {
+                "@type": "Person",
+                "name": "Mary M"
+              },
+              "datePublished": "2024-07-28",
+              "reviewBody": "Delicious!!",
+              "reviewRating": {
+                "@type": "Rating",
+                "ratingValue": "5"
+              }
+            },
+            {
+              "@type": "Review",
+              "author": {
+                "@type": "Person",
+                "name": "Brooke"
+              },
+              "datePublished": "2024-03-19",
+              "reviewBody": "Made these twice and they came out so good! Didn’t have any vinegar so my solution was to make a bit undercooked rice and it came out perfect.",
+              "reviewRating": {
+                "@type": "Rating",
+                "ratingValue": "5"
+              }
+            },
+            {
+              "@type": "Review",
+              "author": {
+                "@type": "Person",
+                "name": "Sue"
+              },
+              "datePublished": "2024-03-16",
+              "reviewBody": "I made these last night but the nori shell went soggy, it was a train wreck!\r\nTasted nice but looked a mess.",
+              "reviewRating": {
+                "@type": "Rating",
+                "ratingValue": "1"
+              }
+            },
+            {
+              "@type": "Review",
+              "author": {
+                "@type": "Person",
+                "name": "Leslie"
+              },
+              "datePublished": "2024-03-06",
+              "reviewBody": "I made these tonight and we loved them!!!  Thanks for creating such tasty recipes!",
+              "reviewRating": {
+                "@type": "Rating",
+                "ratingValue": "5"
+              }
+            }
+          ],
+          "suitableForDiet": [
+            "https://schema.org/GlutenFreeDiet",
+            "https://schema.org/LowLactoseDiet",
+            "https://schema.org/LowSaltDiet"
+          ],
+          "video": {
+            "@type": "VideoObject",
+            "contentUrl": "https://videos.scriptwrapper.com/9200/zmxzqmkxwamqjkn4a00n/original/video.mp4",
+            "creator": {
+              "@type": "Organization",
+              "name": "Kale Junkie",
+              "url": "https://kalejunkie.com"
+            },
+            "description": "If you think the perfect, portable lunch doesn't exist, then think again, because this recipe is about to blow your mind. That's right, my Viral Baked Salmon Sushi Cups are a delicious, on-the-go way to enjoy all of the flavors you love about sushi, but with a fun twist. These cups are loaded with tender salmon, sushi rice, and your favorite garnishes for an exciting take on the sushi bake trend. Plus, this recipe happens to be naturally gluten-free- woohoo!",
+            "duration": "PT24S",
+            "embedUrl": "https://video.mediavine.com/videos/zmxzqmkxwamqjkn4a00n.js",
+            "name": "Viral Baked Salmon Sushi Cups",
+            "thumbnailUrl": "https://videos.scriptwrapper.com/9200/zmxzqmkxwamqjkn4a00n/thumbnail.jpg",
+            "uploadDate": "2022-11-24T18:17:19+00:00"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/sroberts/sous/internal/identity"
+	"github.com/sroberts/sous/internal/importer"
 	"github.com/sroberts/sous/internal/recipes"
 )
 
@@ -23,6 +24,8 @@ type Deps struct {
 	Log     *slog.Logger
 	Version string // the binary's version, for /v1/status
 	Auth    string // "none" or "gateway", for /v1/status
+	// Importer reads recipes from links; nil answers import with 503.
+	Importer *importer.Importer
 }
 
 const (
@@ -76,6 +79,11 @@ func (a *api) endpoints() []endpoint {
 			Summary: "Create a recipe. Ingredients and steps are raw lines; '# Heading' starts a section",
 			Body:    jsonOf[recipes.RecipeInput](), Resp: jsonOf[recipes.Recipe](), Status: http.StatusCreated,
 			Write: true, Limit: jsonLimit, Handle: a.createRecipe},
+		{Method: "POST", Path: "/v1/recipes/import/preview", OpID: "previewImport",
+			Summary: "Read a recipe from a link (or pasted text) into a draft to review; nothing is saved but its photo. " +
+				"POST the draft to /v1/recipes to save it",
+			Body: jsonOf[recipes.ImportRequest](), Resp: jsonOf[recipes.ImportPreview](),
+			Errors: []int{422}, Write: true, Limit: jsonLimit, Handle: a.previewImport},
 		{Method: "GET", Path: "/v1/recipes/{id}", OpID: "getRecipe",
 			Summary: "The full recipe, with the caller's flags. A deleted recipe has deleted_at set",
 			Resp:    jsonOf[recipes.Recipe](), Errors: []int{404}, Handle: a.getRecipe},
@@ -224,6 +232,23 @@ func (a *api) createRecipe(w http.ResponseWriter, r *http.Request, c identity.Ca
 		return err
 	}
 	writeRecipe(w, http.StatusCreated, rec)
+	return nil
+}
+
+func (a *api) previewImport(w http.ResponseWriter, r *http.Request, c identity.Caller) error {
+	if a.d.Importer == nil {
+		writeError(w, http.StatusServiceUnavailable, "unavailable", "importing from links is not available")
+		return nil
+	}
+	var in recipes.ImportRequest
+	if err := decodeJSON(r, &in); err != nil {
+		return err
+	}
+	p, err := a.d.Importer.Preview(r.Context(), c, in)
+	if err != nil {
+		return err
+	}
+	writeJSON(w, http.StatusOK, p)
 	return nil
 }
 

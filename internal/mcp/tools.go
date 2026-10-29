@@ -137,3 +137,24 @@ func register(s *sdk.Server, t *tools) {
 		return t.svc.Changes(ctx, c, in)
 	})
 }
+
+type importInput struct {
+	URL  string `json:"url" jsonschema:"the recipe page to read"`
+	Save bool   `json:"save,omitempty" jsonschema:"save the recipe as read; refused with exists when the link is already in Sous"`
+}
+
+func registerImport(s *sdk.Server, t *tools) {
+	add(s, t, &sdk.Tool{
+		Name:  "import_recipe",
+		Title: "Import a recipe from a link",
+		Description: "Read a recipe from a web page: title, ingredients, steps, times, yield, nutrition and its photo, " +
+			"which is stored in Sous. Returns a draft with a report of what was found and missing, and any recipes " +
+			"already imported from the same link. Without save, nothing else is stored: check the draft and pass it " +
+			"to create_recipe. With save=true it is saved as read and returned in saved, unless the link is already " +
+			"in Sous (an exists error). A page Sous can't read fails with a code such as blocked, paywalled or " +
+			"no_recipe_found; ask the person to paste the recipe instead.",
+		Annotations: &sdk.ToolAnnotations{DestructiveHint: ptr(false), OpenWorldHint: ptr(true)},
+	}, func(ctx context.Context, c identity.Caller, in importInput) (recipes.ImportResult, error) {
+		return t.importer.Import(ctx, c, in.URL, in.Save)
+	})
+}

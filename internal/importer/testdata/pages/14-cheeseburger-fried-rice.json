@@ -1,0 +1,144 @@
+{
+  "source_url": "https://www.bonappetit.com/recipe/cheeseburger-fried-rice",
+  "fetched_url": "https://www.bonappetit.com/recipe/cheeseburger-fried-rice",
+  "status": 200,
+  "server": "cloudflare",
+  "size": 1303311,
+  "title": "Cheeseburger Fried Rice Recipe | Bon Appétit",
+  "og_title": "Cheeseburger Fried Rice",
+  "og_site_name": "Bon Appétit",
+  "og_image": "https://assets.bonappetit.com/photos/6a84d040e13cd3d88c9b62fc/16:9/w_1280,c_limit/olmos_agnesandsherman-bonapp-1290.jpg",
+  "twitter_image": "https://assets.bonappetit.com/photos/6a84d040e13cd3d88c9b62fc/16:9/w_1280,c_limit/olmos_agnesandsherman-bonapp-1290.jpg?mbid=social_retweet",
+  "canonical": "https://www.bonappetit.com/recipe/cheeseburger-fried-rice",
+  "markers": [
+    "captcha"
+  ],
+  "jsonld": [
+    {
+      "@context": "http://schema.org",
+      "@type": "Recipe",
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingCount": 1,
+        "ratingValue": 5
+      },
+      "alternativeHeadline": "This cheeseburger fried rice recipe from Agnes and Sherman in Houston is immediately familiar and comforting, complete with a patty melt sauce.",
+      "articleBody": "An improbable preparation that somehow manages to be immediately familiar and comforting, this cheeseburger fried rice is a little peek into all the fun going down at Agnes and Sherman in Houston, one of our Best New Restaurants of 2026. At the restaurant, the dish begins many days prior to landing on the table. Chef Nick Wong infuses vats of soy sauce with deeply browned ground beef for a brawny condiment that doubles down on the umami. Strained and poured into little squeeze bottles, this becomes the seasoning for the fried rice. Our home-cook-friendly version skips this days-long steeping process with no detriment. You will have extra patty melt sauce and you will be grateful for it when you make yourself a breakfast sandwich the next day.\nChef’s Note: Add the lettuce to the fried rice moments before it comes off the heat so it’s barely wilted when served. If you add it too soon, it can turn slippery.\nCheck out more delicious fried rice recipes here: Broccoli and Egg Fried Rice; Ginger Fried Rice; and Golden Fried Rice With Salmon and Furikake.",
+      "author": [
+        {
+          "@type": "Person",
+          "name": "Nick Wong",
+          "sameAs": "https://www.bonappetit.com/contributor/nick-wong"
+        }
+      ],
+      "dateModified": "2026-08-24T07:00:00.000-04:00",
+      "datePublished": "2026-08-24T07:00:00.000-04:00",
+      "description": "This cheeseburger fried rice recipe from Agnes and Sherman in Houston is immediately familiar and comforting, complete with a patty melt sauce.",
+      "headline": "Cheeseburger Fried Rice",
+      "image": [
+        "https://assets.bonappetit.com/photos/6a84d040e13cd3d88c9b62fc/16:9/w_1337,h_752,c_limit/olmos_agnesandsherman-bonapp-1290.jpg",
+        "https://assets.bonappetit.com/photos/6a84d040e13cd3d88c9b62fc/4:3/w_1435,h_1077,c_limit/olmos_agnesandsherman-bonapp-1290.jpg",
+        "https://assets.bonappetit.com/photos/6a84d040e13cd3d88c9b62fc/1:1/w_1148,h_1148,c_limit/olmos_agnesandsherman-bonapp-1290.jpg"
+      ],
+      "inLanguage": "en-US",
+      "isAccessibleForFree": true,
+      "isPartOf": {
+        "@type": "CreativeWork",
+        "name": "Bon Appétit"
+      },
+      "keywords": [
+        "main",
+        "side",
+        "dinner",
+        "nut-free",
+        "make ahead",
+        "fried rice",
+        "ground beef",
+        "rice",
+        "iceberg lettuce",
+        "cheese",
+        "best new restaurants",
+        "paywall exclude",
+        "web"
+      ],
+      "name": "Cheeseburger Fried Rice",
+      "publisher": {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "logo": {
+          "@type": "ImageObject",
+          "height": "100px",
+          "url": "https://www.bonappetit.com/verso/static/bonappetit-us/assets/logo-seo.png",
+          "width": "479px"
+        },
+        "name": "Bon Appétit",
+        "url": "https://www.bonappetit.com"
+      },
+      "recipeIngredient": [
+        "½ small white onion, finely chopped",
+        "1 Tbsp. apple cider vinegar",
+        "1 Tbsp. sugar",
+        "½ tsp. Diamond Crystal or ¼ tsp. Morton kosher salt",
+        "⅓ cup mayonnaise",
+        "¼ cup ketchup",
+        "1 tsp. soy sauce",
+        "1 tsp. yellow mustard",
+        "½ tsp. garlic powder",
+        "½ tsp. paprika",
+        "2 large eggs",
+        "Kosher salt, freshly ground pepper",
+        "1 Tbsp. sesame seeds",
+        "3 Tbsp. vegetable oil, divided",
+        "8 oz. ground beef",
+        "1 tsp. sugar",
+        "2 Tbsp. soy sauce, divided",
+        "½ small white onion, finely chopped",
+        "2 cups chilled cooked short-grain white rice",
+        "1 cup (packed) 1\"-pieces iceberg lettuce",
+        "2 slices American cheese"
+      ],
+      "recipeInstructions": [
+        {
+          "@type": "HowToSection",
+          "itemListElement": [
+            {
+              "@type": "HowToStep",
+              "text": "Bring ½ small white onion, finely chopped, 1 Tbsp. apple cider vinegar, 1 Tbsp. sugar, ½ tsp. Diamond Crystal or ¼ tsp. Morton kosher salt, and 1 Tbsp. water to a simmer in a small saucepan over medium heat. Cook until onion is softened, about 1 minute. Scrape into a blender; add ⅓ cup mayonnaise, ¼ cup ketchup, 1 tsp. soy sauce, 1 tsp. yellow mustard, ½ tsp. garlic powder, and ½ tsp. paprika and blend until smooth. Transfer burger sauce to an airtight container; chill until ready to use.\nDo Ahead: Sauce can be made 4 days ahead. Keep chilled."
+            }
+          ],
+          "name": "Sauce"
+        },
+        {
+          "@type": "HowToSection",
+          "itemListElement": [
+            {
+              "@type": "HowToStep",
+              "text": "Whisk 2 large eggs, a pinch of kosher salt, and a pinch of freshly ground pepper in a medium bowl to combine; set aside."
+            },
+            {
+              "@type": "HowToStep",
+              "text": "Toast 1 Tbsp. sesame seeds in a medium nonstick or cast-iron skillet over low heat, stirring often, until golden, about 3 minutes; transfer to a plate."
+            },
+            {
+              "@type": "HowToStep",
+              "text": "Heat 1 Tbsp. vegetable oil in same pan over medium-high. Add 8 oz. ground beef and press into a thin layer; season lightly with salt and pepper. Cook, undisturbed, until deeply browned underneath, 6–8 minutes. Add 1 tsp. sugar and 1 Tbsp. soy sauce and cook, stirring and breaking up, until meat is cooked through, about 1 minute. Transfer to another plate."
+            },
+            {
+              "@type": "HowToStep",
+              "text": "Cook ½ small white onion, finely chopped, and remaining 2 Tbsp. vegetable oil in same pan, stirring often, until onion is translucent, about 1 minute. Pour in reserved egg mixture, swirling pan to coat. Cook, undisturbed, 5 seconds, then stir in a circular motion with a heatproof rubber spatula or wooden spoon until curds are just set, about 30 seconds more."
+            },
+            {
+              "@type": "HowToStep",
+              "text": "Return beef to pan and add 2 cups chilled cooked short-grain white rice. Cook, stirring often, until rice is softened and heated through, about 5 minutes. Mix in 1 cup (packed) 1\"-pieces iceberg lettuce and remaining 1 Tbsp. soy sauce; season with salt and pepper. Cook, stirring, until lettuce starts to wilt, about 30 seconds. Drizzle about 2 Tbsp. burger sauce over rice (save remaining sauce for another use). Arrange 2 slices American cheese on top in a single layer. Reduce heat to low, cover, and cook until cheese is melted, about 1 minute. (Or to recreate the restaurant presentation, spoon fried rice onto an ovenproof platter; top with sauce and cheese and broil until cheese is melted, up to 2 minutes.) Top with sesame seeds.\nDo Ahead: Ground beef can be cooked 2 days ahead. Transfer to an airtight container; cover and chill."
+            }
+          ],
+          "name": "Fried Rice and Assembly"
+        }
+      ],
+      "recipeYield": "2–4 servings",
+      "thumbnailUrl": "https://assets.bonappetit.com/photos/6a84d040e13cd3d88c9b62fc/2:3/w_944,h_1415,c_limit/olmos_agnesandsherman-bonapp-1290.jpg",
+      "totalTime": "35 minutes",
+      "url": "https://www.bonappetit.com/recipe/cheeseburger-fried-rice"
+    }
+  ]
+}

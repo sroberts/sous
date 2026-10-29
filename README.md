@@ -92,6 +92,38 @@ uv run scripts/mela-import/mela_import.py Recipes.melarecipes \
 skips what's already there, so an interrupted import can just be run again.
 Details are in [`spec.md`](spec.md) §11.
 
+## Importing from a link
+
+In the web UI, choose **Import** in the masthead (or "Import from a link" on
+the new-recipe page), paste a link, and Sous reads the recipe into the editor
+for you to check before saving. The `/import` page also shows how to set up a
+bookmarklet for desktop browsers and an iOS Shortcut for the Share Sheet; both
+open `/import?url=…`. If a site blocks Sous or has no recipe data, paste the
+recipe text instead. Agents use the MCP tool `import_recipe`. Details are in
+[`spec.md`](spec.md) §14.
+
+### Checking it against real sites
+
+The importer's tests run offline against saved fixtures. To check the real
+sites, run the live check, which fetches the 25 links in
+`internal/importer/testdata/testset.json` and prints how each one read:
+
+```sh
+go test -tags live -run Live -v -count=1 ./internal/importer
+```
+
+To re-record the fixtures, then regenerate and review the expected output:
+
+```sh
+go test -tags live -run Live -v -count=1 ./internal/importer -record
+go test -run TestFixtures ./internal/importer -update
+git diff internal/importer/testdata/pages   # review the *.want.json files
+```
+
+Fixtures hold only the extracted recipe data and the link back to the source
+(the recipe's JSON-LD, or the recipe's microdata element), never a whole page.
+A test fails if one contains page markup or grows past 200 KB.
+
 ## Identity
 
 Outpost's login gateway supplies the caller as a signed `X-Outpost-Identity`

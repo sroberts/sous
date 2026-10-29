@@ -1,0 +1,368 @@
+{
+  "source_url": "https://thewoksoflife.com/garlic-noodles/",
+  "fetched_url": "https://thewoksoflife.com/garlic-noodles/",
+  "status": 200,
+  "server": "cloudflare",
+  "size": 526987,
+  "title": "Asian Garlic Noodles: 20-Minute Recipe - The Woks of Life",
+  "og_title": "Asian Garlic Noodles",
+  "og_site_name": "The Woks of Life",
+  "og_image": "https://thewoksoflife.com/wp-content/uploads/2020/06/asian-garlic-noodles-10.jpg",
+  "og_image_width": 1300,
+  "og_image_height": 1774,
+  "canonical": "https://thewoksoflife.com/garlic-noodles/",
+  "markers": [
+    "captcha"
+  ],
+  "jsonld": [
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@id": "https://thewoksoflife.com/garlic-noodles/#article",
+          "@type": "Article",
+          "articleSection": [
+            "Baby \u0026amp; Toddler Friendly",
+            "Noodles \u0026amp; Pasta",
+            "Quick \u0026amp; Easy",
+            "Recipes",
+            "Side Dishes",
+            "Vegan \u0026amp; Vegetarian"
+          ],
+          "author": {
+            "@id": "https://thewoksoflife.com/#/schema/person/b6722edf39874a953ec3180cefb152e5",
+            "name": "Sarah"
+          },
+          "commentCount": 250,
+          "dateModified": "2026-08-04T13:48:54+00:00",
+          "datePublished": "2020-06-27T04:01:23+00:00",
+          "headline": "Asian Garlic Noodles",
+          "image": {
+            "@id": "https://thewoksoflife.com/garlic-noodles/#primaryimage"
+          },
+          "inLanguage": "en-US",
+          "isPartOf": {
+            "@id": "https://thewoksoflife.com/garlic-noodles/"
+          },
+          "potentialAction": [
+            {
+              "@type": "CommentAction",
+              "name": "Comment",
+              "target": [
+                "https://thewoksoflife.com/garlic-noodles/#respond"
+              ]
+            }
+          ],
+          "publisher": {
+            "@id": "https://thewoksoflife.com/#organization"
+          },
+          "thumbnailUrl": "https://thewoksoflife.com/wp-content/uploads/2020/06/asian-garlic-noodles-10.jpg",
+          "wordCount": 798
+        },
+        {
+          "@id": "https://thewoksoflife.com/garlic-noodles/",
+          "@type": "WebPage",
+          "breadcrumb": {
+            "@id": "https://thewoksoflife.com/garlic-noodles/#breadcrumb"
+          },
+          "dateModified": "2026-08-04T13:48:54+00:00",
+          "datePublished": "2020-06-27T04:01:23+00:00",
+          "description": "This quick and easy Asian garlic noodles recipe takes just 20 minutes to make. The combo of soy sauce, oyster sauce, butter, and parmesan is an umami blast!",
+          "image": {
+            "@id": "https://thewoksoflife.com/garlic-noodles/#primaryimage"
+          },
+          "inLanguage": "en-US",
+          "isPartOf": {
+            "@id": "https://thewoksoflife.com/#website"
+          },
+          "name": "Asian Garlic Noodles: 20-Minute Recipe - The Woks of Life",
+          "potentialAction": [
+            {
+              "@type": "ReadAction",
+              "target": [
+                "https://thewoksoflife.com/garlic-noodles/"
+              ]
+            }
+          ],
+          "primaryImageOfPage": {
+            "@id": "https://thewoksoflife.com/garlic-noodles/#primaryimage"
+          },
+          "thumbnailUrl": "https://thewoksoflife.com/wp-content/uploads/2020/06/asian-garlic-noodles-10.jpg",
+          "url": "https://thewoksoflife.com/garlic-noodles/"
+        },
+        {
+          "@id": "https://thewoksoflife.com/garlic-noodles/#primaryimage",
+          "@type": "ImageObject",
+          "caption": "Garlic Noodles, thewoksoflife.com",
+          "contentUrl": "https://thewoksoflife.com/wp-content/uploads/2020/06/asian-garlic-noodles-10.jpg",
+          "height": 1774,
+          "inLanguage": "en-US",
+          "url": "https://thewoksoflife.com/wp-content/uploads/2020/06/asian-garlic-noodles-10.jpg",
+          "width": 1300
+        },
+        {
+          "@id": "https://thewoksoflife.com/garlic-noodles/#breadcrumb",
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "item": "https://thewoksoflife.com/",
+              "name": "Home",
+              "position": 1
+            },
+            {
+              "@type": "ListItem",
+              "item": "https://thewoksoflife.com/category/recipes/",
+              "name": "Recipes",
+              "position": 2
+            },
+            {
+              "@type": "ListItem",
+              "item": "https://thewoksoflife.com/category/recipes/noodles-pasta-recipes/",
+              "name": "Noodles \u0026 Pasta",
+              "position": 3
+            },
+            {
+              "@type": "ListItem",
+              "name": "Asian Garlic Noodles",
+              "position": 4
+            }
+          ]
+        },
+        {
+          "@id": "https://thewoksoflife.com/#website",
+          "@type": "WebSite",
+          "description": "a culinary genealogy",
+          "inLanguage": "en-US",
+          "name": "The Woks of Life",
+          "potentialAction": [
+            {
+              "@type": "SearchAction",
+              "query-input": {
+                "@type": "PropertyValueSpecification",
+                "valueName": "search_term_string",
+                "valueRequired": true
+              },
+              "target": {
+                "@type": "EntryPoint",
+                "urlTemplate": "https://thewoksoflife.com/?s={search_term_string}"
+              }
+            }
+          ],
+          "publisher": {
+            "@id": "https://thewoksoflife.com/#organization"
+          },
+          "url": "https://thewoksoflife.com/"
+        },
+        {
+          "@id": "https://thewoksoflife.com/#organization",
+          "@type": "Organization",
+          "image": {
+            "@id": "https://thewoksoflife.com/#/schema/logo/image/"
+          },
+          "logo": {
+            "@id": "https://thewoksoflife.com/#/schema/logo/image/",
+            "@type": "ImageObject",
+            "caption": "The Woks of Life",
+            "contentUrl": "https://thewoksoflife.com/wp-content/uploads/2019/05/Temporary-Logo-e1556728319201.png",
+            "height": 364,
+            "inLanguage": "en-US",
+            "url": "https://thewoksoflife.com/wp-content/uploads/2019/05/Temporary-Logo-e1556728319201.png",
+            "width": 365
+          },
+          "name": "The Woks of Life",
+          "sameAs": [
+            "https://www.facebook.com/thewoksoflife",
+            "https://x.com/thewoksoflife"
+          ],
+          "url": "https://thewoksoflife.com/"
+        },
+        {
+          "@id": "https://thewoksoflife.com/#/schema/person/b6722edf39874a953ec3180cefb152e5",
+          "@type": "Person",
+          "description": "Sarah Leung is the eldest daughter in The Woks of Life family, working alongside younger sister Kaitlin and parents Bill and Judy. You could say this multigenerational recipe blog was born out of two things: 1) her realization in college that she had no idea how to make her mom’s Braised Pork Belly and 2) that she couldn’t find a job after graduation. With the rest of the family on board, she laid the groundwork for the blog in 2013. By 2015, it had become one of the internet’s most trusted resources for Chinese cooking. Creator of quick and easy recipes for harried home cooks and official Woks of Life photographer, Sarah loves creating accessible recipes that chase down familiar nostalgic flavors while adapting to the needs of modern home cooks. Alongside her family, Sarah has become a New York Times Bestselling author with their cookbook, The Woks of Life: Recipes to Know and Love from a Chinese American Family, as well as a James Beard Award nominee and IACP Award finalist.",
+          "image": {
+            "@id": "https://thewoksoflife.com/wp-content/uploads/2020/10/sarah-110x110.jpg",
+            "@type": "ImageObject",
+            "caption": "Sarah",
+            "contentUrl": "https://thewoksoflife.com/wp-content/uploads/2020/10/sarah-110x110.jpg",
+            "inLanguage": "en-US",
+            "url": "https://thewoksoflife.com/wp-content/uploads/2020/10/sarah-110x110.jpg"
+          },
+          "name": "Sarah",
+          "sameAs": [
+            "https://www.thewoksoflife.com",
+            "facebook.com/thewoksoflife",
+            "https://x.com/thewoksoflife"
+          ],
+          "url": "https://thewoksoflife.com/author/sleung/"
+        },
+        {
+          "@id": "https://thewoksoflife.com/garlic-noodles/#recipe",
+          "@type": "Recipe",
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingCount": "84",
+            "ratingValue": "4.95",
+            "reviewCount": "6"
+          },
+          "author": {
+            "@id": "https://thewoksoflife.com/#/schema/person/b6722edf39874a953ec3180cefb152e5"
+          },
+          "cookTime": "PT15M",
+          "datePublished": "2020-06-27T00:01:23+00:00",
+          "description": "This quick and easy Asian garlic noodles recipe takes just 20 minutes to make. The combo of soy sauce, oyster sauce, butter, and parmesan is an umami blast!",
+          "image": [
+            "https://thewoksoflife.com/wp-content/uploads/2020/06/asian-garlic-noodles-11.jpg",
+            "https://thewoksoflife.com/wp-content/uploads/2020/06/asian-garlic-noodles-11-500x500.jpg",
+            "https://thewoksoflife.com/wp-content/uploads/2020/06/asian-garlic-noodles-11-500x375.jpg",
+            "https://thewoksoflife.com/wp-content/uploads/2020/06/asian-garlic-noodles-11-480x270.jpg"
+          ],
+          "isPartOf": {
+            "@id": "https://thewoksoflife.com/garlic-noodles/#article"
+          },
+          "keywords": "garlic noodles",
+          "mainEntityOfPage": "https://thewoksoflife.com/garlic-noodles/",
+          "name": "Asian Garlic Noodles",
+          "nutrition": {
+            "@type": "NutritionInformation",
+            "calories": "468 kcal",
+            "carbohydrateContent": "68 g",
+            "cholesterolContent": "34 mg",
+            "fatContent": "15 g",
+            "fiberContent": "3 g",
+            "proteinContent": "14 g",
+            "saturatedFatContent": "9 g",
+            "servingSize": "1 serving",
+            "sodiumContent": "510 mg",
+            "sugarContent": "3 g"
+          },
+          "prepTime": "PT5M",
+          "recipeCategory": [
+            "Noodles"
+          ],
+          "recipeCuisine": [
+            "American/Chinese"
+          ],
+          "recipeIngredient": [
+            "12 ounces thin spaghetti ((340g; can also use dried Chinese noodles or fresh egg noodles))",
+            "salt",
+            "4 tablespoons unsalted butter",
+            "8 cloves garlic ((peeled and thinly sliced))",
+            "1/8 teaspoon turmeric ((optional))",
+            "1 tablespoon oyster sauce ((or vegetarian oyster sauce))",
+            "1 tablespoon soy sauce",
+            "1-2 teaspoons brown sugar ((depending on your taste))",
+            "1 teaspoon sesame oil",
+            "1-2  whole scallions ((chopped))",
+            "1/4 cup Parmesan cheese"
+          ],
+          "recipeInstructions": [
+            {
+              "@type": "HowToStep",
+              "name": "Bring a large pot of salted water to a boil. Cook the noodles/pasta according to package instructions. If using fresh noodles, you may simply need to blanch them. (Reserve some of the pasta cooking water, as you may need it in the sauce later.)",
+              "text": "Bring a large pot of salted water to a boil. Cook the noodles/pasta according to package instructions. If using fresh noodles, you may simply need to blanch them. (Reserve some of the pasta cooking water, as you may need it in the sauce later.)",
+              "url": "https://thewoksoflife.com/garlic-noodles/#wprm-recipe-40577-step-0-0"
+            },
+            {
+              "@type": "HowToStep",
+              "name": "Meanwhile, heat the butter in a large skillet over medium heat and add the garlic. Cook for 5 minutes, until lightly caramelized, and stir in the turmeric (if using), oyster sauce, soy sauce, brown sugar, and sesame oil. Stir for 1 minute and add the scallions.",
+              "text": "Meanwhile, heat the butter in a large skillet over medium heat and add the garlic. Cook for 5 minutes, until lightly caramelized, and stir in the turmeric (if using), oyster sauce, soy sauce, brown sugar, and sesame oil. Stir for 1 minute and add the scallions.",
+              "url": "https://thewoksoflife.com/garlic-noodles/#wprm-recipe-40577-step-0-1"
+            },
+            {
+              "@type": "HowToStep",
+              "name": "After 30 seconds, to let the scallions wilt, toss in the cooked pasta and parmesan cheese. If the sauce is too thick, add a few tablespoons of the noodle cooking water to loosen them up. Serve!",
+              "text": "After 30 seconds, to let the scallions wilt, toss in the cooked pasta and parmesan cheese. If the sauce is too thick, add a few tablespoons of the noodle cooking water to loosen them up. Serve!",
+              "url": "https://thewoksoflife.com/garlic-noodles/#wprm-recipe-40577-step-0-2"
+            }
+          ],
+          "recipeYield": [
+            "4"
+          ],
+          "review": [
+            {
+              "@type": "Review",
+              "author": {
+                "@type": "Person",
+                "name": "Liz"
+              },
+              "datePublished": "2026-10-27",
+              "reviewBody": "I've made this as directed several times.  I love it.  Today I'm going to take the plunge and try the recipe with rice in my little rice cooker for one.  I'll use 1/2 c rice and 1 cup of liquid ingredients prepared in the skillet as instructed.  I'll top it with a couple of small salmon fillets.  If it works, I'll try making it in a small pot and put the raw fillets on top to absorb the flavors of the condiments as it steams.  I'll let you know how it goes, but would like your thoughts on the idea.  Am I a nut case crazy lady, or might I have something worth trying?",
+              "reviewRating": {
+                "@type": "Rating",
+                "ratingValue": "5"
+              }
+            },
+            {
+              "@type": "Review",
+              "author": {
+                "@type": "Person",
+                "name": "Terri"
+              },
+              "datePublished": "2026-09-18",
+              "reviewBody": "This  was so yummy,  all of the flavors infused, and the addition of hot oil crunch was great!",
+              "reviewRating": {
+                "@type": "Rating",
+                "ratingValue": "5"
+              }
+            },
+            {
+              "@type": "Review",
+              "author": {
+                "@type": "Person",
+                "name": "Asdis"
+              },
+              "datePublished": "2026-09-07",
+              "reviewBody": "This was quick, easy, and delicious! I cubed some leftover chicken and used ramen noodles because that's what I had. Fantastic quick lunch!",
+              "reviewRating": {
+                "@type": "Rating",
+                "ratingValue": "5"
+              }
+            },
+            {
+              "@type": "Review",
+              "author": {
+                "@type": "Person",
+                "name": "J.H."
+              },
+              "datePublished": "2026-08-30",
+              "reviewBody": "You need to make this, seriously. I left out turmeric bc I'm out, and used maple syrup instead of brown sugar, and radiatori pasta instead of spaghtetti. It turned out unexpectedly SCRUMPTIOUS. The unassuming simple ingredients together create something really remarkable. So satisfying, all you need is a side of your choice of veggies for an easy lunch. Mix in some chili oil and you'll be in ecstasy.",
+              "reviewRating": {
+                "@type": "Rating",
+                "ratingValue": "5"
+              }
+            },
+            {
+              "@type": "Review",
+              "author": {
+                "@type": "Person",
+                "name": "Wendy"
+              },
+              "datePublished": "2026-08-27",
+              "reviewBody": "I eat these for days when I make them. Just love these noodles",
+              "reviewRating": {
+                "@type": "Rating",
+                "ratingValue": "5"
+              }
+            },
+            {
+              "@type": "Review",
+              "author": {
+                "@type": "Person",
+                "name": "Lydia Martha"
+              },
+              "datePublished": "2026-08-13",
+              "reviewBody": "These noodles are so delicious and easy to make! I made it with rice noodles and it didn’t disappoint! 💚💚",
+              "reviewRating": {
+                "@type": "Rating",
+                "ratingValue": "5"
+              }
+            }
+          ],
+          "totalTime": "PT20M"
+        }
+      ]
+    }
+  ]
+}

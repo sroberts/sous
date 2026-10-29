@@ -1,0 +1,73 @@
+{
+  "draft": {
+    "title": "Viral TikTok Baked Salmon Sushi Cups",
+    "source_url": "https://kalejunkie.com/viral-tiktok-baked-salmon-sushi-cups/",
+    "description": "If you think the perfect, portable lunch doesn't exist, then think again, because this recipe is about to blow your mind. That's right, my Baked Salmon Sushi Cups are a delicious, on-the-go way to enjoy all of the flavors you love about sushi, but with a fun twist. These cups are loaded with tender salmon, sushi rice, and your favorite garnishes for an exciting take on the sushi bake trend. Plus, this recipe happens to be naturally gluten-free- woohoo!",
+    "yield_text": "12 Cups",
+    "nutrition_text": "Serving: 1 serving · Calories: 129 kcal · Fat: 6 g · Saturated fat: 1 g · Trans fat: 0.004 g · Unsaturated fat: 5 g · Cholesterol: 32 mg · Sodium: 214 mg · Carbohydrates: 5 g · Fiber: 0.4 g · Sugar: 0.1 g · Protein: 12 g",
+    "ingredients": [
+      "1 1/2 Pounds Salmon (with the skin removed and cubed)",
+      "1 Pinch Sea Salt",
+      "2 Tablespoons Soy Sauce or Coconut Aminos",
+      "2 Tablespoons Kewpie Mayo (or try my homemade mayo recipe!)",
+      "1 1/2 Cups Cooked Sushi Rice",
+      "1 Teaspoon Rice Vinegar",
+      "12 Nori Squares",
+      "1 Squeeze Kewpie Mayo",
+      "1 Tablespoon Sesame Seeds",
+      "1/4 Cup Green Onions (chopped)"
+    ],
+    "steps": [
+      "Start by preheating your oven to 400 F and lightly greasing a standard size muffin tin.",
+      "Next, add your cubed salmon, sea salt, soy sauce, and mayo to a large bowl. Toss to coat well, until all of the ingredients are fully combined.",
+      "Then, add your cooked rice to a bowl and add in your vinegar. Mix until all of the rice is coated in the vinegar.",
+      "Prepare your nori sheets by laying them out on a countertop. If using large nori sheets, cut them into squares small enough to fit into each cavity of your muffin tin.",
+      "Add about 2-3 tablespoons of your rice mixture to each nori sheet, then fold and place inside the muffin tin. Repeat until all of the cavities of your muffin tin are filled.",
+      "Then, top each nori cup with your salmon mixture. This will be about 2 tablespoons, depending on how big your salmon is!",
+      "Finally, bake your cups for 15 minutes, or until the salmon is cooked to your liking.",
+      "Once done, remove from the oven, top with your garnishes of choice, serve, and enjoy! These cups are best eaten the same day, but can be stored in an airtight container, in the fridge, for up to two days."
+    ]
+  },
+  "images": [
+    {
+      "url": "https://kalejunkie.com/wp-content/uploads/2022/11/BakedSalmonSushiCups_Shot5_22.jpg",
+      "width": 1500,
+      "height": 2251,
+      "rank": 0
+    },
+    {
+      "url": "https://kalejunkie.com/wp-content/uploads/2022/11/BakedSalmonSushiCups_Shot5_22-500x500.jpg",
+      "width": null,
+      "height": null,
+      "rank": 1
+    },
+    {
+      "url": "https://kalejunkie.com/wp-content/uploads/2022/11/BakedSalmonSushiCups_Shot5_22-500x375.jpg",
+      "width": null,
+      "height": null,
+      "rank": 2
+    },
+    {
+      "url": "https://kalejunkie.com/wp-content/uploads/2022/11/BakedSalmonSushiCups_Shot5_22-480x270.jpg",
+      "width": null,
+      "height": null,
+      "rank": 3
+    }
+  ],
+  "report": {
+    "method": "json-ld",
+    "found": [
+      "title",
+      "description",
+      "ingredients",
+      "steps",
+      "yield",
+      "nutrition",
+      "image"
+    ],
+    "missing": [
+      "times"
+    ],
+    "warnings": []
+  }
+}

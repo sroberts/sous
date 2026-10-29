@@ -1,0 +1,80 @@
+{
+  "draft": {
+    "title": "Albóndigas in Red Chile Sauce",
+    "source_url": "https://www.bonappetit.com/recipe/albondigas-in-red-chile-sauce",
+    "description": "This recipe for albóndigas in red chile sauce proves once and for all that Italians aren’t the only players in the meatball game.",
+    "notes": "Cotija cheese is available at Latin markets and some supermarkets.",
+    "yield_text": "8 Servings",
+    "ingredients": [
+      "1 poblano chile",
+      "1 small white onion, coarsely chopped",
+      "2 cloves garlic cloves",
+      "½ cup (packed) arugula leaves",
+      "½ cup (packed) fresh cilantro leaves with tender stems",
+      "½ cup crushed tortilla chips",
+      "¼ cup whole milk",
+      "2 large eggs",
+      "4 ounces Cotija cheese or feta, finely grated (about 1 cup)",
+      "Kosher salt and freshly ground black pepper",
+      "2 pounds ground beef, preferably chuck",
+      "4 dried ancho chiles, seeds removed",
+      "1 small white onion, chopped",
+      "2 garlic cloves",
+      "½ teaspoon ground cumin",
+      "2 cups (or more) low-sodium chicken broth",
+      "2 tablespoons olive oil, divided",
+      "1–2 tablespoons sugar",
+      "Kosher salt and freshly ground black pepper",
+      "½ cup sour cream",
+      "2 tablespoons fresh lime juice",
+      "Crumbled Cotija cheese, sliced radishes, toasted shelled pumpkin seeds (pepitas), cilantro sprigs, and lime wedges (for serving)"
+    ],
+    "steps": [
+      "# Albóndigas",
+      "Preheat broiler. Place poblano chile on a broiler-proof rimmed baking sheet and broil, turning occasionally, until charred in spots and blistered all over, 6–8 minutes. Transfer to a bowl, cover with plastic wrap, and let steam 10 minutes. Remove skin, stem, and seeds; discard. Pulse poblano, onion, garlic, arugula, and cilantro in a food processor until very finely chopped.",
+      "Combine tortilla chips and milk in a large bowl; let stand until chips soften, about 5 minutes. Mix in poblano mixture, eggs, and cheese; season with salt and pepper. Gently fold in beef. Form mixture into 1½”-diameter balls (2 Tbsp. each; makes about 40) and chill at least 4 hours.",
+      "# red chile sauce and assembly",
+      "Place ancho chiles in a small bowl and add boiling water to cover. Let sit until softened, about 15 minutes. Drain chiles. Purée chiles, onion, garlic, cumin, 2 cups broth, 1 Tbsp. oil, and 1 Tbsp. sugar in a blender until smooth, adding more broth by the tablespoonful to thin sauce as needed (should be consistency of whole milk); season chile sauce with salt, pepper, and additional 1 Tbsp. sugar, if sauce is too bitter.",
+      "Heat remaining 1 Tbsp. oil in a large nonstick skillet over medium heat. Working in batches, cook meatballs, turning occasionally, until brown all over, 8–10 minutes. Transfer meatballs to a Dutch oven or other large heavy pot and add chile sauce. Bring to a boil, reduce heat, and simmer, turning meatballs halfway through and adding more broth if needed (sauce should come up to about ¾ sides of meatballs), until meatballs are cooked through and sauce is slightly thickened, 15–20 minutes.",
+      "Meanwhile, whisk sour cream and lime juice in a small bowl; season with salt.",
+      "Serve meatballs with lime sour cream, Cotija cheese, radishes, pumpkin seeds, cilantro, and lime wedges.",
+      "DO AHEAD: Red chile sauce can be made 3 days ahead. Meatballs can be formed up to 1 day ahead. Cover both separately and chill. Meatballs can be cooked in chile sauce 1 day ahead. Reheat before serving, adding chicken broth or water as needed to thin sauce."
+    ]
+  },
+  "images": [
+    {
+      "url": "https://assets.bonappetit.com/photos/57adf1cd1b3340441497578b/16:9/w_1280,c_limit/albondigas-in-red-chile-sauce.jpg",
+      "width": null,
+      "height": null,
+      "rank": 0
+    },
+    {
+      "url": "https://assets.bonappetit.com/photos/57adf1cd1b3340441497578b/16:9/w_1280,c_limit/albondigas-in-red-chile-sauce.jpg?mbid=social_retweet",
+      "width": null,
+      "height": null,
+      "rank": 1
+    },
+    {
+      "url": "https://assets.bonappetit.com/photos/57adf1cd1b3340441497578b/master/w_940,h_600,c_limit/albondigas-in-red-chile-sauce.jpg",
+      "width": null,
+      "height": null,
+      "rank": 2
+    }
+  ],
+  "report": {
+    "method": "json-ld",
+    "found": [
+      "title",
+      "description",
+      "ingredients",
+      "steps",
+      "yield",
+      "notes",
+      "image"
+    ],
+    "missing": [
+      "times"
+    ],
+    "warnings": []
+  }
+}

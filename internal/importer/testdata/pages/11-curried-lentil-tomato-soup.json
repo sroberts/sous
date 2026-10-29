@@ -1,0 +1,165 @@
+{
+  "source_url": "https://web.archive.org/web/20231120222809/https://www.myrecipes.com/recipe/curried-lentil-tomato-soup",
+  "fetched_url": "https://web.archive.org/web/20231120222809id_/https://www.myrecipes.com/recipe/curried-lentil-tomato-soup",
+  "status": 200,
+  "server": "nginx",
+  "size": 243311,
+  "title": "Curried Lentil-Tomato Soup Recipe | MyRecipes",
+  "og_title": "Curried Lentil-Tomato Soup Recipe",
+  "og_site_name": "MyRecipes",
+  "og_image": "https://imagesvc.meredithcorp.io/v3/mm/image?q=60\u0026c=sc\u0026poi=%5B0%2C0%5D\u0026w=1000\u0026h=500\u0026url=https%3A%2F%2Fstatic.onecms.io%2Fwp-content%2Fuploads%2Fsites%2F19%2F2012%2F10%2F09%2Fcurried-lentil-tomato-soup-oh-1000.jpg",
+  "og_image_width": 1000,
+  "og_image_height": 500,
+  "twitter_image": "https://imagesvc.meredithcorp.io/v3/mm/image?q=60\u0026c=sc\u0026poi=%5B0%2C0%5D\u0026w=1000\u0026h=500\u0026url=https%3A%2F%2Fstatic.onecms.io%2Fwp-content%2Fuploads%2Fsites%2F19%2F2012%2F10%2F09%2Fcurried-lentil-tomato-soup-oh-1000.jpg",
+  "canonical": "https://www.myrecipes.com/recipe/curried-lentil-tomato-soup",
+  "jsonld": [
+    [
+      {
+        "@type": "BreadcrumbList"
+      },
+      {
+        "@context": "http://schema.org",
+        "@type": "Recipe",
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "bestRating": "5",
+          "itemReviewed": "Curried Lentil-Tomato Soup",
+          "ratingCount": 12,
+          "ratingValue": 4.75,
+          "reviewCount": 4,
+          "worstRating": "1"
+        },
+        "author": {
+          "@type": "Organization",
+          "name": "MyRecipes"
+        },
+        "cookTime": null,
+        "datePublished": "2012-10-09T20:38:22.000Z",
+        "description": "If it's buried under bacon, then you know it's got to be good. This is a yummy comfort food perfect for the winter months and appropriate for all members of your family.",
+        "image": {
+          "@type": "ImageObject",
+          "height": 1000,
+          "url": "https://imagesvc.meredithcorp.io/v3/mm/image?url=https%3A%2F%2Fstatic.onecms.io%2Fwp-content%2Fuploads%2Fsites%2F19%2F2012%2F10%2F09%2Fcurried-lentil-tomato-soup-oh-1000.jpg",
+          "width": 1000
+        },
+        "mainEntityOfPage": "https://www.myrecipes.com/recipe/curried-lentil-tomato-soup",
+        "name": "Curried Lentil-Tomato Soup",
+        "nutrition": {
+          "@type": "NutritionInformation",
+          "calories": "218 calories",
+          "carbohydrateContent": "32.8 g",
+          "cholesterolContent": "11 mg",
+          "fatContent": "3.7 g",
+          "fiberContent": "10.6 g",
+          "proteinContent": "13.5 g",
+          "saturatedFatContent": "1.9 g",
+          "servingSize": null,
+          "sodiumContent": "445 mg",
+          "sugarContent": null,
+          "transFatContent": null,
+          "unsaturatedFatContent": null
+        },
+        "prepTime": null,
+        "recipeCategory": [],
+        "recipeCuisine": [],
+        "recipeIngredient": [
+          "4 center-cut bacon slices",
+          "1 ½ cups chopped sweet onion (1 onion)",
+          "4 garlic cloves, finely chopped",
+          "3 cups fat-free, lower-sodium chicken broth",
+          "1 cup dried lentils",
+          "½ cup chopped carrot",
+          "½ cup chopped celery",
+          "2 teaspoons curry powder",
+          "½ teaspoon ground ginger",
+          "¼ teaspoon ground cinnamon",
+          "2 (14.5-ounce) cans no-salt-added stewed tomatoes, undrained",
+          "½ cup half-and-half",
+          "2 tablespoons dry sherry"
+        ],
+        "recipeInstructions": [
+          {
+            "@type": "HowToStep",
+            "text": "Cook bacon in a large nonstick skillet over medium heat until crisp. Remove bacon from pan; crumble. Add onion and garlic to drippings in pan; sauté 3 minutes. Transfer onion mixture to a 4-quart electric slow cooker. Stir in broth and next 7 ingredients (through tomatoes). Cover and cook on LOW for 8 hours.\n"
+          },
+          {
+            "@type": "HowToStep",
+            "text": "Stir in half-and-half and sherry. Ladle soup into bowls; sprinkle with crumbled bacon.\n"
+          }
+        ],
+        "recipeYield": "6 servings (serving size: about 1 cup soup and 2 teaspoons bacon)",
+        "review": [
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "image": null,
+              "name": "KitchenCat",
+              "sameAs": null
+            },
+            "datePublished": "2015-03-29T11:51:07.000Z",
+            "reviewBody": "Followed the recipe exactly.  This was so good, even my 18mo old loved it.  Will definitely make again.",
+            "reviewRating": {
+              "@type": "Rating",
+              "bestRating": "5",
+              "ratingValue": 5,
+              "worstRating": "1"
+            }
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "image": null,
+              "name": "kitschywhiz",
+              "sameAs": null
+            },
+            "datePublished": "2014-01-18T23:59:29.000Z",
+            "reviewBody": "Really good although I did totally stray from the recipe - substituted Safeway brand Black Beans (cooked with onion and garlic). Also added tumeric because I cook curry on my own and you add tumeric for color and for enhanced scent, and it's a cousin of ginger. Overall, it came out spicy on it's own! I have no idea how but I suspect the ground ginger did the trick - I did NOT add any salt or pepper, either. I'll add the sherry in the morning and see what that does to it!",
+            "reviewRating": {
+              "@type": "Rating",
+              "bestRating": "5",
+              "ratingValue": 5,
+              "worstRating": "1"
+            }
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "image": null,
+              "name": "LauraD0612",
+              "sameAs": null
+            },
+            "datePublished": "2013-11-11T13:09:22.000Z",
+            "reviewBody": "This is YUM!  Followed the recipe exactly, except for the sherry part. Substituted cognac and dry white wine in equal parts. Oh yeah, left out the bacon all together. My crock pot might be sub-par, and the soup was not done in 9.5 hours on low.  No big deal, just turned it to high when I got home, and the lentils were cooked to perfection within a few minutes. Added a bit of salt and cayenne to my taste.  Great recipe for meatless Monday.",
+            "reviewRating": {
+              "@type": "Rating",
+              "bestRating": "5",
+              "ratingValue": 5,
+              "worstRating": "1"
+            }
+          },
+          {
+            "@type": "Review",
+            "author": {
+              "@type": "Person",
+              "image": null,
+              "name": "twaflygal",
+              "sameAs": null
+            },
+            "datePublished": "2013-01-13T13:33:14.000Z",
+            "reviewBody": "This is a wonderful, easy recipe for a dinner soup on a cold winter night served with a salad or even just crusty French bread. I had to make some substitutions since I discovered I had no lentils, just barley so barley it was. Also only had one can of whole, peeled tomatoes so in they went. And to add to my ineptitude I didn't start making it until 3:30 so the crock pot was out of the question, and I had to just let it simmer for 2 hours.  Nonetheless, my husband had 3 servings! A definite winner! Nice and thick - more like stew than soup and with great flavor. I also added a little salt and pepper to taste but I can't wait to make it the right way next time.",
+            "reviewRating": {
+              "@type": "Rating",
+              "bestRating": "5",
+              "ratingValue": 5,
+              "worstRating": "1"
+            }
+          }
+        ],
+        "totalTime": null
+      }
+    ]
+  ]
+}

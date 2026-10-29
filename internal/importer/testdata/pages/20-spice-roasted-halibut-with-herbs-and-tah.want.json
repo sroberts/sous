@@ -1,0 +1,49 @@
+{
+  "draft": {
+    "title": "Spice-Roasted Halibut with Herbs and Tahini Salad",
+    "source_url": "https://www.foodandwine.com/recipes/spice-roasted-halibut-with-herbs-and-tahini-salad",
+    "description": "Reem Assil's Spice-Roasted Halibut with Tahini Salad uses a blend of earthy warming spices with fresh aromatics for a fast-fix summer dinner.",
+    "yield_text": "4",
+    "total_minutes": 65,
+    "ingredients": [
+      "0.25 cup olive oil, divided",
+      "2 tablespoons khalta hara (chile spice blend) (such as Burlap \u0026 Barrel)",
+      "2 teaspoons ground coriander",
+      "1.50 teaspoons ground ginger",
+      "4 (6-ounce) skinless halibut fillets",
+      "2 tablespoons fresh lemon juice plus 4 lemon slices, divided",
+      "4 fresh flat-leaf parsley stems plus 1/2 cup fresh flat-leaf parsley leaves",
+      "4 cilantro stems plus 1/2 cup fresh cilantro leaves",
+      "2 tablespoons thinly sliced serrano chile",
+      "1 large garlic clove, grated",
+      "1 teaspoon kosher salt",
+      "Tahini Salad (recipe follows) and flatbread, for serving"
+    ],
+    "steps": [
+      "Preheat oven to 400°F with oven racks in middle and top positions. Stir together 2 tablespoons olive oil, khalta hara, coriander, and ginger in a small bowl to form a paste. Rub spice mixture evenly over fish (about 2 teaspoons per fillet). Place lemon slices 4 inches apart on a baking sheet. Top each lemon slice with 1 parsley stem and 1 cilantro stem. Top with fish fillets, and set aside at room temperature 15 minutes. Stir together serrano chile, parsley leaves, and cilantro leaves in a small bowl. Stir together garlic, salt, lemon juice, and remaining 2 tablespoons oil in a separate bowl.",
+      "Roast fish on middle rack of preheated oven until a meat thermometer inserted in thickest portion registers 140°F, 10 to 12 minutes. Toss lemon juice mixture with serrano mixture until evenly coated. Serve each fillet with 1/4 cup herb mixture, tahini salad, and flatbread."
+    ]
+  },
+  "images": [
+    {
+      "url": "https://www.foodandwine.com/thmb/jovCxuYrfIg383FqNAiyp_ikZj0=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/spice-roasted-halibut-with-herbs-and-tahini-salad-FT-RECIPE0721-5742bf2928254b88a3e94e464322be74.jpg",
+      "width": 1500,
+      "height": 1000,
+      "rank": 0
+    }
+  ],
+  "report": {
+    "method": "json-ld",
+    "found": [
+      "title",
+      "description",
+      "ingredients",
+      "steps",
+      "times",
+      "yield",
+      "image"
+    ],
+    "missing": [],
+    "warnings": []
+  }
+}

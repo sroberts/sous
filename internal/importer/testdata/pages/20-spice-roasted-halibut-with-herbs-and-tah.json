@@ -1,0 +1,134 @@
+{
+  "source_url": "https://www.foodandwine.com/recipes/spice-roasted-halibut-with-herbs-and-tahini-salad",
+  "fetched_url": "https://www.foodandwine.com/recipes/spice-roasted-halibut-with-herbs-and-tahini-salad",
+  "status": 200,
+  "server": "cloudflare",
+  "size": 638645,
+  "title": "Spice-Roasted Halibut with Herbs and Tahini Salad Recipe",
+  "og_title": "Spice-Roasted Halibut with Herbs and Tahini Salad",
+  "og_site_name": "Food \u0026 Wine",
+  "og_image": "https://www.foodandwine.com/thmb/jovCxuYrfIg383FqNAiyp_ikZj0=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/spice-roasted-halibut-with-herbs-and-tahini-salad-FT-RECIPE0721-5742bf2928254b88a3e94e464322be74.jpg",
+  "twitter_image": "https://www.foodandwine.com/thmb/jovCxuYrfIg383FqNAiyp_ikZj0=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/spice-roasted-halibut-with-herbs-and-tahini-salad-FT-RECIPE0721-5742bf2928254b88a3e94e464322be74.jpg",
+  "canonical": "https://www.foodandwine.com/recipes/spice-roasted-halibut-with-herbs-and-tahini-salad",
+  "jsonld": [
+    [
+      {
+        "@context": "http://schema.org",
+        "@type": [
+          "Recipe",
+          "NewsArticle"
+        ],
+        "author": [
+          {
+            "@type": "Person",
+            "name": "Reem Assil",
+            "url": "https://www.foodandwine.com/reem-assil-8412871"
+          }
+        ],
+        "dateModified": "2021-06-15T16:11:15-04:00",
+        "datePublished": "2021-06-15T16:11:15-04:00",
+        "description": "Reem Assil\u0026#39;s Spice-Roasted Halibut with Tahini Salad uses a blend of earthy warming spices with fresh aromatics for a fast-fix summer dinner.",
+        "headline": "Spice-Roasted Halibut with Herbs and Tahini Salad",
+        "image": {
+          "@type": "ImageObject",
+          "contentUrl": "https://www.foodandwine.com/thmb/jovCxuYrfIg383FqNAiyp_ikZj0=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/spice-roasted-halibut-with-herbs-and-tahini-salad-FT-RECIPE0721-5742bf2928254b88a3e94e464322be74.jpg",
+          "creditText": "Photo by Victor Protasio / Food Styling by Chelsea Zimmer / Prop Styling by Heather Claire Spollen",
+          "height": 1000,
+          "url": "https://www.foodandwine.com/thmb/jovCxuYrfIg383FqNAiyp_ikZj0=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/spice-roasted-halibut-with-herbs-and-tahini-salad-FT-RECIPE0721-5742bf2928254b88a3e94e464322be74.jpg",
+          "width": 1500
+        },
+        "mainEntityOfPage": {
+          "@id": "https://www.foodandwine.com/recipes/spice-roasted-halibut-with-herbs-and-tahini-salad",
+          "@type": [
+            "WebPage"
+          ],
+          "breadcrumb": {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "item": {
+                  "@id": "https://www.foodandwine.com/food-7499700",
+                  "name": "Food"
+                },
+                "position": 1
+              },
+              {
+                "@type": "ListItem",
+                "item": {
+                  "@id": "https://www.foodandwine.com/recipes",
+                  "name": "Recipes"
+                },
+                "position": 2
+              },
+              {
+                "@type": "ListItem",
+                "item": {
+                  "@id": "https://www.foodandwine.com/recipes/dinner",
+                  "name": "Dinner"
+                },
+                "position": 3
+              }
+            ]
+          },
+          "name": "Spice-Roasted Halibut with Herbs and Tahini Salad"
+        },
+        "name": "Spice-Roasted Halibut with Herbs and Tahini Salad",
+        "publisher": {
+          "@type": "Organization",
+          "brand": "Food \u0026 Wine",
+          "logo": {
+            "@type": "ImageObject",
+            "contentUrl": "https://www.foodandwine.com/thmb/uV0O06O8WNrLepjgxkntdVuRpeE=/112x112/filters:no_upscale():max_bytes(150000):strip_icc()/brand_logo_schema-f3b2e548eb6f4243ad527798593483e0.png",
+            "creditText": "Food \u0026 Wine",
+            "height": 112,
+            "width": 112
+          },
+          "name": "Food \u0026 Wine",
+          "publishingPrinciples": "https://www.foodandwine.com/about-us-6373913#toc-editorial-policies",
+          "sameAs": [
+            "https://www.facebook.com/foodandwine",
+            "https://www.instagram.com/foodandwine/?hl=en",
+            "https://www.pinterest.com/foodandwine/",
+            "https://flipboard.com/@foodandwine",
+            "https://www.youtube.com/channel/UCKH_4hkRSyUSHDIFMzlGCRA",
+            "https://en.wikipedia.org/wiki/Food_%26_Wine"
+          ],
+          "url": "https://www.foodandwine.com"
+        },
+        "recipeCategory": [
+          "Dinner"
+        ],
+        "recipeCuisine": [
+          "Middle Eastern"
+        ],
+        "recipeIngredient": [
+          ".25 cup olive oil, divided",
+          "2 tablespoons khalta hara (chile spice blend) (such as Burlap \u0026 Barrel)",
+          "2 teaspoons ground coriander",
+          "1.50 teaspoons ground ginger",
+          "4 (6-ounce) skinless halibut fillets",
+          "2 tablespoons fresh lemon juice plus 4 lemon slices, divided",
+          "4 fresh flat-leaf parsley stems plus 1/2 cup fresh flat-leaf parsley leaves",
+          "4 cilantro stems plus 1/2 cup fresh cilantro leaves",
+          "2 tablespoons thinly sliced serrano chile",
+          "1 large garlic clove, grated",
+          "1 teaspoon kosher salt",
+          "Tahini Salad (recipe follows) and flatbread, for serving"
+        ],
+        "recipeInstructions": [
+          {
+            "@type": "HowToStep",
+            "text": "Preheat oven to 400°F with oven racks in middle and top positions. Stir together 2 tablespoons olive oil, khalta hara, coriander, and ginger in a small bowl to form a paste. Rub spice mixture evenly over fish (about 2 teaspoons per fillet). Place lemon slices 4 inches apart on a baking sheet. Top each lemon slice with 1 parsley stem and 1 cilantro stem. Top with fish fillets, and set aside at room temperature 15 minutes. Stir together serrano chile, parsley leaves, and cilantro leaves in a small bowl. Stir together garlic, salt, lemon juice, and remaining 2 tablespoons oil in a separate bowl."
+          },
+          {
+            "@type": "HowToStep",
+            "text": "Roast fish on middle rack of preheated oven until a meat thermometer inserted in thickest portion registers 140°F, 10 to 12 minutes. Toss lemon juice mixture with serrano mixture until evenly coated. Serve each fillet with 1/4 cup herb mixture, tahini salad, and flatbread."
+          }
+        ],
+        "recipeYield": "4",
+        "totalTime": "PT65M"
+      }
+    ]
+  ]
+}

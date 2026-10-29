@@ -33,9 +33,10 @@ var (
 
 // componentNames names the API's own types in components/schemas.
 var componentNames = map[reflect.Type]string{
-	reflect.TypeFor[errorBody]():   "Error",
-	reflect.TypeFor[errorDetail](): "ErrorDetail",
-	reflect.TypeFor[staleBody]():   "StaleError",
+	reflect.TypeFor[errorBody]():       "Error",
+	reflect.TypeFor[errorDetail]():     "ErrorDetail",
+	reflect.TypeFor[staleBody]():       "StaleError",
+	reflect.TypeFor[importErrorBody](): "ImportError",
 }
 
 const docDescription = `Sous is a household recipe manager. Every response is JSON except images.
@@ -116,6 +117,8 @@ var errorDescriptions = map[int]string{
 	412: "stale: the recipe changed since the version in If-Match; current holds it as it now stands",
 	413: "too_large",
 	415: "unsupported_media_type: not JPEG, PNG, WebP or HEIC",
+	422: "the import failed: blocked, paywalled, not_found, no_recipe_found, timeout, too_large, unsupported_url or site_error; " +
+		"page holds what the page still offered, to start a pasted recipe from",
 	428: "version_required: send If-Match",
 	500: "internal",
 	503: "starting, or identity_unavailable: the gateway's keys cannot be fetched",
@@ -153,6 +156,7 @@ func buildDocument(eps []endpoint, version string) *document {
 	}
 	errRef := b.component(jsonOf[errorBody]())
 	staleRef := b.component(jsonOf[staleBody]())
+	importErrRef := b.component(jsonOf[importErrorBody]())
 	for _, ep := range eps {
 		op := &operation{
 			OperationID: ep.OpID,
@@ -205,8 +209,11 @@ func buildDocument(eps []endpoint, version string) *document {
 		}
 		for _, code := range errs {
 			s := errRef
-			if code == http.StatusPreconditionFailed {
+			switch code {
+			case http.StatusPreconditionFailed:
 				s = staleRef
+			case http.StatusUnprocessableEntity:
+				s = importErrRef
 			}
 			op.Responses[strconv.Itoa(code)] = &response{
 				Description: errorDescriptions[code],

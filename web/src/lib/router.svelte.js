@@ -4,6 +4,7 @@
 const ROUTES = [
   ['library', /^\/$/],
   ['new', /^\/new$/],
+  ['import', /^\/import$/],
   ['recipe', /^\/r\/([\w-]+)$/],
   ['cook', /^\/r\/([\w-]+)\/cook$/],
   ['edit', /^\/r\/([\w-]+)\/edit$/],

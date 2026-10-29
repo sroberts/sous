@@ -1,0 +1,119 @@
+{
+  "source_url": "https://www.epicurious.com/recipes/food/views/rotisserie-chicken-salad-with-charred-scallion-dressing",
+  "fetched_url": "https://www.epicurious.com/recipes/food/views/rotisserie-chicken-salad-with-charred-scallion-dressing",
+  "status": 200,
+  "server": "CloudFront",
+  "size": 1087356,
+  "title": "Rotisserie Chicken Salad with Charred Scallion Dressing Recipe | Epicurious",
+  "og_title": "Rotisserie Chicken Salad with Charred Scallion Dressing",
+  "og_site_name": "Epicurious",
+  "og_image": "https://assets.epicurious.com/photos/5a05db1747bc8227618ffb1f/16:9/w_1280,c_limit/rotisserie-chicken-salad-with-charred-scallion-dressing-recipe-BA-111017.jpg",
+  "twitter_image": "https://assets.epicurious.com/photos/5a05db1747bc8227618ffb1f/16:9/w_1280,c_limit/rotisserie-chicken-salad-with-charred-scallion-dressing-recipe-BA-111017.jpg?mbid=social_retweet",
+  "canonical": "https://www.bonappetit.com/recipe/rotisserie-chicken-salad-with-charred-scallion-dressing",
+  "markers": [
+    "captcha"
+  ],
+  "jsonld": [
+    {
+      "@context": "http://schema.org",
+      "@type": "Recipe",
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingCount": 20,
+        "ratingValue": 4.9
+      },
+      "alternativeHeadline": "A hearty, healthy meal that’s halfway done before you even start cooking.",
+      "articleBody": "A hearty, healthy meal that’s halfway done before you even start cooking.",
+      "author": [
+        {
+          "@type": "Person",
+          "name": "Adam Rapoport",
+          "sameAs": "https://www.epicurious.com/contributor/adam-rapoport"
+        }
+      ],
+      "dateModified": "2017-11-01T12:08:00.000-04:00",
+      "datePublished": "2017-11-01T12:08:00.000-04:00",
+      "description": "A hearty, healthy meal that’s halfway done before you even start cooking.",
+      "headline": "Rotisserie Chicken Salad with Charred Scallion Dressing",
+      "image": [
+        "https://assets.epicurious.com/photos/5a05db1747bc8227618ffb1f/16:9/w_2000,h_1125,c_limit/rotisserie-chicken-salad-with-charred-scallion-dressing-recipe-BA-111017.jpg",
+        "https://assets.epicurious.com/photos/5a05db1747bc8227618ffb1f/4:3/w_1776,h_1332,c_limit/rotisserie-chicken-salad-with-charred-scallion-dressing-recipe-BA-111017.jpg",
+        "https://assets.epicurious.com/photos/5a05db1747bc8227618ffb1f/1:1/w_1332,h_1332,c_limit/rotisserie-chicken-salad-with-charred-scallion-dressing-recipe-BA-111017.jpg"
+      ],
+      "inLanguage": "en-US",
+      "isAccessibleForFree": true,
+      "isPartOf": {
+        "@type": "CreativeWork",
+        "name": "Epicurious"
+      },
+      "keywords": [
+        "salad",
+        "american",
+        "chicken",
+        "scallion",
+        "lettuce",
+        "avocado",
+        "radish",
+        "lemon",
+        "main",
+        "dinner",
+        "lunch",
+        "brunch",
+        "nut free",
+        "easy",
+        "weeknight meals",
+        "roast",
+        "bon appétit",
+        "web"
+      ],
+      "name": "Rotisserie Chicken Salad with Charred Scallion Dressing",
+      "publisher": {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "logo": {
+          "@type": "ImageObject",
+          "height": "100px",
+          "url": "https://www.epicurious.com/verso/static/epicurious-us/assets/logo-seo.png",
+          "width": "488px"
+        },
+        "name": "Epicurious",
+        "url": "https://www.epicurious.com"
+      },
+      "recipeIngredient": [
+        "5 ounce country-style bread, crusts removed, torn into 1\" pieces",
+        "10 tablespoons olive oil, divided",
+        "2 scallions",
+        "Kosher salt, freshly ground pepper",
+        "2 tablespoons fresh lemon juice",
+        "2 tablespoons unseasoned rice vinegar",
+        "1 tablespoons Dijon mustard",
+        "1 tablespoons mayonnaise, preferably Hellmann’s (Best Foods)",
+        "1 small rotisserie chicken, meat pulled from bones and shredded",
+        "6 radishes, trimmed, cut into wedges",
+        "1 head of Bibb lettuce, leaves separated",
+        "1 avocado, sliced, divided"
+      ],
+      "recipeInstructions": [
+        {
+          "@type": "HowToStep",
+          "text": "Preheat oven to 450°F. Toss bread and 3 Tbsp. oil on a rimmed baking sheet; season with salt and pepper. Bake until golden and crisp around the edges, 8–12 minutes; let croutons cool."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Meanwhile, separate scallion whites from greens. Finely chop whites; place in a large bowl. Finely chop greens. Heat 1 Tbsp. oil in a small skillet over medium. Cook greens, stirring often, until blackened around edges and crisp, about 3 minutes. Scrape into bowl with whites, then whisk in lemon juice, vinegar, mustard, and mayonnaise; season with salt and pepper. Gradually whisk in remaining 6 Tbsp. oil."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Pour half of dressing into a small bowl; set aside. Add chicken, radishes, and croutons to bowl with remaining dressing and toss to coat."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Arrange lettuce and half of avocado on a platter; season with salt and pepper. Drizzle with 3 Tbsp. reserved dressing; top with chicken salad. Tuck remaining avocado around; season with salt and pepper. Drizzle with remaining dressing."
+        }
+      ],
+      "recipeYield": "4 servings ",
+      "thumbnailUrl": "https://assets.epicurious.com/photos/5a05db1747bc8227618ffb1f/1:1/w_1332,h_1332,c_limit/rotisserie-chicken-salad-with-charred-scallion-dressing-recipe-BA-111017.jpg",
+      "url": "https://www.bonappetit.com/recipe/rotisserie-chicken-salad-with-charred-scallion-dressing"
+    }
+  ]
+}

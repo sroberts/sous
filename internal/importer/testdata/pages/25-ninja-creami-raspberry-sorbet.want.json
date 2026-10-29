@@ -1,0 +1,66 @@
+{
+  "draft": {
+    "title": "Ninja Creami Raspberry Sorbet",
+    "source_url": "https://www.foodbanjo.com/ninja-creami-raspberry-sorbet/",
+    "description": "Ninja Creami raspberry sorbet is so refreshing. It can be made with fresh or frozen raspberries, so you can make it any time of year!",
+    "yield_text": "4",
+    "prep_minutes": 10,
+    "total_minutes": 1095,
+    "nutrition_text": "Serving: 1 serving · Calories: 81 kcal · Fat: 0.4 g · Saturated fat: 0.02 g · Unsaturated fat: 0.24 g · Sodium: 3 mg · Carbohydrates: 20 g · Fiber: 4 g · Sugar: 15 g · Protein: 1 g",
+    "ingredients": [
+      "2 cups raspberries (fresh or frozen)",
+      "2/3 cup hot water",
+      "1/4 cup sugar",
+      "2 Tablespoons lemon juice"
+    ],
+    "steps": [
+      "Heat water, then add sugar. Stir until dissolved.",
+      "Add water, raspberries, and fresh lemon juice to the blender. Blend until smooth.",
+      "Strain mixture through a fine mesh strainer to remove seeds (optional but recommended).",
+      "Pour into Ninja Creami container and freeze on a level surface for at least 18 hours.",
+      "Remove from freezer and run a little warm water along the outer edge for 30 seconds (or leave on the counter for 7-10 minutes to thaw).",
+      "Process on the sorbet setting. If needed, respin until you reach your desired texture."
+    ]
+  },
+  "images": [
+    {
+      "url": "https://www.foodbanjo.com/wp-content/uploads/2026/06/ninja-creami-raspberry-sorbet-1200fp.jpg",
+      "width": 1200,
+      "height": 1200,
+      "rank": 0
+    },
+    {
+      "url": "https://www.foodbanjo.com/wp-content/uploads/2026/06/ninja-creami-raspberry-sorbet-1200fp-500x500.jpg",
+      "width": null,
+      "height": null,
+      "rank": 1
+    },
+    {
+      "url": "https://www.foodbanjo.com/wp-content/uploads/2026/06/ninja-creami-raspberry-sorbet-1200fp-500x375.jpg",
+      "width": null,
+      "height": null,
+      "rank": 2
+    },
+    {
+      "url": "https://www.foodbanjo.com/wp-content/uploads/2026/06/ninja-creami-raspberry-sorbet-1200fp-480x270.jpg",
+      "width": null,
+      "height": null,
+      "rank": 3
+    }
+  ],
+  "report": {
+    "method": "json-ld",
+    "found": [
+      "title",
+      "description",
+      "ingredients",
+      "steps",
+      "times",
+      "yield",
+      "nutrition",
+      "image"
+    ],
+    "missing": [],
+    "warnings": []
+  }
+}

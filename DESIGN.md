@@ -304,6 +304,15 @@ The recipe's figures read across the top of a ticket in fixed cells: label over 
 ### The Rail (signature)
 A 10px steel bar (`steel-hi` to `steel` to `steel-lo`) with tickets overlapping it by 4px, each held by a centred steel clip. Rail tickets show a big time figure and ingredient count, a perforation, then the title and source; on hover a ticket swings 1deg from its clip (240ms). In cook mode a new step fires onto the rail with a short slide and settle (420ms); queued steps hang beside it at reduced opacity (0.72, then 0.5); timers hang in their own lane with a red clock, grey when paused, and turn solid red and swing when done.
 
+### Import page
+`/import` is a plain page on paper, not a panel. With no link it holds one field and a primary Fetch button, with the "Send recipes from anywhere" panel below (bookmarklet link and iOS Shortcut steps). While a link is read it says "Reading <host>…" in a polite live region, and adds a slow-site note after 5 seconds. On success the banner sits above the ordinary editor; on failure it shows a ticket-voiced message for the error code, then the paste box.
+
+### Import banner
+A thermal-white strip under a 3px black rule, above the editor. The headline reads "Read from <host>" with an external-link icon; beneath it, one line on how the page was read. Counts (ingredients, steps, sections) sit to the right as label-over-figure cells under 3px black rules, like Facts. Missing items and warnings follow a dashed perforation as icon rows (dashed circle for missing, triangle for warnings), 18px line icons in `ink-2`. A duplicate adds another perforated block: the existing recipe's title, then default buttons (Open it, Update it with this version, Save as new; Restore it if trashed), with chosen options `aria-pressed`. The recipe stays hidden until one is chosen. No colour is added; red stays with the primary action.
+
+### Paste box
+A panel (3px black rule under its label header) titled "Paste the recipe", with a Title field and a ten-row text area in the editor-field style (borderless, `perf` underline turning red on focus), an intro line saying why the link failed, and a "Read the recipe" button. It is primary on the error view, where it is the next step, and default on the blank form. Errors are the standard red message beneath the field.
+
 ### Toast
 Black slip with white text and a white-stroked button, 3px corners, rising 12px into place over 320ms.
 

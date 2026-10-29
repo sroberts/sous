@@ -899,6 +899,112 @@
         }
       }
     },
+    "/v1/recipes/import/preview": {
+      "post": {
+        "operationId": "previewImport",
+        "summary": "Read a recipe from a link (or pasted text) into a draft to review; nothing is saved but its photo. POST the draft to /v1/recipes to save it",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Person"
+          },
+          {
+            "$ref": "#/components/parameters/Via"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportPreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid, invalid_cursor or unknown_image; the message says what is wrong",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "who_are_you (a write from nobody), unknown_person, invalid_identity or gateway_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "cross_origin: a browser request from another site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "too_large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "the import failed: blocked, paywalled, not_found, no_recipe_found, timeout, too_large, unsupported_url or site_error; page holds what the page still offered, to start a pasted recipe from",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "starting, or identity_unavailable: the gateway's keys cannot be fetched",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/recipes/{id}": {
       "delete": {
         "operationId": "deleteRecipe",
@@ -1734,6 +1840,31 @@
         ],
         "additionalProperties": false
       },
+      "DuplicateRef": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer"
+          },
+          "deleted": {
+            "type": "boolean",
+            "description": "the existing copy is in the trash"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "version",
+          "deleted"
+        ],
+        "additionalProperties": false
+      },
       "Error": {
         "type": "object",
         "properties": {
@@ -1764,6 +1895,48 @@
         ],
         "additionalProperties": false
       },
+      "ImageCandidate": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "width": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "height": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "hash": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "set when the photo was stored in Sous"
+          },
+          "problem": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "why the photo wasn't stored"
+          }
+        },
+        "required": [
+          "url",
+          "width",
+          "height",
+          "hash",
+          "problem"
+        ],
+        "additionalProperties": false
+      },
       "ImageRef": {
         "type": "object",
         "properties": {
@@ -1775,6 +1948,189 @@
         "required": [
           "hash"
         ],
+        "additionalProperties": false
+      },
+      "ImportError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorDetail"
+          },
+          "page": {
+            "description": "the page's link, title and photo, when it was reached",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImportPage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "error",
+          "page"
+        ],
+        "additionalProperties": false
+      },
+      "ImportPage": {
+        "type": "object",
+        "properties": {
+          "source_url": {
+            "type": "string"
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "image": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImageCandidate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "source_url",
+          "title",
+          "image"
+        ],
+        "additionalProperties": false
+      },
+      "ImportPreview": {
+        "type": "object",
+        "properties": {
+          "draft": {
+            "$ref": "#/components/schemas/RecipeInput",
+            "description": "the recipe as read; POST it to /v1/recipes to save"
+          },
+          "ingredients": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ParsedLine"
+            },
+            "description": "draft.ingredients as the server would store them"
+          },
+          "images": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ImageCandidate"
+            },
+            "description": "photos found on the page, best first"
+          },
+          "report": {
+            "$ref": "#/components/schemas/ImportReport"
+          },
+          "duplicates": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/DuplicateRef"
+            },
+            "description": "recipes already in Sous from the same link"
+          }
+        },
+        "required": [
+          "draft",
+          "ingredients",
+          "images",
+          "report",
+          "duplicates"
+        ],
+        "additionalProperties": false
+      },
+      "ImportReport": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "type": "string",
+            "description": "json-ld, microdata, h-recipe or text"
+          },
+          "source_url": {
+            "type": "string",
+            "description": "the link the recipe is credited to"
+          },
+          "fetched_url": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "the URL actually fetched, when it differs (an archive copy, a redirect)"
+          },
+          "archived": {
+            "type": "boolean",
+            "description": "read from a web.archive.org copy"
+          },
+          "found": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "missing": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "warnings": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "method",
+          "source_url",
+          "fetched_url",
+          "archived",
+          "found",
+          "missing",
+          "warnings"
+        ],
+        "additionalProperties": false
+      },
+      "ImportRequest": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "the recipe page to read; with text, only the link the recipe is credited to, never fetched"
+          },
+          "text": {
+            "type": "string",
+            "description": "recipe text pasted by a person; split into ingredients and steps without fetching anything"
+          },
+          "title": {
+            "type": "string",
+            "description": "with text: a title carried over from a page that had no recipe data"
+          }
+        },
         "additionalProperties": false
       },
       "Ingredient": {

@@ -1,0 +1,191 @@
+{
+  "bonappetit.com/recipe/braised-short-rib-ragu-with-pappardelle": {
+    "preview": {
+      "draft": {
+        "title": "Braised Short Rib Ragù With Pappardelle",
+        "source_url": "https://www.bonappetit.com/recipe/braised-short-rib-ragu-with-pappardelle",
+        "description": "Bone-in short ribs give this ragù its body, and a long, low braise does nearly all the work. Make the sauce a day ahead; it only gets better.",
+        "yield_text": "8 Servings",
+        "notes": "Ingredient info: Look for fresh pappardelle in the refrigerated section of well-stocked supermarkets; dried works too, just cook it a few minutes longer.\nDo ahead: Ragù can be made 3 days ahead. Let cool, then cover and chill. Rewarm gently over low heat, adding a splash of water if needed.",
+        "ingredients": [
+          "# Ragù",
+          "3 lb. bone-in beef short ribs, cut into 2–3 pieces",
+          "2 tsp. Diamond Crystal or 1 tsp. Morton kosher salt, plus more",
+          "Freshly ground black pepper",
+          "2 Tbsp. extra-virgin olive oil",
+          "1 large onion, finely chopped",
+          "2 medium carrots, peeled, finely chopped",
+          "2 celery stalks, finely chopped",
+          "6 garlic cloves, thinly sliced",
+          "3 Tbsp. tomato paste",
+          "1½ cups dry red wine",
+          "1 28-oz. can whole peeled tomatoes",
+          "2 sprigs rosemary",
+          "1 bay leaf",
+          "# Assembly",
+          "1 lb. fresh pappardelle",
+          "3 Tbsp. unsalted butter",
+          "1 oz. Parmesan, finely grated, plus more for serving"
+        ],
+        "steps": [
+          "# Ragù",
+          "Preheat oven to 300°. Season short ribs all over with salt and pepper. Heat oil in a large Dutch oven over medium-high. Working in batches, cook short ribs, turning occasionally, until deeply browned on all sides, 10–12 minutes per batch. Transfer to a plate.",
+          "Pour off all but 2 Tbsp. fat from pot. Add onion, carrots, and celery and cook, stirring often, until softened and beginning to brown, 8–10 minutes. Add garlic and cook, stirring, until fragrant, about 1 minute. Add tomato paste and cook, stirring, until it darkens slightly, about 2 minutes.",
+          "Add wine and simmer, scraping up browned bits, until reduced by half, about 5 minutes. Add tomatoes, crushing with your hands, then rosemary, bay leaf, and 1 cup water. Return short ribs and any accumulated juices to pot; bring to a simmer.",
+          "Cover pot and transfer to oven. Braise until meat is falling off the bone, 3–3½ hours.",
+          "Transfer short ribs to a cutting board; discard bones, rosemary, and bay leaf. Shred meat with 2 forks and return to sauce. Simmer over medium until thickened, 10–15 minutes. Taste and season with more salt if needed.",
+          "# Assembly",
+          "Cook pasta in a large pot of boiling salted water, stirring occasionally, until al dente. Drain, reserving 1 cup pasta cooking liquid.",
+          "Add pasta, butter, and Parmesan to ragù along with ½ cup pasta cooking liquid. Toss, adding more liquid as needed, until sauce coats pasta. Serve topped with more Parmesan."
+        ],
+        "images": []
+      },
+      "images": [],
+      "report": {
+        "method": "json-ld",
+        "source_url": "https://www.bonappetit.com/recipe/braised-short-rib-ragu-with-pappardelle",
+        "fetched_url": null,
+        "archived": false,
+        "found": ["title", "description", "yield", "ingredients", "steps", "notes"],
+        "missing": ["times", "photo"],
+        "warnings": []
+      }
+    }
+  },
+  "halfbakedharvest.com/sheet-pan-sticky-honey-garlic-chicken-and-rice": {
+    "preview": {
+      "draft": {
+        "title": "Sheet Pan Sticky Honey Garlic Chicken and Rice",
+        "source_url": "https://www.halfbakedharvest.com/sheet-pan-sticky-honey-garlic-chicken-and-rice/",
+        "description": "Crispy, sticky chicken roasted on one pan with garlicky rice underneath to catch every drop of the sauce. Weeknight easy, and everyone goes back for seconds.",
+        "yield_text": "4 Servings",
+        "prep_minutes": 15,
+        "cook_minutes": 35,
+        "total_minutes": 50,
+        "time_text": "Prep: 15 min · Cook: 35 min",
+        "nutrition_text": "Calories: 612 · Fat: 21 g · Carbohydrates: 68 g · Protein: 38 g · Sodium: 1180 mg",
+        "ingredients": [
+          "1 1/2 cups jasmine rice",
+          "2 cups low-sodium chicken broth",
+          "4 cloves garlic, minced or grated",
+          "1 tablespoon extra virgin olive oil",
+          "1 1/2 pounds boneless chicken thighs",
+          "2 tablespoons arrowroot starch",
+          "kosher salt and black pepper",
+          "# Sticky Honey Sauce",
+          "1/3 cup honey",
+          "1/4 cup low-sodium soy sauce",
+          "2 tablespoons rice vinegar",
+          "1 tablespoon sesame oil",
+          "1 tablespoon fresh grated ginger",
+          "1-2 teaspoons chili flakes",
+          "# To Serve",
+          "sliced green onions and toasted sesame seeds",
+          "chopped fresh cilantro"
+        ],
+        "steps": [
+          "Preheat the oven to 425° F. Grease a 9x13 inch baking dish or sheet pan with sides.",
+          "In the baking dish, combine the rice, broth, and half the garlic. Cover tightly with foil and bake for 15 minutes.",
+          "Meanwhile, toss the chicken with the olive oil, arrowroot, and a pinch each of salt and pepper.",
+          "To make the sauce, whisk together the honey, soy sauce, vinegar, sesame oil, ginger, chili flakes, and the remaining garlic.",
+          "Remove the foil and arrange the chicken over the rice. Pour half the sauce over the chicken. Return to the oven, uncovered, and bake for 20 minutes more, until the chicken is cooked through and the rice is tender.",
+          "Switch the oven to broil and pour over the remaining sauce. Broil 2-3 minutes, until the chicken is sticky and caramelized. Top with green onions, sesame seeds, and cilantro."
+        ],
+        "images": []
+      },
+      "images": [
+        {
+          "url": "https://www.halfbakedharvest.com/wp-content/uploads/2024/02/Sheet-Pan-Sticky-Honey-Garlic-Chicken-and-Rice-1.jpg",
+          "width": 1200,
+          "height": 1800,
+          "hash": null,
+          "problem": "The site refused the photo request (403)."
+        },
+        {
+          "url": "https://www.halfbakedharvest.com/wp-content/uploads/2024/02/Sheet-Pan-Sticky-Honey-Garlic-Chicken-and-Rice-1-500x500.jpg",
+          "width": null,
+          "height": null,
+          "hash": null,
+          "problem": "The site refused the photo request (403)."
+        }
+      ],
+      "report": {
+        "method": "json-ld",
+        "source_url": "https://www.halfbakedharvest.com/sheet-pan-sticky-honey-garlic-chicken-and-rice/",
+        "fetched_url": null,
+        "archived": false,
+        "found": ["title", "description", "yield", "times", "nutrition", "ingredients", "steps"],
+        "missing": ["photo"],
+        "warnings": []
+      }
+    }
+  },
+  "cooking.nytimes.com/recipes/1099999-miso-butter-roast-chicken": {
+    "preview": {
+      "draft": {
+        "title": "Miso-Butter Roast Chicken With Acorn Squash Panzanella",
+        "source_url": "https://cooking.nytimes.com/recipes/1099999-miso-butter-roast-chicken",
+        "description": "Miso and butter rubbed under the skin season the meat and help it brown, while torn bread soaks up the drippings in the pan below.",
+        "yield_text": "4 servings",
+        "total_minutes": 75,
+        "time_text": "1¼ hours",
+        "ingredients": [
+          "1 (3½- to 4-pound) chicken",
+          "3 tablespoons white miso",
+          "4 tablespoons unsalted butter, softened",
+          "1 small acorn squash, seeded and cut into wedges",
+          "½ loaf crusty bread, torn into 1-inch pieces",
+          "2 tablespoons apple cider vinegar",
+          "1 small red onion, thinly sliced",
+          "Handful of parsley leaves"
+        ],
+        "steps": [
+          "Heat oven to 425 degrees. Mash the miso and butter together, then rub it under and over the chicken skin.",
+          "Arrange the squash in a roasting pan, set the chicken on top and roast until the thigh juices run clear, 50 to 60 minutes.",
+          "Let the chicken rest. Toss the bread with the pan drippings and toast in the oven for 10 minutes.",
+          "Toss the bread, squash, onion, vinegar and parsley. Carve the chicken and serve over the panzanella."
+        ],
+        "images": []
+      },
+      "images": [],
+      "report": {
+        "method": "json-ld",
+        "source_url": "https://cooking.nytimes.com/recipes/1099999-miso-butter-roast-chicken",
+        "fetched_url": null,
+        "archived": false,
+        "found": ["title", "description", "yield", "times", "ingredients", "steps"],
+        "missing": ["photo"],
+        "warnings": ["The site marks this for subscribers; check it's complete."]
+      }
+    }
+  },
+  "example.com/blocked": {
+    "error": { "code": "blocked", "message": "example.com turned the request away (403)." },
+    "page": { "source_url": "https://example.com/blocked", "title": null, "image": null }
+  },
+  "example.com/paywalled": {
+    "error": { "code": "paywalled", "message": "The page is for subscribers and shows no recipe." },
+    "page": { "source_url": "https://example.com/paywalled", "title": "Crispy Gnocchi With Brown Butter and Sage", "image": null }
+  },
+  "example.com/not-found": {
+    "error": { "code": "not_found", "message": "example.com has no page at that address (404)." },
+    "page": { "source_url": "https://example.com/not-found", "title": null, "image": null }
+  },
+  "example.com/no-recipe": {
+    "error": { "code": "no_recipe_found", "message": "The page has no recipe data." },
+    "page": { "source_url": "https://example.com/no-recipe", "title": "Grandma's Sunday Gravy (and the Story Behind It)", "image": null }
+  },
+  "example.com/too-large": {
+    "error": { "code": "too_large", "message": "The page is larger than 5 MB." },
+    "page": null
+  },
+  "example.com/timeout": {
+    "delay": 3000,
+    "error": { "code": "timeout", "message": "example.com didn't answer within 10 seconds." },
+    "page": { "source_url": "https://example.com/timeout", "title": null, "image": null }
+  },
+  "example.com/site-error": {
+    "error": { "code": "site_error", "message": "example.com answered with an error (502)." },
+    "page": { "source_url": "https://example.com/site-error", "title": null, "image": null }
+  }
+}

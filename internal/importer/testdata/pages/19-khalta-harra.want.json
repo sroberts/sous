@@ -1,0 +1,46 @@
+{
+  "draft": {
+    "title": "Khalta Harra (Chile-Spice Mix)",
+    "source_url": "https://sunset.com/recipe/chile-spice-mix",
+    "description": "Khalta Harra (Chile-Spice Mix)",
+    "nutrition_text": "Calories: 0",
+    "ingredients": [
+      "1 tbsp plus 1 tsp. whole coriander seeds",
+      "2 tsp whole cardamom seeds (about 17 pods)",
+      "2 tsp whole cumin seeds",
+      "6 tbsp Aleppo pepper",
+      "2 tsp kosher salt",
+      "2 tsp dried lime, ground",
+      "½ tsp ground cinnamon"
+    ],
+    "steps": [
+      "Toast the coriander, cardamom, and cumin in a dry pan over medium heat until fragrant, 2 to 3 minutes. The spices will begin to dance around in the pan when they are close to being done. Be careful not to let them burn.",
+      "Once they are slightly darker in color and fragrant, remove them from the pan and let cool completely. Then grind them to a coarse powder in a spice grinder or mortar and pestle.",
+      "Mix with the Aleppo pepper, salt, dried lime, and cinnamon."
+    ]
+  },
+  "images": [
+    {
+      "url": "https://img.sunset02.com/sites/default/files/image/city-guides/icons/insiderguides-restaurants-icon-x.jpg",
+      "width": null,
+      "height": null,
+      "rank": 0
+    }
+  ],
+  "report": {
+    "method": "json-ld",
+    "found": [
+      "title",
+      "description",
+      "ingredients",
+      "steps",
+      "nutrition",
+      "image"
+    ],
+    "missing": [
+      "times",
+      "yield"
+    ],
+    "warnings": []
+  }
+}
