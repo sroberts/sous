@@ -30,7 +30,7 @@
   }
 </script>
 
-<dialog class="ticket" bind:this={dialog} onclose={() => (session.asking = false)} aria-labelledby="who-title">
+<dialog bind:this={dialog} onclose={() => (session.asking = false)} aria-labelledby="who-title">
   <h2 id="who-title">Who's cooking?</h2>
   <p>Changes are signed with your name, so the household can see who did what. This device will remember you.</p>
   <ul>
@@ -57,7 +57,7 @@
     border-radius: 0;
     background: var(--ticket);
     color: var(--ink);
-    padding: var(--space-6) var(--space-6) calc(var(--space-6) + var(--tear));
+    padding: var(--space-6);
   }
   dialog::backdrop {
     background: rgb(20 21 22 / 0.45);

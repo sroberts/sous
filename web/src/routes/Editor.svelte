@@ -238,7 +238,7 @@
 
   {#if loaded}
     <div class="sheet">
-      <div class="main ticket">
+      <div class="main panel">
         <label class="visually-hidden" for="title">Title</label>
         <textarea id="title" class="title" rows="1" placeholder="Name the dish" bind:value={form.title} aria-invalid={titleError} oninput={() => (titleError = false)}></textarea>
         {#if titleError}<p class="field-error">A recipe needs a name.</p>{/if}
@@ -301,7 +301,7 @@
         </label>
       </div>
 
-      <aside class="side ticket">
+      <aside class="side panel">
         <div class="photo">
           <Plate hash={form.images[0]} title={form.title} />
           <label class="btn photo-btn">
@@ -394,9 +394,9 @@
     gap: var(--space-4);
     align-items: start;
   }
-  .main,
-  .side {
-    padding: var(--space-5) var(--space-5) calc(var(--space-6) + var(--tear));
+  .panel {
+    background: var(--ticket);
+    padding: var(--space-5) var(--space-5) var(--space-6);
   }
   .main {
     border-top: 3px solid var(--ink);

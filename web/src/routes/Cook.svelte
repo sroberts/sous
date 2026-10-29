@@ -127,7 +127,7 @@
     <main class="stage"><p class="step-text">{error.message}</p></main>
   {:else if recipe}
     <div class="body">
-      <aside class="ingredients ticket" class:open={sheet} aria-label="Ingredients">
+      <aside class="ingredients sheet" class:open={sheet} aria-label="Ingredients">
         <div class="ing-head"><h2 class="label">Ingredients</h2><span class="label">{checked.length} of {checked.length + left} gathered</span></div>
         {#each groups as g}
           {#if g.section}<h3>{g.section}</h3>{/if}
@@ -150,26 +150,7 @@
 
       <main class="stage" onpointerdown={down} onpointerup={up}>
         <div class="rail" aria-hidden="true"></div>
-        {#if timers.list.length}
-          <ul class="timers" aria-label="Timers">
-            {#each timers.list as t (t.id)}
-              <li class="tick ticket" class:done={t.done} class:paused={t.paused}>
-                <span class="clip" aria-hidden="true"></span>
-                <span class="t-label label">Step {t.step + 1} · {t.label}</span>
-                <span class="t-row">
-                  <span class="t-clock fig" role="timer" aria-live={t.done ? 'assertive' : 'off'}>{t.done ? 'Done' : clock(remaining(t))}</span>
-                  {#if !t.done}
-                    <button class="icon-btn small" onclick={() => togglePause(t)} aria-label={t.paused ? 'Resume timer' : 'Pause timer'}>
-                      {#if t.paused}<Play size={20} />{:else}<Pause size={20} />{/if}
-                    </button>
-                  {/if}
-                  <button class="icon-btn small" onclick={() => dismiss(t)} aria-label={t.done ? 'Clear timer' : 'Cancel timer'}><X size={20} /></button>
-                </span>
-              </li>
-            {/each}
-          </ul>
-        {/if}
-        <div class="hung">
+        <div class="hung" class:timed={timers.list.length > 0}>
           {#key step}
             <article class="step ticket" aria-live="polite">
               <span class="clip" aria-hidden="true"></span>
@@ -186,7 +167,7 @@
                     {@const t = timers.list.find((x) => x.step === step && x.label === d.label && !x.done)}
                     {#if t}
                       <button class="btn timer-btn" aria-pressed="true" onclick={() => togglePause(t)}>
-                        {#if t.paused}<Play aria-hidden="true" />{:else}<Pause aria-hidden="true" />{/if}{d.label} · {clock(remaining(t))}{t.paused ? ' paused' : ''}
+                        {#if t.paused}<Play aria-hidden="true" />Resume {d.label}{:else}<Pause aria-hidden="true" />Pause {d.label}{/if}
                       </button>
                     {:else}
                       <button class="btn timer-btn" onclick={() => startTimer(d.label, d.seconds, step)}><Timer aria-hidden="true" />Time {d.label}</button>
@@ -203,6 +184,25 @@
               <span class="next-text">{q.text}</span>
             </button>
           {/each}
+          {#if timers.list.length}
+            <ul class="timers" aria-label="Timers">
+              {#each timers.list as t (t.id)}
+                <li class="tick ticket" class:done={t.done} class:paused={t.paused}>
+                  <span class="clip" aria-hidden="true"></span>
+                  <span class="t-label label">Step {t.step + 1} · {t.label}</span>
+                  <span class="t-row">
+                    <span class="t-clock fig" role="timer" aria-live={t.done ? 'assertive' : 'off'}>{t.done ? 'Done' : clock(remaining(t))}</span>
+                    {#if !t.done}
+                      <button class="icon-btn small" onclick={() => togglePause(t)} aria-label={t.paused ? 'Resume timer' : 'Pause timer'}>
+                        {#if t.paused}<Play size={20} />{:else}<Pause size={20} />{/if}
+                      </button>
+                    {/if}
+                    <button class="icon-btn small" onclick={() => dismiss(t)} aria-label={t.done ? 'Clear timer' : 'Cancel timer'}><X size={20} /></button>
+                  </span>
+                </li>
+              {/each}
+            </ul>
+          {/if}
         </div>
       </main>
     </div>
@@ -292,7 +292,8 @@
     overflow-y: auto;
     align-self: start;
     max-height: 100%;
-    padding: var(--space-4) var(--space-4) calc(var(--space-5) + var(--tear));
+    background: var(--ticket);
+    padding: var(--space-4) var(--space-4) var(--space-5);
     scrollbar-width: thin;
   }
   .ing-head {
@@ -380,13 +381,12 @@
     border-radius: 0 0 3px 3px;
     background: linear-gradient(var(--steel), var(--steel-lo));
   }
+  /* Timers are a lane of the same hanging row, clipped to the rail. */
   .timers {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
+    flex: 0 0 13.5rem;
+    display: grid;
     gap: var(--space-3);
-    padding: 0 var(--space-4);
-    margin-top: -4px;
+    margin-left: auto;
   }
   .tick {
     position: relative;
@@ -566,7 +566,8 @@
   }
 
   @media (max-width: 1440px) {
-    .next + .next {
+    .next + .next,
+    .timed .next {
       display: none;
     }
   }
@@ -609,12 +610,23 @@
     .awake {
       display: none;
     }
-    .hung,
-    .timers {
+    .hung {
+      position: relative;
       padding: 0 var(--space-2);
     }
+    /* On a phone the timer hangs over the step's top-right corner. */
     .timers {
-      justify-content: flex-start;
+      position: absolute;
+      top: 0;
+      right: var(--space-2);
+      z-index: 1;
+      width: 10.5rem;
+    }
+    .timed .step-head {
+      padding-right: 10.5rem;
+    }
+    .tick .t-clock {
+      font-size: 1.75rem;
     }
   }
   @media (max-width: 560px) {

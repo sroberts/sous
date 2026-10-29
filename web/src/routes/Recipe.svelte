@@ -55,12 +55,16 @@
       <a class="back" href="/r/{id}/edit" use:link><Pencil size={16} aria-hidden="true" />Edit recipe</a>
     </div>
 
+    <div class="rail" aria-hidden="true"></div>
     <header class="top ticket">
+      <span class="clip" aria-hidden="true"></span>
       <div class="head">
-        {#if recipe.tags.length}<p class="tags label">{recipe.tags.join(' · ')}</p>{/if}
         <h1>{recipe.title}</h1>
-        {#if recipe.source_url}
-          <p class="src"><a href={recipe.source_url} target="_blank" rel="noreferrer">{recipe.source_host ?? recipe.source_url}<ExternalLink size={13} aria-hidden="true" /></a></p>
+        {#if recipe.source_url || recipe.tags.length}
+          <p class="src">
+            {#if recipe.tags.length}<span>{recipe.tags.join(', ')}</span>{/if}
+            {#if recipe.source_url}<a href={recipe.source_url} target="_blank" rel="noreferrer">{recipe.source_host ?? recipe.source_url}<ExternalLink size={13} aria-hidden="true" /></a>{/if}
+          </p>
         {/if}
         <div class="facts"><Facts {recipe} size="l" /></div>
         {#if recipe.description}<p class="desc">{recipe.description}</p>{/if}
@@ -78,7 +82,7 @@
     </header>
 
     <div class="body">
-      <section class="ingredients ticket" aria-labelledby="ing-h">
+      <section class="ingredients sheet" aria-labelledby="ing-h">
         <div class="col-head">
           <h2 id="ing-h" class="label">Ingredients</h2>
           <button class="as-written" aria-pressed={asWritten} onclick={() => (asWritten = !asWritten)}>
@@ -102,7 +106,7 @@
         {/each}
       </section>
 
-      <section class="method ticket" aria-labelledby="method-h">
+      <section class="method sheet" aria-labelledby="method-h">
         <div class="col-head"><h2 id="method-h" class="label">Method</h2><span class="label steps">{recipe.steps.length} steps</span></div>
         {#each groups(recipe.steps) as g}
           {#if g.section}<h3 class="sect">{g.section}</h3>{/if}
@@ -158,16 +162,27 @@
     color: var(--red);
   }
 
+  .page > .rail {
+    position: relative;
+    z-index: 1;
+  }
+  .clip {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 44px;
+    height: 10px;
+    margin-left: -22px;
+    border-radius: 0 0 3px 3px;
+    background: linear-gradient(var(--steel), var(--steel-lo));
+  }
   .top {
+    position: relative;
+    margin: -4px var(--space-4) 0;
     display: grid;
     grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
     gap: var(--space-6);
-    padding: var(--space-6) var(--space-6) calc(var(--space-6) + var(--tear));
-    border-top: 3px solid var(--ink);
-  }
-  .tags {
-    color: var(--ink-3);
-    margin-bottom: var(--space-2);
+    padding: var(--space-7) var(--space-6) calc(var(--space-6) + var(--tear));
   }
   h1 {
     font-size: var(--title-xl);
@@ -179,6 +194,16 @@
     margin-top: var(--space-2);
     font-size: var(--ui);
     color: var(--ink-2);
+  }
+  .src {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--space-3);
+  }
+  .src span + a::before {
+    content: '·';
+    margin-right: var(--space-3);
+    color: var(--ink-3);
   }
   .src a {
     display: inline-flex;
@@ -218,9 +243,9 @@
     margin-top: var(--space-4);
     align-items: start;
   }
-  .ingredients,
-  .method {
-    padding: var(--space-4) var(--space-5) calc(var(--space-5) + var(--tear));
+  .sheet {
+    background: var(--ticket);
+    padding: var(--space-4) var(--space-5) var(--space-6);
   }
   .ingredients {
     position: sticky;
@@ -320,7 +345,8 @@
   @media (max-width: 900px) {
     .top {
       grid-template-columns: 1fr;
-      padding: var(--space-4) var(--space-4) calc(var(--space-5) + var(--tear));
+      margin: -4px var(--space-2) 0;
+      padding: var(--space-5) var(--space-4) calc(var(--space-5) + var(--tear));
     }
     .photo {
       order: -1;

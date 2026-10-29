@@ -2,19 +2,19 @@
    pass, printed in black with one red second ink. Red marks only what is
    live, selected or actionable. */
 :root {
-  --pass: #e3e5e2; /* the counter tickets sit on */
-  --pass-deep: #d5d8d4; /* hover on the pass, wells, empty photo */
-  --ticket: #fbfbf8; /* thermal paper */
-  --ticket-press: #f0f1ed; /* hover and pressed on a ticket */
+  --pass: #dfe3e6; /* the counter tickets sit on */
+  --pass-deep: #d0d6da; /* hover on the pass, wells, empty photo */
+  --ticket: #fafbfc; /* thermal paper */
+  --ticket-press: #eef1f3; /* hover and pressed on a ticket */
   --ink: #141516;
-  --ink-2: #404447; /* secondary text: 7.8:1 on pass */
-  --ink-3: #5f6367; /* tertiary text: 5.8:1 on ticket, 4.8:1 on pass */
-  --perf: #b3b7b2; /* perforations and hairlines; never text */
+  --ink-2: #404447; /* secondary text: 7.6:1 on pass */
+  --ink-3: #5f6367; /* tertiary text: 5.9:1 on ticket, 4.7:1 on pass */
+  --perf: #adb4ba; /* perforations and hairlines; never text */
   --steel-hi: #d2d6d9;
   --steel: #959ba0;
   --steel-lo: #5d6368;
-  --red: #c41f17; /* 5.7:1 on ticket, 4.7:1 on pass */
-  --red-press: #9f1811;
+  --red: #bb1c14; /* 6.2:1 on ticket, 5.0:1 on pass */
+  --red-press: #981610;
   --red-wash: #fbe5e2;
 
   --sans: 'Archivo Variable', 'Archivo', system-ui, sans-serif;

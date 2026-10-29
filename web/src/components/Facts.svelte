@@ -44,6 +44,8 @@
     border-bottom: 1.5px dashed var(--perf);
   }
   .facts > div {
+    display: flex;
+    flex-direction: column;
     flex: 0 1 auto;
     min-width: 4.5rem;
     padding: var(--space-2) var(--space-5) var(--space-3) 0;
@@ -56,7 +58,7 @@
     margin-bottom: var(--space-1);
   }
   dd {
-    margin: 0;
+    margin: auto 0 0;
     font-weight: 600;
     line-height: 1.25;
   }
