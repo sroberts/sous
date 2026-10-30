@@ -1,0 +1,4 @@
+{
+  "about": "Tests known to pass and fail on the same code. The weekly flaky-tests workflow fails on any flake not listed here. Each entry names its tracking issue; remove it once fixed.",
+  "flaky": []
+}

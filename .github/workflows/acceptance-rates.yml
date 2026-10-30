@@ -1,0 +1,44 @@
+# Weekly: recount how often AI-authored PRs are merged, and propose the
+# updated acceptance-rates.json as a pull request (nothing is pushed to main).
+name: acceptance-rates
+
+on:
+  schedule:
+    - cron: "23 8 * * 1" # Mondays, 08:23 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+      - name: Count PR outcomes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: uv run --no-project scripts/acceptance/acceptance.py | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Propose the update
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet -- acceptance-rates.json; then
+            echo "acceptance-rates.json is unchanged" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          branch="metrics/acceptance-$(date -u +%Y-%m-%d)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git commit -am "Update acceptance rates for AI-authored PRs"
+          git push --force -u origin "$branch"
+          # Creating the PR needs "Allow GitHub Actions to create and approve
+          # pull requests" in the repository's Actions settings. Without it
+          # the branch is still pushed for someone to open by hand.
+          gh pr create --base main --head "$branch" \
+            --title "Update acceptance rates for AI-authored PRs" \
+            --body "Weekly recount from \`scripts/acceptance/acceptance.py\`. Review the agent acceptance rate and any rejected areas before merging." \
+            || echo "::warning::branch $branch pushed; open its PR by hand or allow Actions to create PRs"

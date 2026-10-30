@@ -1,0 +1,48 @@
+# Weekly flaky-test analysis: run the suite several times and find tests
+# that both pass and fail on the same code. A new flake fails this run;
+# known flakes are listed in flaky-tests.json with an issue to fix them.
+name: flaky-tests
+
+on:
+  schedule:
+    - cron: "41 6 * * 1" # Mondays, 06:41 UTC
+  workflow_dispatch:
+    inputs:
+      runs:
+        description: Times to run the suite
+        default: "5"
+
+permissions:
+  contents: read
+
+jobs:
+  flaky:
+    name: Rerun the suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - uses: astral-sh/setup-uv@v6
+      - name: Build the UI
+        working-directory: web
+        run: npm ci && npm run build
+      - name: Run the suite repeatedly
+        env:
+          SOUS_REQUIRE_UI: "1"
+        # Failures are expected here; the analysis step decides the result.
+        run: go test -race -count="${{ inputs.runs || '5' }}" -json ./... > test-runs.jsonl || true
+      - name: Find flaky tests
+        run: uv run --no-project scripts/flaky/flaky.py test-runs.jsonl --known flaky-tests.json --summary "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: flaky-test-runs
+          path: test-runs.jsonl
+          retention-days: 14

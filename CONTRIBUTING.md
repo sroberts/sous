@@ -47,6 +47,24 @@ The importer's tests run offline against saved fixtures. To check the real
 recipe sites, run `go test -tags live -run Live -v -count=1 ./internal/importer`.
 The README explains re-recording fixtures.
 
+## What CI and the scheduled jobs check
+
+- **Every push and PR** (`ci.yml`): the UI build and svelte-check, gofmt,
+  go vet, the parser golden, the test suite with the race detector, and a
+  **coverage floor**: total Go coverage below `COVERAGE_FLOOR` fails the
+  build. Raise the floor as coverage grows; never lower it to make a PR
+  pass. `plumbline.yml` fails if the repo drops below ACMM level 3.
+- **Nightly** (`nightly.yml`): the full coverage suite, `govulncheck` and
+  `npm audit` for known vulnerabilities, and the live importer check against
+  the 25 real sites, which reports rather than fails.
+- **Weekly** (`flaky-tests.yml`): runs the suite five times and fails on any
+  test that both passes and fails, or fails every time. Known flakes go in `flaky-tests.json`
+  with a tracking issue, and come out once fixed.
+- **Weekly** (`acceptance-rates.yml`): recounts how often AI-authored PRs
+  are merged and proposes the updated `acceptance-rates.json` as a PR.
+  A falling rate, or an area where agent PRs keep being closed, is the cue
+  to tighten instructions or keep that work supervised.
+
 ## Rules that matter here
 
 - **Existing tests are not changed without the maintainer's explicit

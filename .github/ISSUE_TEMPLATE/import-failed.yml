@@ -1,0 +1,33 @@
+name: A recipe site didn't import
+description: A link gave an error, or a draft with something missing.
+labels: [importer, bug]
+body:
+  - type: input
+    id: url
+    attributes:
+      label: The link
+      placeholder: https://…
+    validations:
+      required: true
+  - type: dropdown
+    id: result
+    attributes:
+      label: What happened?
+      options:
+        - An error (blocked, no recipe found, timed out…)
+        - A draft, but something was missing or wrong
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: What was missing or wrong?
+      description: The error message, or which fields were empty or garbled. Please don't paste a paywalled recipe's text.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Sous version
+      description: "`sous --version`, or `version` from /v1/status"

@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Ideas and questions
+    url: https://github.com/sroberts/sous/issues/new?template=feedback.yml
+    about: Share how Sous works for you, or what you'd like it to do.
