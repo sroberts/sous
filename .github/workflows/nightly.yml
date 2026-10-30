@@ -17,11 +17,11 @@ jobs:
     name: Full coverage suite
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: lts/*
           cache: npm
@@ -49,7 +49,7 @@ jobs:
             echo "::error::coverage ${total}% is below the floor of ${COVERAGE_FLOOR}%"
             exit 1
           fi
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: nightly-coverage
           path: coverage.out
@@ -59,11 +59,11 @@ jobs:
     name: Security scan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: lts/*
       - name: govulncheck
@@ -76,8 +76,8 @@ jobs:
     name: Live importer check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       # Sites change and block crawlers, so this reports drift rather than
@@ -85,7 +85,7 @@ jobs:
       - name: Fetch the 25 test links
         continue-on-error: true
         run: go test -tags live -run Live -v -count=1 ./internal/importer 2>&1 | tee live.log
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: live-import-report
           path: live.log
