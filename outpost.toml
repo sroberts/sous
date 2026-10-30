@@ -1,5 +1,7 @@
 # outpost.toml
 name                = "sous"
+title               = "Sous"
+description         = "Household recipes"
 healthcheck         = "/up"
 mcp                 = true
 restart_policy      = "on-failure"
