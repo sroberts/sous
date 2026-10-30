@@ -1,0 +1,13 @@
+# Subject: what the change does, in the imperative, ≤72 characters.
+#   "Add a --data flag for running without Outpost"
+#   "safefetch: an SSRF-safe HTTP client for fetching recipe pages"
+# A package or area prefix ("safefetch:", "Import:") is fine when it helps;
+# there are no type prefixes like feat: or fix:.
+#
+# Body, wrapped at 72: WHY the change is needed and what someone using
+# Sous will notice. Skip what the diff already makes obvious. Name any
+# decision a reviewer should weigh, and anything not verified.
+#
+# Trailers last (Co-Authored-By: …), after a blank line.
+#
+# To use this template: git config commit.template .gitmessage
