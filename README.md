@@ -1,13 +1,43 @@
 # Sous
 
+[![ci](https://github.com/sroberts/sous/actions/workflows/ci.yml/badge.svg)](https://github.com/sroberts/sous/actions/workflows/ci.yml)
+[![release](https://img.shields.io/github/v/release/sroberts/sous)](https://github.com/sroberts/sous/releases/latest)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 ![ACMM level](.plumbline-badge.svg)
 
-A household recipe manager: web UI, REST API, and MCP from one Go binary.
-Run it as a service under [Outpost](https://github.com/sroberts/outpost),
-which signs your household in and backs it up, or run it on its own.
+A recipe library your whole household shares, on a computer you own. Save
+recipes from any site in a couple of taps, cook from a screen that walks you
+through each step with timers, and let an AI assistant search and add recipes
+for you. It's one small program with nothing else to install, and everything
+it keeps lives in one folder you can back up.
 
-Status: the basics run. The service, REST API, MCP, and web UI are built to
-[`spec.md`](spec.md); the feature specs it lists in §13 come next.
+![The Sous library: a want-to-cook rail of tickets above a grid of recipes, with a recipe preview on the right](docs/images/library.png)
+
+- **Import from a link.** Paste a link, or use the bookmarklet or iOS share
+  sheet. Sous reads the recipe the page publishes and opens it for you to
+  check before anything is saved. Sites that block it fall back to pasting
+  the text.
+- **Cook mode.** One step at a time in large type, with ingredients to tick
+  off, timers that start from the step's own wording, and the screen kept on.
+- **Shared, but personal.** One library for the household; favorites and
+  want-to-cook are each person's own, and every change records who made it.
+- **Agents built in.** AI assistants such as Claude can use the whole
+  library over MCP, with the same rights and the same history as the web UI.
+- **Run it your way.** As a service under
+  [Outpost](https://github.com/sroberts/outpost), which signs everyone in and
+  backs it up, or on its own.
+
+Quick start, on a Mac with Apple silicon (Linux binaries are on the
+[releases page](https://github.com/sroberts/sous/releases/latest)):
+
+```sh
+gh release download -R sroberts/sous -p sous-darwin-arm64
+chmod +x sous-darwin-arm64
+./sous-darwin-arm64 --port 8080 --data ~/sous-library   # then open http://127.0.0.1:8080
+```
+
+Sous is young: the basics work today, and the
+[roadmap](#roadmap) lists what's coming.
 
 ## Install
 
@@ -122,33 +152,37 @@ uv run scripts/mela-import/mela_import.py Recipes.melarecipes \
 skips what's already there, so an interrupted import can just be run again.
 Details are in [`spec.md`](spec.md) §11.
 
-## What it does
+## What it does today
 
-### Data
+- **Library:** browse by course, a want-to-cook rail, favorites, and search
+  by title, tag or ingredient. The "using" filter finds recipes that use
+  what you have.
+- **Recipes:** ingredients are parsed into amount, unit and item, with the
+  original line kept; steps, times, yield, notes, nutrition and photos.
+- **Cook mode:** step by step, ingredient check-offs, step timers, screen
+  stays on.
+- **Editor:** a live preview of how each ingredient line was read.
+- **Import:** from a link (schema.org JSON-LD, microdata or h-recipe), the
+  bookmarklet, the iOS Shortcut, or pasted text, with photos stored and
+  duplicates caught by link. From Mela, with a one-time script.
+- **Household:** per-person favorites and want-to-cook, a history of who
+  changed what, and deleted recipes can be restored.
+- **Interfaces:** the web UI, a REST API described at `/v1/openapi.json`,
+  and MCP tools with the same reach.
 
-- **Recipes:** title, source link, yield, prep/cook/total time, notes,
-  nutrition, photos.
-- **Ingredients** are parsed into quantity / unit / item / note, with the
-  original line always kept alongside.
-- **Steps** are stored individually, so cook mode can walk them and start timers.
-- **Tags** (free-form) and **collections** (hand-ordered groups).
-- **Household:** one shared library. Favorites, ratings, notes, and cook
-  history are per person. Every change is attributed to whoever made it.
+![Cook mode: the current step in large type, ingredients ticked off on the left, and an eight-minute timer running](docs/images/cook.png)
 
-### Features
+<p align="center"><img src="docs/images/phone.png" alt="The library on a phone" width="300"></p>
 
-- Search by title, tag, and ingredient ("what can I make with…")
-- Cook mode: step-by-step, screen awake, ingredient check-offs, step timers
-- Scaling by servings, US ↔ metric conversion
-- Weekly meal plan → combined, de-duplicated shopping list grouped by aisle
-- Import from URL via the page's schema.org Recipe data
+## Roadmap
 
-### Interfaces
+Planned in [`spec.md`](spec.md) §13, not built yet:
 
-- **Web UI:** warm, editorial, photo-forward. Installable PWA. Works offline
-  for recipes already opened and for the shopping list, and syncs on reconnect.
-- **REST and MCP** have parity. MCP agents get full read/write, attributed
-  like any other change.
+- Scaling a recipe by servings, and US ↔ metric conversion
+- A weekly meal plan and a combined shopping list grouped by aisle
+- Collections, ratings, personal notes and cook history
+- An installable app that works offline for recipes you've opened
+- Passwords for running Sous on its own ([#6](https://github.com/sroberts/sous/issues/6))
 
 ## Development
 
