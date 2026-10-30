@@ -24,7 +24,7 @@ jobs:
           go-version: stable
 
       - name: install plumbline
-        run: go install github.com/sroberts/plumbline/cmd/plumbline@latest
+        run: go install github.com/sroberts/plumbline/cmd/plumbline@v1.0.2
 
       - name: ACMM gate
         # Exit 1 when the repo assesses below the floor. Raise the

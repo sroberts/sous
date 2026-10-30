@@ -67,7 +67,7 @@ jobs:
         with:
           node-version: lts/*
       - name: govulncheck
-        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
       - name: npm audit (shipped dependencies)
         working-directory: web
         run: npm audit --omit=dev --audit-level=high

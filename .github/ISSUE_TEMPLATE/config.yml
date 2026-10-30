@@ -1,5 +1,8 @@
-blank_issues_enabled: true
+blank_issues_enabled: false
 contact_links:
-  - name: Ideas and questions
-    url: https://github.com/sroberts/sous/issues/new?template=feedback.yml
-    about: Share how Sous works for you, or what you'd like it to do.
+  - name: Report a security problem
+    url: https://github.com/sroberts/sous/security/advisories/new
+    about: Report vulnerabilities privately, not as a public issue.
+  - name: Getting help
+    url: https://github.com/sroberts/sous/blob/main/SUPPORT.md
+    about: Where to ask questions and what to expect.
