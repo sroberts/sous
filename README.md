@@ -209,3 +209,7 @@ git diff internal/importer/testdata/pages   # review the *.want.json files
 Fixtures hold only the extracted recipe data and the link back to the source
 (the recipe's JSON-LD, or the recipe's microdata element), never a whole page.
 A test fails if one contains page markup or grows past 200 KB.
+
+## License
+
+[MIT](LICENSE)
