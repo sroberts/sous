@@ -1,7 +1,7 @@
 # Sous: Basics Design Spec
 
-The foundation Sous is built on: how the service runs under Outpost, where its
-state lives, who is calling, and the core recipe model with its REST and MCP
+The foundation Sous is built on: how the service runs, under Outpost or on its
+own, where its state lives, who is calling, and the core recipe model with its REST and MCP
 surface. Feature specs (UI, cook mode, meal planning, and the rest) build on
 this and are listed in §13.
 
@@ -15,6 +15,12 @@ checklist to where this design satisfies it.
 
 One Go binary, `sous`. Running it with no subcommand serves. There are no
 other subcommands in the basics: the Mela import is a separate script (§11).
+
+Outpost is the primary host, but nothing requires it. Run alone, Sous takes
+its port and storage from `--port` and `--data` (§2), and identity falls to
+the "who's cooking?" route (§5). The Outpost contract (loopback only, plain
+HTTP, foreground, clean SIGTERM) holds either way, so a standalone Sous
+behaves like one under Outpost with no gateway.
 
 - **Go 1.27**, standard library `net/http` routing, `log/slog` for logging.
 - **SQLite via `modernc.org/sqlite`**: pure Go, so `CGO_ENABLED=0` and
@@ -71,7 +77,7 @@ well-known path, and nothing prompts.
 | Setting | Source | Default | Notes |
 |---|---|---|---|
 | Port | `--port`, else `OUTPOST_PORT` | none, required | Flag wins. Never chosen dynamically. |
-| Storage | `OUTPOST_STORAGE_DIR` | none, required | No flag: Outpost's value always wins, so Sous never takes it from anywhere else. |
+| Storage | `OUTPOST_STORAGE_DIR`, else `--data` | none, required | Outpost's value always wins, so its backups cover everything. `--data` is for running without Outpost; both set to different directories → exit 1. |
 | Auth mode | `OUTPOST_AUTH` | unset | `gateway` turns on token verification (§5). Any other value → exit 1. |
 | Issuer | `OUTPOST_ISSUER` | none | Required when `OUTPOST_AUTH=gateway`. |
 | JWKS URL | `OUTPOST_JWKS_URL` | none | Required when `OUTPOST_AUTH=gateway`. |
@@ -82,22 +88,31 @@ Sous needs no secrets in the basics. If a later feature does (an API key for a
 nutrition service, say), it takes a *path* via `SOUS_<NAME>_FILE` and reads
 the file, per Outpost §3.
 
-For local development the same variables apply:
+`sous --help` prints these and exits 0; `sous --version` prints the version.
+
+Run without Outpost, the flags alone are enough:
 
 ```sh
-OUTPOST_STORAGE_DIR=./.dev-data go run ./cmd/sous --port 8099
+sous --port 8080 --data ~/sous-library
+```
+
+For local development:
+
+```sh
+go run ./cmd/sous --port 8099 --data ./.dev-data
 ```
 
 ---
 
 ## 3. Storage
 
-Everything Sous needs to survive a restart is under `OUTPOST_STORAGE_DIR`
-(Outpost §4), and nothing is written anywhere else: not `$HOME`, not `/tmp`,
-not beside the binary.
+Everything Sous needs to survive a restart is under the storage directory:
+`OUTPOST_STORAGE_DIR` under Outpost (Outpost §4), or `--data` on its own
+(§2). Nothing is written anywhere else: not `$HOME`, not `/tmp`, not beside
+the binary.
 
 ```
-$OUTPOST_STORAGE_DIR/
+<storage>/
   sous.db            SQLite database: all records, the search index, schema version
   sous.db-wal        present while running; folded in on clean shutdown
   sous.db-shm

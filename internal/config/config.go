@@ -18,7 +18,7 @@ import (
 // Config is the parsed, validated configuration.
 type Config struct {
 	Port           int        // --port, else OUTPOST_PORT; 1..65535
-	StorageDir     string     // OUTPOST_STORAGE_DIR, made absolute
+	StorageDir     string     // OUTPOST_STORAGE_DIR, else --data, made absolute
 	Auth           string     // OUTPOST_AUTH: "" or "gateway"
 	Issuer         string     // OUTPOST_ISSUER; required in gateway mode
 	JWKSURL        string     // OUTPOST_JWKS_URL; required in gateway mode
@@ -26,14 +26,24 @@ type Config struct {
 	LogLevel       slog.Level // SOUS_LOG_LEVEL: debug, info (default), warn, error
 }
 
+// ErrHelp and ErrVersion are returned by Load when the arguments ask for
+// help (-h, --help) or the version (--version) rather than a configuration.
+var (
+	ErrHelp    = flag.ErrHelp
+	ErrVersion = errors.New("version requested")
+)
+
 // Gateway reports whether gateway token verification is on.
 func (c Config) Gateway() bool { return c.Auth == "gateway" }
 
 // Load parses args (without the program name) and reads getenv.
 //
-// --port wins over OUTPOST_PORT, and one of them is required. Positional
-// arguments are an error. OUTPOST_STORAGE_DIR is required; it is made
-// absolute and created with MkdirAll(0700). OUTPOST_AUTH other than unset or
+// --port wins over OUTPOST_PORT, and one of them is required. The storage
+// directory comes from OUTPOST_STORAGE_DIR or, run without Outpost, --data;
+// one is required. Both naming different directories is an error, so
+// Outpost's (which its backups cover) never quietly loses or wins.
+// Positional arguments are an error. The storage directory is made absolute
+// and created with MkdirAll(0700). OUTPOST_AUTH other than unset or
 // "gateway" is an error; gateway mode requires OUTPOST_ISSUER and
 // OUTPOST_JWKS_URL. SOUS_REQUIRE_GATEWAY=true without gateway mode is an
 // error. Every error message says which setting is wrong.
@@ -43,14 +53,19 @@ func Load(args []string, getenv func(string) string) (Config, error) {
 	fs := flag.NewFlagSet("sous", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	portFlag := fs.String("port", "", "port to listen on (overrides OUTPOST_PORT)")
+	dataFlag := fs.String("data", "", "storage directory, when OUTPOST_STORAGE_DIR is unset")
+	versionFlag := fs.Bool("version", false, "print the version and exit")
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
-			return c, errors.New("usage: sous [--port N]")
+			return c, ErrHelp
 		}
-		return c, fmt.Errorf("flags: %w", err)
+		return c, fmt.Errorf("flags: %w (sous --help lists them)", err)
+	}
+	if *versionFlag {
+		return c, ErrVersion
 	}
 	if fs.NArg() > 0 {
-		return c, fmt.Errorf("flags: unexpected argument %q (usage: sous [--port N])", fs.Arg(0))
+		return c, fmt.Errorf("flags: unexpected argument %q (usage: sous --port N --data DIR)", fs.Arg(0))
 	}
 
 	portSrc, portVal := "--port", *portFlag
@@ -66,12 +81,24 @@ func Load(args []string, getenv func(string) string) (Config, error) {
 	}
 	c.Port = port
 
-	dir := getenv("OUTPOST_STORAGE_DIR")
+	dirSrc, dir := "OUTPOST_STORAGE_DIR", getenv("OUTPOST_STORAGE_DIR")
 	if dir == "" {
-		return c, errors.New("OUTPOST_STORAGE_DIR is required")
+		dirSrc, dir = "--data", *dataFlag
+	}
+	if dir == "" {
+		return c, errors.New("OUTPOST_STORAGE_DIR is required: set it or --data DIR, where Sous keeps its library")
 	}
 	if dir, err = filepath.Abs(dir); err != nil {
-		return c, fmt.Errorf("OUTPOST_STORAGE_DIR: %w", err)
+		return c, fmt.Errorf("%s: %w", dirSrc, err)
+	}
+	if *dataFlag != "" && dirSrc == "OUTPOST_STORAGE_DIR" {
+		flagDir, err := filepath.Abs(*dataFlag)
+		if err != nil {
+			return c, fmt.Errorf("--data: %w", err)
+		}
+		if flagDir != dir {
+			return c, fmt.Errorf("--data %q and OUTPOST_STORAGE_DIR %q differ: under Outpost, leave --data out", *dataFlag, dir)
+		}
 	}
 	c.StorageDir = dir
 
@@ -120,7 +147,7 @@ func Load(args []string, getenv func(string) string) (Config, error) {
 
 	// Created last so a configuration error leaves nothing behind.
 	if err := os.MkdirAll(c.StorageDir, 0o700); err != nil {
-		return c, fmt.Errorf("OUTPOST_STORAGE_DIR: %w", err)
+		return c, fmt.Errorf("%s: %w", dirSrc, err)
 	}
 	return c, nil
 }

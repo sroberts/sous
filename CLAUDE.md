@@ -1,7 +1,7 @@
 # Sous
 
-A household recipe manager run as a service under Outpost: web UI, REST API,
-and MCP from one Go binary.
+A household recipe manager: web UI, REST API, and MCP from one Go binary. It
+runs as a service under Outpost or on its own; keep both working.
 
 - [`README.md`](README.md): what Sous is and the decisions behind it.
 - [`spec.md`](spec.md): the basics design spec. Read it before changing

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net"
@@ -33,10 +34,17 @@ const shutdownGrace = 6 * time.Second
 // 0 after an error: under Outpost's on-failure policy that would leave Sous
 // down.
 func run(args []string, getenv func(string) string, stdout io.Writer) int {
+	cfg, err := config.Load(args, getenv)
+	switch {
+	case errors.Is(err, config.ErrHelp):
+		fmt.Fprint(stdout, usage)
+		return 0
+	case errors.Is(err, config.ErrVersion):
+		fmt.Fprintln(stdout, "sous", version)
+		return 0
+	}
 	level := new(slog.LevelVar)
 	log := newLogger(stdout, level)
-
-	cfg, err := config.Load(args, getenv)
 	if err != nil {
 		log.Error("invalid configuration", "error", err.Error())
 		return 1
