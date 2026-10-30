@@ -6,6 +6,7 @@ runs as a service under Outpost or on its own; keep both working.
 - [`README.md`](README.md): what Sous is and the decisions behind it.
 - [`spec.md`](spec.md): the basics design spec. Read it before changing
   anything structural.
+- [`CONTRIBUTING.md`](CONTRIBUTING.md): workflow, CI commands, and review rules.
 - [`outpost-spec.md`](outpost-spec.md): the Outpost service spec Sous must
   conform to. Don't change behaviour in a way that breaks its checklist
   (`spec.md` §12 maps each item).

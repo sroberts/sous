@@ -1,5 +1,7 @@
 # Sous
 
+![ACMM level](.plumbline-badge.svg)
+
 A household recipe manager: web UI, REST API, and MCP from one Go binary.
 Run it as a service under [Outpost](https://github.com/sroberts/outpost),
 which signs your household in and backs it up, or run it on its own.
@@ -149,6 +151,9 @@ Details are in [`spec.md`](spec.md) §11.
   like any other change.
 
 ## Development
+
+[`CONTRIBUTING.md`](CONTRIBUTING.md) has the workflow, the rules, and what
+CI checks.
 
 ```sh
 cd web && npm ci && npm run build && cd ..   # build the UI into the binary
