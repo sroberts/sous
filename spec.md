@@ -106,12 +106,13 @@ go run ./cmd/sous --port 8099 --data ./.dev-data
 
 ## 3. Storage
 
-Everything Sous needs to survive a restart is under `OUTPOST_STORAGE_DIR`
-(Outpost §4), and nothing is written anywhere else: not `$HOME`, not `/tmp`,
-not beside the binary.
+Everything Sous needs to survive a restart is under the storage directory:
+`OUTPOST_STORAGE_DIR` under Outpost (Outpost §4), or `--data` on its own
+(§2). Nothing is written anywhere else: not `$HOME`, not `/tmp`, not beside
+the binary.
 
 ```
-$OUTPOST_STORAGE_DIR/
+<storage>/
   sous.db            SQLite database: all records, the search index, schema version
   sous.db-wal        present while running; folded in on clean shutdown
   sous.db-shm

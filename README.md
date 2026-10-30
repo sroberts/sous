@@ -91,7 +91,8 @@ REST API, including `import_recipe`. Every change is attributed to a person:
   <username>` header naming who the agent acts for.
 - **Under Outpost:** connect on loopback (Outpost assigns the port; see
   `outpost status sous`) with the same header. The gateway itself only lets
-  in people signed in with a browser.
+  in people signed in with a browser, and `SOUS_REQUIRE_GATEWAY=true` closes
+  the loopback route too, so leave it unset if agents need MCP.
 
 The REST API is described at `/v1/openapi.json`.
 

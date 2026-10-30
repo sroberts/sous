@@ -26,6 +26,13 @@ type Config struct {
 	LogLevel       slog.Level // SOUS_LOG_LEVEL: debug, info (default), warn, error
 }
 
+// ErrHelp and ErrVersion are returned by Load when the arguments ask for
+// help (-h, --help) or the version (--version) rather than a configuration.
+var (
+	ErrHelp    = flag.ErrHelp
+	ErrVersion = errors.New("version requested")
+)
+
 // Gateway reports whether gateway token verification is on.
 func (c Config) Gateway() bool { return c.Auth == "gateway" }
 
@@ -47,11 +54,15 @@ func Load(args []string, getenv func(string) string) (Config, error) {
 	fs.SetOutput(io.Discard)
 	portFlag := fs.String("port", "", "port to listen on (overrides OUTPOST_PORT)")
 	dataFlag := fs.String("data", "", "storage directory, when OUTPOST_STORAGE_DIR is unset")
+	versionFlag := fs.Bool("version", false, "print the version and exit")
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
-			return c, errors.New("usage: sous --port N --data DIR (sous --help explains)")
+			return c, ErrHelp
 		}
 		return c, fmt.Errorf("flags: %w (sous --help lists them)", err)
+	}
+	if *versionFlag {
+		return c, ErrVersion
 	}
 	if fs.NArg() > 0 {
 		return c, fmt.Errorf("flags: unexpected argument %q (usage: sous --port N --data DIR)", fs.Arg(0))
@@ -81,7 +92,11 @@ func Load(args []string, getenv func(string) string) (Config, error) {
 		return c, fmt.Errorf("%s: %w", dirSrc, err)
 	}
 	if *dataFlag != "" && dirSrc == "OUTPOST_STORAGE_DIR" {
-		if flagDir, err := filepath.Abs(*dataFlag); err != nil || flagDir != dir {
+		flagDir, err := filepath.Abs(*dataFlag)
+		if err != nil {
+			return c, fmt.Errorf("--data: %w", err)
+		}
+		if flagDir != dir {
 			return c, fmt.Errorf("--data %q and OUTPOST_STORAGE_DIR %q differ: under Outpost, leave --data out", *dataFlag, dir)
 		}
 	}
