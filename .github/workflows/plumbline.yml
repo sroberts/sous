@@ -29,7 +29,7 @@ jobs:
       - name: ACMM gate
         # Exit 1 when the repo assesses below the floor. Raise the
         # floor as loops land; never lower it to make a build pass.
-        run: plumbline assess --fail-below 2 --quiet .
+        run: plumbline assess --fail-below 3 --quiet .
 
       - name: badge drift gate
         # The committed badge is a claim about this repo; regenerate

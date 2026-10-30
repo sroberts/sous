@@ -47,7 +47,32 @@ jobs:
       - name: Test
         env:
           SOUS_REQUIRE_UI: "1"
-        run: go test -race ./...
+        run: go test -race -covermode=atomic -coverprofile=coverage.out ./...
+
+      # The coverage floor: total Go statement coverage below it fails the
+      # build. Raise it as coverage grows; never lower it to make a PR pass.
+      # Gated on one OS so platform-specific code paths can't make the
+      # number differ between runners.
+      - name: Coverage floor
+        if: matrix.os == 'ubuntu-latest'
+        env:
+          COVERAGE_FLOOR: "85.0"
+        run: |
+          total=$(go tool cover -func=coverage.out | awk '/^total:/ { sub("%", "", $3); print $3 }')
+          echo "Go coverage: ${total}% (floor ${COVERAGE_FLOOR}%)" >> "$GITHUB_STEP_SUMMARY"
+          if awk -v t="$total" -v f="$COVERAGE_FLOOR" 'BEGIN { exit !(t < f) }'; then
+            echo "::error::coverage ${total}% is below the floor of ${COVERAGE_FLOOR}%"
+            exit 1
+          fi
+          echo "coverage ${total}% meets the floor of ${COVERAGE_FLOOR}%"
+
+      - name: Upload the coverage report
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage.out
+          retention-days: 14
 
       - name: Build without cgo
         env:

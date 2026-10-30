@@ -1,0 +1,40 @@
+name: Bug report
+description: Something in Sous doesn't work as it should.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: "1. …\n2. …"
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Sous version
+      description: "`sous --version`"
+    validations:
+      required: true
+  - type: dropdown
+    id: setup
+    attributes:
+      label: How do you run it?
+      options:
+        - Under Outpost, with the login gateway
+        - Under Outpost, without the gateway
+        - On its own
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Relevant lines from Sous's output (`outpost logs sous` under Outpost).
+      render: json

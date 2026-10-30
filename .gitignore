@@ -19,3 +19,4 @@ internal/recipes/testdata/*.local.json
 
 # Python
 __pycache__/
+coverage.out

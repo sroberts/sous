@@ -1,0 +1,26 @@
+{
+  "about": "Acceptance of AI-authored pull requests: merged / (merged + closed without merging). Written by scripts/acceptance/acceptance.py from a weekly workflow; review the rate before widening what agents do unattended, and look at rejected areas first.",
+  "pull_requests": 10,
+  "by_author": {
+    "agent": {
+      "merged": 9,
+      "closed_unmerged": 0,
+      "open": 1,
+      "acceptance_rate": 1.0
+    },
+    "human": {
+      "merged": 0,
+      "closed_unmerged": 0,
+      "open": 0,
+      "acceptance_rate": null
+    }
+  },
+  "agent_by_area": {
+    "unlabelled": {
+      "merged": 9,
+      "closed_unmerged": 0,
+      "open": 1,
+      "acceptance_rate": 1.0
+    }
+  }
+}

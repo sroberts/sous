@@ -1,0 +1,36 @@
+name: Feedback
+description: Tell us how Sous works for your household, what's missing, or what got in the way.
+labels: [feedback]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for using Sous. Short answers are fine.
+  - type: dropdown
+    id: overall
+    attributes:
+      label: How well does Sous work for you?
+      options:
+        - Very well
+        - Mostly well
+        - It's okay
+        - Not well
+    validations:
+      required: true
+  - type: textarea
+    id: working
+    attributes:
+      label: What works well?
+  - type: textarea
+    id: missing
+    attributes:
+      label: What's missing or gets in the way?
+    validations:
+      required: true
+  - type: dropdown
+    id: setup
+    attributes:
+      label: How do you run it?
+      options:
+        - Under Outpost, with the login gateway
+        - Under Outpost, without the gateway
+        - On its own
