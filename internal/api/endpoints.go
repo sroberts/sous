@@ -24,6 +24,8 @@ type Deps struct {
 	Log     *slog.Logger
 	Version string // the binary's version, for /v1/status
 	Auth    string // "none" or "gateway", for /v1/status
+	// Portal is the Outpost portal (OUTPOST_ISSUER) in gateway mode, for /v1/me.
+	Portal string
 	// Importer reads recipes from links; nil answers import with 503.
 	Importer *importer.Importer
 }
@@ -183,11 +185,14 @@ func (a *api) me(w http.ResponseWriter, r *http.Request, c identity.Caller) erro
 	if c.Person == nil {
 		return recipes.Errorf(recipes.CodeWhoAreYou, "no one is selected on this device")
 	}
-	src := recipes.SourceDevice
+	me := recipes.Me{Person: recipes.Person{Username: c.Person.Username, Name: c.Person.Name}, Source: recipes.SourceDevice}
 	if c.Route == identity.RouteGateway {
-		src = recipes.SourceOutpost
+		me.Source = recipes.SourceOutpost
+		if a.d.Portal != "" {
+			me.Portal = &a.d.Portal
+		}
 	}
-	writeJSON(w, http.StatusOK, recipes.Me{Person: recipes.Person{Username: c.Person.Username, Name: c.Person.Name}, Source: src})
+	writeJSON(w, http.StatusOK, me)
 	return nil
 }
 

@@ -133,7 +133,8 @@ type Person struct {
 // Me is GET /v1/me: the caller, and how Sous knows who they are.
 type Me struct {
 	Person
-	Source string `json:"source" jsonschema:"outpost when signed in through the Outpost gateway, which fixes who this is; device when chosen on this device"`
+	Source string  `json:"source" jsonschema:"outpost when signed in through the Outpost gateway, which fixes who this is; device when chosen on this device"`
+	Portal *string `json:"portal" jsonschema:"with source outpost: the Outpost portal, where the person's account, sign-out and other apps are"`
 }
 
 // Sources of a Me.

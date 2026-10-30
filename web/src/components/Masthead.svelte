@@ -1,5 +1,5 @@
 <script>
-  import { Search, Plus, Link2, ChevronDown, Check } from '@lucide/svelte';
+  import { Search, Plus, Link2, ChevronDown, Check, ExternalLink } from '@lucide/svelte';
   import { route, go, link } from '../lib/router.svelte.js';
   import { session, choosePerson } from '../lib/session.svelte.js';
 
@@ -49,11 +49,27 @@
   </div>
   <div class="who">
     {#if session.outpost}
-      <!-- Outpost's login decides who this is; there is no one to switch to. -->
-      <span class="who-btn signed" title="Signed in with Outpost">
-        <span class="avatar fig" aria-hidden="true">{session.person.name.slice(0, 1)}</span>
-        <span class="name">{session.person.name}</span>
-      </span>
+      <!-- Outpost's login decides who this is, so there is no one to switch
+           to; the menu leads back to Outpost for the account and sign-out. -->
+      {#if session.portal}
+        <button class="who-btn" aria-haspopup="menu" aria-expanded={menuOpen} onclick={() => (menuOpen = !menuOpen)}>
+          <span class="avatar fig" aria-hidden="true">{session.person.name.slice(0, 1)}</span>
+          <span class="name">{session.person.name}</span>
+          <ChevronDown size={15} aria-hidden="true" />
+        </button>
+        {#if menuOpen}
+          <ul class="menu" role="menu">
+            <li role="none" class="note label">Signed in with Outpost</li>
+            <li role="none"><a role="menuitem" href="{session.portal}/account">Account and sign out<ExternalLink size={16} aria-hidden="true" /></a></li>
+            <li role="none"><a role="menuitem" href="{session.portal}/">All apps<ExternalLink size={16} aria-hidden="true" /></a></li>
+          </ul>
+        {/if}
+      {:else}
+        <span class="who-btn signed" title="Signed in with Outpost">
+          <span class="avatar fig" aria-hidden="true">{session.person.name.slice(0, 1)}</span>
+          <span class="name">{session.person.name}</span>
+        </span>
+      {/if}
     {:else}
       <button class="who-btn" aria-haspopup="menu" aria-expanded={menuOpen} onclick={() => (menuOpen = !menuOpen)}>
         {#if session.person}
@@ -181,6 +197,9 @@
     font-size: var(--ui);
     font-weight: 600;
   }
+  .name {
+    white-space: nowrap;
+  }
   .signed {
     cursor: default;
   }
@@ -204,7 +223,8 @@
     border: 2px solid var(--ink);
     border-radius: 3px;
   }
-  .menu button {
+  .menu button,
+  .menu a {
     width: 100%;
     min-height: 44px;
     display: flex;
@@ -215,7 +235,14 @@
     text-align: left;
     padding: 0 var(--space-4);
     font-size: var(--ui);
+    color: var(--ink);
+    text-decoration: none;
   }
+  .menu .note {
+    padding: var(--space-2) var(--space-4) var(--space-1);
+    color: var(--ink-3);
+  }
+  .menu a:hover,
   .menu button:hover {
     background: var(--ticket-press);
   }

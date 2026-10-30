@@ -47,9 +47,47 @@
   <WhoIsCooking />
 {/if}
 
-<Toast />
+{#if session.signedOut}
+  <!-- Reloading this page takes the gateway's login, which returns here. -->
+  <div class="signed-out" role="alert">
+    <p>Your Outpost sign-in has ended, so changes aren't being saved.</p>
+    <a class="btn" href={location.href}>Sign in again</a>
+  </div>
+{:else}
+  <Toast />
+{/if}
 
 <style>
+  .signed-out {
+    position: fixed;
+    left: 50%;
+    bottom: max(var(--space-5), env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    z-index: 30;
+    width: min(34rem, calc(100vw - 32px));
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-3) var(--space-3) var(--space-3) var(--space-5);
+    background: var(--ink);
+    color: var(--ticket);
+    border-top: 4px solid var(--red);
+    border-radius: 3px;
+  }
+  .signed-out p {
+    flex: 1;
+    font-size: var(--ui);
+    font-weight: 600;
+  }
+  .signed-out .btn {
+    flex: none;
+    background: var(--red);
+    border-color: var(--red);
+    color: var(--ticket);
+  }
+  .signed-out .btn:hover {
+    background: var(--red-press);
+  }
   .down {
     max-width: 36rem;
     margin: var(--space-8) auto;

@@ -16,6 +16,13 @@ export function setPerson(username) {
   person = username;
 }
 
+let signedOut = () => {};
+
+/** Called when the Outpost gateway says the sign-in has ended. */
+export function onSignedOut(fn) {
+  signedOut = fn;
+}
+
 async function request(method, path, { body, version, raw } = {}) {
   const headers = { 'x-sous-via': 'ui' };
   if (person) headers['x-sous-person'] = person;
@@ -30,9 +37,16 @@ async function request(method, path, { body, version, raw } = {}) {
   }
   let res;
   try {
-    res = await fetch(path, { method, headers, body: payload });
+    // Sous never redirects, so a redirect is the gateway sending us to log in.
+    res = await fetch(path, { method, headers, body: payload, redirect: 'manual' });
   } catch {
     throw new ApiError(0, { error: { code: 'offline', message: "Sous isn't answering. Check the connection and try again." } });
+  }
+  // Sous answers in JSON. A redirect, or a 401 page, comes from the Outpost
+  // gateway: the sign-in has ended (spec.md §5).
+  if (res.type === 'opaqueredirect' || (res.status === 401 && !res.headers.get('content-type')?.includes('json'))) {
+    signedOut();
+    throw new ApiError(401, { error: { code: 'signed_out', message: 'Your Outpost sign-in has ended. Sign in again to carry on.' } });
   }
   if (res.status === 204) return null;
   const data = await res.json().catch(() => null);

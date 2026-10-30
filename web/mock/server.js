@@ -221,7 +221,7 @@ async function handle(req, res) {
     return send(res, 200, { version: 'mock', schema_version: 1, auth: outpost ? 'gateway' : 'none', recipes: db.recipes.size });
   }
   if (path === '/v1/me') {
-    return person ? send(res, 200, { ...db.people.get(person), source: outpost ? 'outpost' : 'device' }) : fail(res, 401, 'who_are_you', 'No one is selected on this device.');
+    return person ? send(res, 200, { ...db.people.get(person), source: outpost ? 'outpost' : 'device', portal: outpost ? 'http://localhost:8443' : null }) : fail(res, 401, 'who_are_you', 'No one is selected on this device.');
   }
   if (path === '/v1/people') {
     if (req.method === 'GET') return send(res, 200, { items: [...db.people.values()] });

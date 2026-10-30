@@ -128,5 +128,6 @@ A test fails if one contains page markup or grows past 200 KB.
 
 Outpost's login gateway supplies the caller as a signed `X-Outpost-Identity`
 token, verified against `OUTPOST_JWKS_URL`. Signed in that way, Sous shows
-your Outpost name and doesn't ask who's cooking. Without the gateway, a person
+your Outpost name, doesn't ask who's cooking, and links back to Outpost for
+your account, signing out and your other apps. Without the gateway, a person
 is chosen on each device. Details are in [`spec.md`](spec.md) §5.

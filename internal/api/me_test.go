@@ -45,7 +45,7 @@ func TestMeSource(t *testing.T) {
 		Gateway: true, Issuer: "https://outpost.test", Directory: svc,
 		JWKS: identity.NewJWKS(keys.URL, keys.Client()),
 	})
-	h := New(Deps{Service: svc, Resolver: res, Log: log, Version: "test", Auth: "gateway"})
+	h := New(Deps{Service: svc, Resolver: res, Log: log, Version: "test", Auth: "gateway", Portal: "https://outpost.test"})
 
 	header, _ := json.Marshal(map[string]string{"alg": "EdDSA", "typ": "JWT", "kid": "k1"})
 	now := time.Now().Unix()
@@ -74,13 +74,13 @@ func TestMeSource(t *testing.T) {
 		return m
 	}
 
-	if m := me("X-Outpost-Identity", token); m["username"] != "scott" || m["name"] != "Scott" || m["source"] != "outpost" {
-		t.Errorf("through the gateway: me = %v; want scott, Scott, outpost", m)
+	if m := me("X-Outpost-Identity", token); m["username"] != "scott" || m["name"] != "Scott" || m["source"] != "outpost" || m["portal"] != "https://outpost.test" {
+		t.Errorf("through the gateway: me = %v; want scott, Scott, outpost, the portal", m)
 	}
 	// The gateway created scott, so the direct route can name him; that is
 	// a choice made on the device, not an Outpost login.
-	if m := me("X-Sous-Person", "scott"); m["source"] != "device" {
-		t.Errorf("direct: source = %v; want device", m["source"])
+	if m := me("X-Sous-Person", "scott"); m["source"] != "device" || m["portal"] != nil {
+		t.Errorf("direct: me = %v; want device, no portal", m)
 	}
 	// A picked name never outranks the token.
 	if m := me("X-Outpost-Identity", token, "X-Sous-Person", "someone"); m["username"] != "scott" || m["source"] != "outpost" {

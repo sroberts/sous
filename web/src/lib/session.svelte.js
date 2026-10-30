@@ -2,7 +2,7 @@
 // searches against. Behind the Outpost gateway the login says who is
 // cooking; otherwise this device picks a person and remembers them.
 
-import { api, setPerson } from './api.js';
+import { api, setPerson, onSignedOut } from './api.js';
 
 const KEY = 'sous.person';
 
@@ -17,6 +17,8 @@ function stored() {
 export const session = $state({
   person: null, // { username, name }
   outpost: false, // signed in through Outpost, so the person is fixed
+  portal: null, // the Outpost portal, for the account menu
+  signedOut: false, // the Outpost sign-in ended while the page was open
   people: [],
   recipes: [], // summaries from /v1/recipes
   loaded: false,
@@ -34,6 +36,8 @@ export function toast(message, action = null) {
   }, 8000);
 }
 
+onSignedOut(() => (session.signedOut = true));
+
 export async function boot() {
   try {
     const [me, { items: people }, recipes] = await Promise.all([signedIn(), api.people(), api.allRecipes()]);
@@ -42,6 +46,7 @@ export async function boot() {
     if (me) {
       session.person = { username: me.username, name: me.name };
       session.outpost = true;
+      session.portal = me.portal;
       // Per-person flags in the index were read with the login already applied.
     } else {
       const saved = people.find((p) => p.username === stored());

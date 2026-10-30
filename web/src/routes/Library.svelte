@@ -404,6 +404,10 @@
   .host {
     font-size: 0.8125rem;
     color: var(--ink-3);
+    /* A long domain is one unbreakable word; it mustn't widen a narrow card. */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   /* Head and the Using filter */
