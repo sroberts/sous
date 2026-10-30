@@ -102,9 +102,23 @@ Common reasons a PR is sent back: an edited existing test, a change that only
 works under one way of running Sous, or a UI change that breaks at phone
 width (check 390px).
 
+## Releasing
+
+Sous uses [semantic versioning](https://semver.org/). Before 1.0, a minor
+release may include breaking changes; call them out in the changelog.
+
+1. On a branch, move the `[Unreleased]` entries in `CHANGELOG.md` under the
+   new version with today's date, and merge it.
+2. Tag `main` and push the tag: `git tag -a v0.3.0 -m "Sous v0.3.0" && git push origin v0.3.0`.
+3. `release.yml` builds the binaries, checksums and `outpost.toml`, and
+   publishes the release with notes grouped by label (`.github/release.yml`).
+4. Edit the release to add the changelog's highlights and any upgrade steps
+   at the top.
+
 ## Reporting problems
 
-Open an issue with the Sous version (`sous --version`), how you run it (with
-Outpost, gateway on or off, or on its own) and the steps to reproduce. For a
-recipe site that didn't import, include the link and what was missing, but
-don't paste paywalled recipe text.
+Security problems go through private reporting; see [SECURITY.md](SECURITY.md).
+For everything else, open an issue with the Sous version (`sous --version`),
+how you run it (with Outpost, gateway on or off, or on its own) and the steps
+to reproduce. For a recipe site that didn't import, include the link and what
+was missing, but don't paste paywalled recipe text.

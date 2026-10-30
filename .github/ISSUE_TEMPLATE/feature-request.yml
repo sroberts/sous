@@ -1,0 +1,22 @@
+name: Feature request
+description: Suggest something Sous should do.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The situation in your kitchen or household first; the best fix may not be the first one that comes to mind.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like Sous to do?
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What do you do today instead?
+  - type: markdown
+    attributes:
+      value: The [roadmap](https://github.com/sroberts/sous/blob/main/spec.md#13-out-of-scope-later-specs) lists what's already planned.

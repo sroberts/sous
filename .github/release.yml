@@ -1,0 +1,18 @@
+# Groups the generated release notes by label. Highlights and upgrade
+# notes are written by hand at the top of each release (CONTRIBUTING.md).
+changelog:
+  exclude:
+    authors: [github-actions]
+  categories:
+    - title: New
+      labels: [enhancement, feedback]
+    - title: Fixes
+      labels: [bug]
+    - title: Importing recipes
+      labels: [importer]
+    - title: Docs and project
+      labels: [documentation, project-setup]
+    - title: Dependencies
+      labels: [dependencies]
+    - title: Other changes
+      labels: ["*"]
