@@ -24,6 +24,8 @@ type Deps struct {
 	Log     *slog.Logger
 	Version string // the binary's version, for /v1/status
 	Auth    string // "none" or "gateway", for /v1/status
+	// Portal is the Outpost portal (OUTPOST_ISSUER) in gateway mode, for /v1/me.
+	Portal string
 	// Importer reads recipes from links; nil answers import with 503.
 	Importer *importer.Importer
 }
@@ -63,8 +65,8 @@ func (a *api) endpoints() []endpoint {
 			Summary: "System status: version, schema version, auth mode, recipe count, storage size and gateway key health",
 			Resp:    jsonOf[recipes.Status](), Handle: a.status},
 		{Method: "GET", Path: "/v1/me", OpID: "getMe",
-			Summary: "The person making the request; 401 who_are_you when nobody is",
-			Resp:    jsonOf[recipes.Person](), Handle: a.me},
+			Summary: "The person making the request, and whether Outpost signed them in; 401 who_are_you when nobody is",
+			Resp:    jsonOf[recipes.Me](), Handle: a.me},
 		{Method: "GET", Path: "/v1/people", OpID: "listPeople",
 			Summary: "Everyone in the household",
 			Resp:    jsonOf[recipes.Items[recipes.Person]](), Handle: a.listPeople},
@@ -183,7 +185,14 @@ func (a *api) me(w http.ResponseWriter, r *http.Request, c identity.Caller) erro
 	if c.Person == nil {
 		return recipes.Errorf(recipes.CodeWhoAreYou, "no one is selected on this device")
 	}
-	writeJSON(w, http.StatusOK, recipes.Person{Username: c.Person.Username, Name: c.Person.Name})
+	me := recipes.Me{Person: recipes.Person{Username: c.Person.Username, Name: c.Person.Name}, Source: recipes.SourceDevice}
+	if c.Route == identity.RouteGateway {
+		me.Source = recipes.SourceOutpost
+		if a.d.Portal != "" {
+			me.Portal = &a.d.Portal
+		}
+	}
+	writeJSON(w, http.StatusOK, me)
 	return nil
 }
 

@@ -195,6 +195,20 @@ gateway requests get 503 and `/up` stays 200.
 
 When `OUTPOST_AUTH` is unset, `X-Outpost-*` headers are ignored entirely.
 
+The UI asks `GET /v1/me` on load. When it answers `"source": "outpost"`, the
+person is the Outpost login: the UI shows their name, with no "who's cooking?"
+picker and no switching people. Their name opens a menu that leads to the
+Outpost portal (`portal`, from `OUTPOST_ISSUER`): the account page, which
+holds sign-out, and the other apps. Sous can't sign anyone out itself, since
+Outpost takes sign-out only as a form posted from the portal. Any other answer
+leaves the picker in place.
+
+When the Outpost sign-in ends while a page is open, the gateway answers the
+UI's requests with a redirect to its login, or a 401 page for a write. Sous's
+own answers are always JSON and never redirect, so the UI reads either as
+signed out, says changes aren't being saved, and offers to sign in again,
+which reloads the page through the gateway's login and returns to it.
+
 **2. Directly over the tailnet (tsnet), or from a local process.** The gateway
 and tsnet run side by side, so a request may arrive with no identity token.
 Such a request may name a person with the `X-Sous-Person` header (agents,
@@ -334,7 +348,7 @@ JSON in and out. Errors are always
 | Method & path | What |
 |---|---|
 | `GET /v1/status` | System status (§4.1) |
-| `GET /v1/me` | The resolved person, or 401 |
+| `GET /v1/me` | The resolved person, with `source`: `outpost` (a verified gateway login) or `device` (named by header or cookie), and for `outpost` the `portal` URL; or 401 |
 | `GET /v1/people` · `POST /v1/people` | List, or create (no-gateway mode) |
 | `GET /v1/recipes` | List and search: `q` (full text), `tag` (repeatable), `ingredient` (repeatable, all must match), `favorite`, `want_to_cook`, `sort` (`title`, `updated`, `created`), `cursor`, `limit` (default 50, max 200) |
 | `POST /v1/recipes` | Create. Body: recipe fields, `ingredients` as raw lines, `steps` as text, `tags` as names, `images` as hashes |

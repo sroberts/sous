@@ -140,6 +140,7 @@ func run(args []string, getenv func(string) string, stdout io.Writer) int {
 		Log:      log,
 		Version:  version,
 		Auth:     auth,
+		Portal:   cfg.Issuer,
 		Importer: im,
 	}))
 	app.Handle("/mcp", api.WithIdentity(resolver, identity.ViaMCP, mcp.New(svc, log, version, mcp.WithImporter(im))))

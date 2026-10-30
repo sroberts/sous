@@ -1,5 +1,5 @@
 <script>
-  import { Search, Plus, Link2, ChevronDown, Check } from '@lucide/svelte';
+  import { Search, Plus, Link2, ChevronDown, Check, ExternalLink } from '@lucide/svelte';
   import { route, go, link } from '../lib/router.svelte.js';
   import { session, choosePerson } from '../lib/session.svelte.js';
 
@@ -48,27 +48,51 @@
     <a class="btn primary" href="/new" use:link><Plus aria-hidden="true" />New recipe</a>
   </div>
   <div class="who">
-    <button class="who-btn" aria-haspopup="menu" aria-expanded={menuOpen} onclick={() => (menuOpen = !menuOpen)}>
-      {#if session.person}
-        <span class="avatar fig" aria-hidden="true">{session.person.name.slice(0, 1)}</span>
-        <span class="name">{session.person.name}</span>
+    {#if session.outpost}
+      <!-- Outpost's login decides who this is, so there is no one to switch
+           to; the menu leads back to Outpost for the account and sign-out. -->
+      {#if session.portal}
+        <button class="who-btn" aria-haspopup="menu" aria-expanded={menuOpen} onclick={() => (menuOpen = !menuOpen)}>
+          <span class="avatar fig" aria-hidden="true">{session.person.name.slice(0, 1)}</span>
+          <span class="name">{session.person.name}</span>
+          <ChevronDown size={15} aria-hidden="true" />
+        </button>
+        {#if menuOpen}
+          <ul class="menu" role="menu">
+            <li role="none" class="note label">Signed in with Outpost</li>
+            <li role="none"><a role="menuitem" href="{session.portal}/account">Account and sign out<ExternalLink size={16} aria-hidden="true" /></a></li>
+            <li role="none"><a role="menuitem" href="{session.portal}/">All apps<ExternalLink size={16} aria-hidden="true" /></a></li>
+          </ul>
+        {/if}
       {:else}
-        <span class="name">Who’s cooking?</span>
+        <span class="who-btn signed" title="Signed in with Outpost">
+          <span class="avatar fig" aria-hidden="true">{session.person.name.slice(0, 1)}</span>
+          <span class="name">{session.person.name}</span>
+        </span>
       {/if}
-      <ChevronDown size={15} aria-hidden="true" />
-    </button>
-    {#if menuOpen}
-      <ul class="menu" role="menu">
-        {#each session.people as p (p.username)}
-          <li role="none">
-            <button role="menuitemradio" aria-checked={session.person?.username === p.username} onclick={() => (choosePerson(p), (menuOpen = false))}>
-              {p.name}
-              {#if session.person?.username === p.username}<Check size={16} aria-hidden="true" />{/if}
-            </button>
-          </li>
-        {/each}
-        <li role="none"><button role="menuitem" onclick={() => ((session.asking = true), (menuOpen = false))}>Someone else…</button></li>
-      </ul>
+    {:else}
+      <button class="who-btn" aria-haspopup="menu" aria-expanded={menuOpen} onclick={() => (menuOpen = !menuOpen)}>
+        {#if session.person}
+          <span class="avatar fig" aria-hidden="true">{session.person.name.slice(0, 1)}</span>
+          <span class="name">{session.person.name}</span>
+        {:else}
+          <span class="name">Who’s cooking?</span>
+        {/if}
+        <ChevronDown size={15} aria-hidden="true" />
+      </button>
+      {#if menuOpen}
+        <ul class="menu" role="menu">
+          {#each session.people as p (p.username)}
+            <li role="none">
+              <button role="menuitemradio" aria-checked={session.person?.username === p.username} onclick={() => (choosePerson(p), (menuOpen = false))}>
+                {p.name}
+                {#if session.person?.username === p.username}<Check size={16} aria-hidden="true" />{/if}
+              </button>
+            </li>
+          {/each}
+          <li role="none"><button role="menuitem" onclick={() => ((session.asking = true), (menuOpen = false))}>Someone else…</button></li>
+        </ul>
+      {/if}
     {/if}
   </div>
 </header>
@@ -173,6 +197,12 @@
     font-size: var(--ui);
     font-weight: 600;
   }
+  .name {
+    white-space: nowrap;
+  }
+  .signed {
+    cursor: default;
+  }
   .avatar {
     display: grid;
     place-items: center;
@@ -193,7 +223,8 @@
     border: 2px solid var(--ink);
     border-radius: 3px;
   }
-  .menu button {
+  .menu button,
+  .menu a {
     width: 100%;
     min-height: 44px;
     display: flex;
@@ -204,7 +235,14 @@
     text-align: left;
     padding: 0 var(--space-4);
     font-size: var(--ui);
+    color: var(--ink);
+    text-decoration: none;
   }
+  .menu .note {
+    padding: var(--space-2) var(--space-4) var(--space-1);
+    color: var(--ink-3);
+  }
+  .menu a:hover,
   .menu button:hover {
     background: var(--ticket-press);
   }

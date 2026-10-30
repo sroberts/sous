@@ -113,7 +113,12 @@ async function readBody(req) {
   return Buffer.concat(chunks);
 }
 
+// MOCK_OUTPOST=<username> acts as the Outpost gateway: every request is that
+// person, signed in, whatever the device picked.
+const outpost = process.env.MOCK_OUTPOST || null;
+
 function personOf(req) {
+  if (outpost && db.people.has(outpost)) return outpost;
   const header = req.headers['x-sous-person'];
   const cookie = /(?:^|;\s*)sous_person=([^;]+)/.exec(req.headers.cookie || '')?.[1];
   const name = header || (cookie && decodeURIComponent(cookie));
@@ -213,10 +218,10 @@ async function handle(req, res) {
 
   let m;
   if (path === '/v1/status' && req.method === 'GET') {
-    return send(res, 200, { version: 'mock', schema_version: 1, auth: 'none', recipes: db.recipes.size });
+    return send(res, 200, { version: 'mock', schema_version: 1, auth: outpost ? 'gateway' : 'none', recipes: db.recipes.size });
   }
   if (path === '/v1/me') {
-    return person ? send(res, 200, db.people.get(person)) : fail(res, 401, 'who_are_you', 'No one is selected on this device.');
+    return person ? send(res, 200, { ...db.people.get(person), source: outpost ? 'outpost' : 'device', portal: outpost ? 'http://localhost:8443' : null }) : fail(res, 401, 'who_are_you', 'No one is selected on this device.');
   }
   if (path === '/v1/people') {
     if (req.method === 'GET') return send(res, 200, { items: [...db.people.values()] });
