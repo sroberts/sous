@@ -117,7 +117,7 @@ type Change struct {
 	ID       string  `json:"id"`
 	At       string  `json:"at"`
 	PersonID *string `json:"person_id" jsonschema:"username of who made the change"`
-	Via      string  `json:"via" jsonschema:"ui, api or mcp"`
+	Via      string  `json:"via" jsonschema:"ui, api, mcp or system"`
 	Entity   string  `json:"entity" jsonschema:"recipe or person"`
 	EntityID string  `json:"entity_id"`
 	Action   string  `json:"action" jsonschema:"create, update, delete or restore"`
@@ -225,7 +225,7 @@ type TrashQuery struct {
 type ChangeQuery struct {
 	EntityID string `query:"entity_id" json:"entity_id,omitempty" jsonschema:"only changes to this recipe or person"`
 	Person   string `query:"person" json:"person,omitempty" jsonschema:"only changes made by this username"`
-	Via      string `query:"via" json:"via,omitempty" jsonschema:"only changes made via ui, api or mcp"`
+	Via      string `query:"via" json:"via,omitempty" jsonschema:"only changes made via ui, api, mcp or system"`
 	Cursor   string `query:"cursor" json:"cursor,omitempty" jsonschema:"next_cursor from the previous page"`
 	Limit    int    `query:"limit" json:"limit,omitempty" jsonschema:"page size, default 50, max 200"`
 }
