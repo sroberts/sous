@@ -41,7 +41,8 @@ var componentNames = map[reflect.Type]string{
 
 const docDescription = `Sous is a household recipe manager. Every response is JSON except images.
 
-Errors are always {"error":{"code","message"}}; branch on code, which is stable.
+Errors are always {"error":{"code","message"}}; branch on code, which is stable. importRecipe
+adds a top-level summary, a sentence to read aloud.
 
 Identity: behind the Outpost gateway, the caller comes from its signed token. Otherwise
 name yourself with the X-Sous-Person header (a username from GET /v1/people). Reads need

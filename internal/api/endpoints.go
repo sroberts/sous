@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"reflect"
 	"slices"
 	"time"
@@ -48,6 +49,7 @@ type endpoint struct {
 	Status  int          // the success status; 0 means 200
 	Errors  []int        // route-specific error statuses, for the document
 	Write   bool         // nobody gets 401 who_are_you
+	Spoken  bool         // errors carry a summary to read aloud
 	Limit   int64        // the request body limit; 0 when no body is read
 	Handle  func(w http.ResponseWriter, r *http.Request, c identity.Caller) error
 }
@@ -86,6 +88,11 @@ func (a *api) endpoints() []endpoint {
 				"POST the draft to /v1/recipes to save it",
 			Body: jsonOf[recipes.ImportRequest](), Resp: jsonOf[recipes.ImportPreview](),
 			Errors: []int{422}, Write: true, Limit: jsonLimit, Handle: a.previewImport},
+		{Method: "POST", Path: "/v1/recipes/import", OpID: "importRecipe",
+			Summary: "Read a recipe from a link and save it in one step, for a shortcut. A link already in Sous " +
+				"answers with that copy, restored if it was in the trash. Errors carry a summary to read aloud",
+			Body: jsonOf[recipes.CaptureRequest](), Resp: jsonOf[recipes.CaptureResult](),
+			Errors: []int{422}, Write: true, Spoken: true, Limit: jsonLimit, Handle: a.importRecipe},
 		{Method: "GET", Path: "/v1/recipes/{id}", OpID: "getRecipe",
 			Summary: "The full recipe, with the caller's flags. A deleted recipe has deleted_at set",
 			Resp:    jsonOf[recipes.Recipe](), Errors: []int{404}, Handle: a.getRecipe},
@@ -150,21 +157,37 @@ func New(d Deps) http.Handler {
 
 	mux := http.NewServeMux()
 	allow := map[string][]string{}
+	spoken := map[string]bool{}
 	for _, ep := range eps {
 		mux.Handle(ep.Method+" "+ep.Path, a.serve(ep))
 		allow[ep.Path] = append(allow[ep.Path], ep.Method)
+		spoken[ep.Method+" "+ep.Path] = ep.Spoken
 	}
 	for path, methods := range allow {
 		if slices.Contains(methods, "GET") {
 			methods = append(methods, "HEAD")
 		}
 		slices.Sort(methods)
-		mux.Handle(path, methodNotAllowed(methods))
+		// One pattern per method, not the bare path: /v1/recipes/import
+		// would conflict with GET /v1/recipes/{id}.
+		h := methodNotAllowed(methods)
+		for _, m := range httpMethods {
+			if !slices.Contains(methods, m) {
+				mux.Handle(m+" "+path, h)
+			}
+		}
 	}
 	mux.HandleFunc("/v1/", func(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, recipes.CodeNotFound, "no route for "+r.Method+" "+r.URL.Path)
 	})
-	return crossOrigin(mux)
+	return crossOrigin(mux, spoken)
+}
+
+// httpMethods are the methods a route answers 405 for when it doesn't
+// serve them; any other method is 404.
+var httpMethods = []string{
+	http.MethodGet, http.MethodHead, http.MethodPost, http.MethodPut, http.MethodPatch,
+	http.MethodDelete, http.MethodConnect, http.MethodOptions, http.MethodTrace,
 }
 
 func (a *api) status(w http.ResponseWriter, r *http.Request, c identity.Caller) error {
@@ -258,6 +281,32 @@ func (a *api) previewImport(w http.ResponseWriter, r *http.Request, c identity.C
 		return err
 	}
 	writeJSON(w, http.StatusOK, p)
+	return nil
+}
+
+// importRecipe is a capture: the link read and saved in one call. url is
+// absolute only through the gateway, where the token's aud has already
+// matched the Host, and the portal gives the scheme.
+func (a *api) importRecipe(w http.ResponseWriter, r *http.Request, c identity.Caller) error {
+	if a.d.Importer == nil {
+		writeErrorFor(w, true, http.StatusServiceUnavailable, "unavailable", "importing from links is not available")
+		return nil
+	}
+	var in recipes.CaptureRequest
+	if err := decodeJSON(r, &in); err != nil {
+		return err
+	}
+	res, err := a.d.Importer.Capture(r.Context(), c, in.URL)
+	if err != nil {
+		return err
+	}
+	if c.Route == identity.RouteGateway {
+		if u, err := url.Parse(a.d.Portal); err == nil && u.Scheme != "" {
+			link := u.Scheme + "://" + r.Host + res.Path
+			res.URL = &link
+		}
+	}
+	writeJSON(w, http.StatusOK, res)
 	return nil
 }
 

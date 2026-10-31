@@ -53,12 +53,12 @@ func (a *api) serve(ep endpoint) http.Handler {
 		via := identity.ViaFromHeader(r.Header.Get(identity.HeaderVia))
 		c, ierr := a.d.Resolver.Resolve(r, via)
 		if ierr != nil {
-			writeError(w, ierr.Status, ierr.Code, ierr.Message)
+			writeErrorFor(w, ep.Spoken, ierr.Status, ierr.Code, ierr.Message)
 			return
 		}
 		reportCaller(w, c)
 		if ep.Write && c.Person == nil {
-			writeError(w, http.StatusUnauthorized, recipes.CodeWhoAreYou, "choose who is cooking before making changes")
+			writeErrorFor(w, ep.Spoken, http.StatusUnauthorized, recipes.CodeWhoAreYou, "choose who is cooking before making changes")
 			return
 		}
 		if ep.Limit > 0 {
@@ -66,7 +66,7 @@ func (a *api) serve(ep endpoint) http.Handler {
 		}
 		r = r.WithContext(identity.WithCaller(r.Context(), c))
 		if err := ep.Handle(w, r, c); err != nil {
-			a.fail(w, r, err)
+			a.fail(w, r, err, ep.Spoken)
 		}
 	})
 }
@@ -80,11 +80,12 @@ func methodNotAllowed(methods []string) http.Handler {
 }
 
 // crossOrigin refuses unsafe requests a browser made from another site.
-// Requests without browser headers (agents, scripts) pass.
-func crossOrigin(next http.Handler) http.Handler {
+// Requests without browser headers (agents, scripts) pass. spoken holds the
+// "METHOD /path" of each spoken route, whose refusal carries a summary.
+func crossOrigin(next http.Handler, spoken map[string]bool) http.Handler {
 	cop := http.NewCrossOriginProtection()
 	cop.SetDenyHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		writeError(w, http.StatusForbidden, "cross_origin", "cross-origin requests are not allowed")
+		writeErrorFor(w, spoken[r.Method+" "+r.URL.Path], http.StatusForbidden, "cross_origin", "cross-origin requests are not allowed")
 	}))
 	return cop.Handler(next)
 }

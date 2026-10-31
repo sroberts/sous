@@ -136,6 +136,10 @@ REST API, including `import_recipe`. Every change is attributed to a person:
   `outpost status sous`) with the same header. The gateway itself only lets
   in people signed in with a browser, and `SOUS_REQUIRE_GATEWAY=true` closes
   the loopback route too, so leave it unset if agents need MCP.
+- **Access tokens:** the gateway also accepts an Outpost access token
+  (`Authorization: Bearer opat_…`) and passes Sous the same signed identity as
+  a login. Scripts and the Siri Shortcut use this to reach Sous from outside.
+  MCP still connects on loopback, as above.
 
 The REST API is described at `/v1/openapi.json`.
 
@@ -148,6 +152,11 @@ bookmarklet for desktop browsers and an iOS Shortcut for the Share Sheet; both
 open `/import?url=…`. If a site blocks Sous or has no recipe data, paste the
 recipe text instead. Agents use the MCP tool `import_recipe`. Details are in
 [`spec.md`](spec.md) §14.
+
+To read and save in one step, `POST /v1/recipes/import` with `{"url": "…"}`.
+It saves the recipe, or returns the copy you already have, and replies with a
+`summary` short enough to speak. The `/import` page shows how to build a Siri
+Shortcut on it: share a recipe page, or say "Hey Siri, Save to Sous".
 
 ## Moving from Mela
 
@@ -163,6 +172,16 @@ uv run scripts/mela-import/mela_import.py Recipes.melarecipes \
 skips what's already there, so an interrupted import can just be run again.
 Details are in [`spec.md`](spec.md) §11.
 
+Under Outpost, make a short-lived access token on the Outpost machine and
+pass it in `SOUS_TOKEN`; the import is then attributed to the token's owner,
+whatever `--person` says. Revoke it when the import is done.
+
+```sh
+outpost token create scott --name mela-import --app sous --expires 1d
+SOUS_TOKEN=opat_… uv run scripts/mela-import/mela_import.py Recipes.melarecipes \
+    --url https://sous.example.ts.net --person scott
+```
+
 ## What it does today
 
 - **Library:** browse by course, a want-to-cook rail, favorites, and search
@@ -175,7 +194,8 @@ Details are in [`spec.md`](spec.md) §11.
 - **Editor:** a live preview of how each ingredient line was read.
 - **Import:** from a link (schema.org JSON-LD, microdata or h-recipe), the
   bookmarklet, the iOS Shortcut, or pasted text, with photos stored and
-  duplicates caught by link. From Mela, with a one-time script.
+  duplicates caught by link. A "Save to Sous" Siri Shortcut saves a link
+  without opening Sous. From Mela, with a one-time script.
 - **Household:** per-person favorites and want-to-cook, a history of who
   changed what, and deleted recipes can be restored.
 - **Interfaces:** the web UI, a REST API described at `/v1/openapi.json`,

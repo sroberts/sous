@@ -221,6 +221,12 @@ On success, identity comes **from the token's claims** (`sub`, `name`,
 reach `127.0.0.1:<port>` directly and set headers; only the signature proves
 the gateway sent them.
 
+Sous never reads `Authorization`. A script or Shortcut can send an Outpost
+access token (`Authorization: Bearer opat_…`) to the gateway, which consumes
+it and forwards the same signed identity for the person who owns the token. A
+bad or revoked token never reaches Sous: Outpost answers with a plain-text 401
+(or 429 when throttled, 403 outside the allow-list).
+
 A token that is present but fails verification gets a 401. It is never
 quietly downgraded to the next route.
 
@@ -407,6 +413,7 @@ JSON in and out. Errors are always
 | `POST /v1/ingredients/parse` | Parse `{lines}` without saving; returns each line as the server would store it. The editor's live preview uses it. Not a write, so it needs no person |
 | `POST /v1/images` | Upload raw bytes (`image/jpeg`, `png`, `webp`, `heic`); returns `{hash}` |
 | `POST /v1/recipes/import/preview` | Read a recipe from a link (`url`) or pasted text (`text`, optional `title`) into a draft, without saving it. Exactly one of `url` or `text`. Needs a person, because it stores photos (§14) |
+| `POST /v1/recipes/import` | Read a recipe from a link (`url`) and save it in one step, or return the copy already saved. Needs a person. Always 200 on success, with a `summary` to speak (§14) |
 | `GET /v1/images/{hash}` | The image. `Cache-Control: immutable`, since the content never changes under a hash |
 | `GET /v1/changes` | The change log, newest first, filterable by `entity_id`, `person`, `via` |
 
@@ -544,6 +551,9 @@ It reads the `.melarecipes` zip, and for each recipe:
 
 It sends `X-Sous-Person`, so the import is attributed to that person like
 any other API client; `--name` adds them to the household first if needed.
+When `SOUS_TOKEN` is set (an Outpost access token, for Sous under Outpost),
+it also sends that as `Authorization: Bearer`; the gateway then names the
+person from the token (§5), and `--person` has no effect.
 It is idempotent by `source_url` plus title: a re-run skips recipes already
 present, so an interrupted import can be resumed. A recipe that appears
 twice in the export is imported once, and the second copy is reported.
@@ -617,6 +627,7 @@ Each builds on the model and API above without changing what this spec defines.
 
 A person gives Sous a link; Sous reads the recipe on that page into a draft
 the person checks in the editor and then saves. Nothing is saved by the read.
+`POST /v1/recipes/import` skips the check and saves (Save in one step).
 
 ### How a page is read
 
@@ -674,6 +685,47 @@ create call. Agents do the same, or pass `save` to `import_recipe`.
 The route needs a person (`Write: true`), because stored photos record who
 added them.
 
+### Save in one step
+
+`POST /v1/recipes/import` takes `{url}` only, runs the same importer, and
+saves what it reads. It is made for the iOS "Save to Sous" Shortcut (below),
+where no one is there to review a draft. It needs a person, and its changes
+are recorded with `via` `api`. It returns 200 with:
+
+```json
+{"summary":"Saved Garlic Noodles.","id":"…","title":"Garlic Noodles","version":1,
+ "path":"/r/<id>","url":null,"duplicate":false,"restored":false,
+ "missing":[],"warnings":[]}
+```
+
+- `summary`: one sentence meant to be spoken. One of "Saved X.", "Saved X, but
+  no steps were found." (or "no ingredients", or "no ingredients or steps"),
+  "Already in Sous: X." or "Restored X from the trash." A page with no title
+  is saved as "Recipe from <host>", with a warning.
+- `path` is the recipe's page in the web UI. `url` is that page as an absolute
+  link through the gateway (the portal's scheme and the request's host, which
+  the identity token's `aud` has matched), else `null`.
+- `missing` and `warnings` are the report's.
+
+A **duplicate** (found as under Duplicates) saves nothing new: the existing
+recipe is returned with `duplicate: true`. If that copy is in the trash it is
+restored, attributed to the caller, and `restored` is `true`.
+
+A **partial** read, with no ingredients or no steps, is saved anyway; the
+`summary` says what is missing, and the person can finish it in the editor.
+
+**Failures** have the same shapes as everywhere else: a 422 with the error
+object and `page` for import failures, and the plain error object for the
+rest. On this route only, they also carry a top-level `summary` string for
+Siri to speak: a fixed sentence for each import error code, and the
+`message` for the rest (`who_are_you` instead says to check the shortcut's
+header).
+
+No rate limit is added. Every call needs a person; the same fetch is already
+open through the preview and MCP; the importer already caps concurrency at 4
+with a 25 second budget and the fetch guard limits each fetch; and Outpost
+throttles rejected tokens.
+
 ### Errors
 
 Every import failure is a 422 with the usual error object plus `page`:
@@ -697,6 +749,7 @@ The codes:
 | `paywalled` | See the paywall rule |
 | `no_recipe_found` | Anything else: the page loaded but holds no usable recipe |
 
+Save in one step returns these too, with the `summary` described there.
 Request mistakes (both or neither of `url` and `text`) are the ordinary 400
 `invalid`. These errors are separate from `recipes.Error`, which already uses
 `not_found` and `too_large` for other statuses; callers check for an import
@@ -769,6 +822,8 @@ restore it. Updating replaces the title, description, yield, times,
 notes and existing photos, appends the imported cover if it is new, and saves
 through `PATCH` with the usual `If-Match` handling. MCP `import_recipe` with
 `save: true` on a duplicate returns an `exists` error rather than a copy.
+`POST /v1/recipes/import` instead returns the existing recipe as above, and
+restores it if it was in the trash.
 
 ### Wayback Machine links
 
@@ -823,6 +878,22 @@ The page itself shows both setups; there is no settings area.
   URLs from Input; URL Encode; Text `https://<sous host>/import?url=[Encoded
   URL]`; Open URLs. Tailscale must be connected and Safari signed in through
   the gateway.
+
+- **Siri Shortcut ("Save to Sous"):** receive URLs and Safari pages; Get URLs
+  from Input (Ask For URLs if there is no input); Get Contents of URL
+  `<sous>/v1/recipes/import`, POST, JSON body `{url}`, with a header for the
+  mode below; Get Dictionary Value `summary`; if it has a value, Speak Text it,
+  else speak "Sous said: " and the contents. After that "Hey Siri, Save to
+  Sous" works. The `/import` page shows these steps with the right header.
+  - *Under Outpost:* `Authorization: Bearer opat_…`, a token made on the
+    Outpost machine with `outpost token create <username> --name siri --app
+    sous` (optionally `--expires 90d`). The secret is shown once. List with
+    `outpost token list <username>`, revoke with `outpost token revoke <id>`.
+    The token can do anything that person can do in Sous, so revoke it if the
+    phone is lost.
+  - *On its own:* `X-Sous-Person: <username>`, with the trust model of §5 route
+    2. Sous binds `127.0.0.1`, so the phone reaches it through `tailscale
+    serve` or a reverse proxy. `SOUS_REQUIRE_GATEWAY=true` closes this route.
 
 A PWA `share_target` is not built, but the `url`, `text` and `title`
 parameters are what one would send.
