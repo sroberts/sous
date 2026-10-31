@@ -8,7 +8,7 @@ import (
 
 // sampleCount is the number of embedded samples; internal/samples pins it
 // too.
-const sampleCount = 7
+const sampleCount = 12
 
 func listCount(t *testing.T, p *proc, path string) int {
 	t.Helper()

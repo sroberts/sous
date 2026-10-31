@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"log/slog"
+	"slices"
 	"testing"
 
 	"github.com/sroberts/sous/internal/identity"
@@ -32,9 +33,15 @@ func TestSamplesThroughMCP(t *testing.T) {
 	h := New(svc, log, "test")
 
 	cs := as(t, serve(t, standIn(h)), "")
+	historic := 0
+	for _, sm := range all {
+		if slices.Contains(sm.Recipe.Tags, "Historic") {
+			historic++
+		}
+	}
 	page := ok[recipes.Page[recipes.Summary]](t, cs, "search_recipes", map[string]any{"tag": []string{"Historic"}})
-	if page.Total != len(all) {
-		t.Fatalf("Historic recipes = %d, want %d", page.Total, len(all))
+	if historic == 0 || page.Total != historic {
+		t.Fatalf("Historic recipes = %d, want %d", page.Total, historic)
 	}
 	changes := ok[recipes.ChangePage](t, cs, "recent_changes", map[string]any{"via": "system"})
 	if len(changes.Items) != len(all) || *changes.Items[0].PersonID != identity.SystemUsername {

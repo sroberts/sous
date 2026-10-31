@@ -136,15 +136,18 @@ the binary.
   touch it, log the two versions, exit 1. Opening it could corrupt it.
 - **Empty directory** (first run, or a restore of nothing) → create the layout
   and a database, then seed it (next item). A fresh Sous is a valid Sous.
-- **Sample recipes.** A library that has never been used gets seven classic
+- **Sample recipes.** A library that has never been used gets twelve sample
   recipes on start (`internal/samples`; sources in its `SOURCES.md`). *Never
   used* means no `changes` rows and no `recipes` rows, deleted ones included,
   so deleting the samples is permanent, and a restore that brings data never
-  seeds. Signing in through the gateway alone doesn't count as use. Each
-  sample is a public-domain original (Glasse 1751, Simmons 1796, Randolph
+  seeds. Signing in through the gateway alone doesn't count as use. Seven
+  are historic: each is a public-domain original (Glasse 1751, Simmons 1796, Randolph
   1824, Acton 1845, Beeton 1861, Farmer 1896, Escoffier 1907) with a modern
   adaptation as the recipe, the verbatim text and its citation in `notes`, a
-  period illustration, and the tags for its course plus `Historic`. They are
+  period illustration, and the tags for its course plus `Historic`. Five are
+  classics written for Sous in its own words, four inspired by a named chef's
+  book (cited, never quoted), tagged with their course plus `Classic`, with a
+  public-domain or CC0 photo where one exists. All are
   credited to the built-in author `_sous` (§5), and their changes are logged
   `via = system`. Seeding runs once per start, before `ready`; if it fails,
   Sous logs a warning and starts anyway. `SOUS_SAMPLES=false` skips it.

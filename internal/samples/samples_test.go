@@ -20,7 +20,7 @@ import (
 
 const (
 	// wantCount is how many samples ship. Change it with the data.
-	wantCount = 7
+	wantCount = 12
 	// maxImageBytes keeps the binary, and every new library, small.
 	maxImageBytes = 200 << 10
 )
@@ -45,10 +45,12 @@ func TestAll(t *testing.T) {
 			t.Errorf("duplicate title %q", r.Title)
 		}
 		titles[r.Title] = true
-		if len(r.Tags) < 2 || !slices.Contains(courses, r.Tags[0]) || !slices.Contains(r.Tags, "Historic") {
-			t.Errorf("%s: tags %v, want a course first and Historic", r.Title, r.Tags)
+		historic := slices.Contains(r.Tags, "Historic")
+		if len(r.Tags) < 2 || !slices.Contains(courses, r.Tags[0]) || historic == slices.Contains(r.Tags, "Classic") {
+			t.Errorf("%s: tags %v, want a course first and one of Historic or Classic", r.Title, r.Tags)
 		}
-		if r.SourceURL == nil || !strings.HasPrefix(*r.SourceURL, "https://") {
+		// A historic recipe cites its book; a classic one may have no source.
+		if (historic && r.SourceURL == nil) || (r.SourceURL != nil && !strings.HasPrefix(*r.SourceURL, "https://")) {
 			t.Errorf("%s: source_url %v", r.Title, r.SourceURL)
 		}
 		if r.Description == nil || r.Notes == nil || r.YieldText == nil {

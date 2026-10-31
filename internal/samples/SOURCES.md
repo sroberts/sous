@@ -1,6 +1,7 @@
 # Sample recipe sources
 
-Seven recipes from public-domain cookbooks, one per book. Each original was copied
+Seven historic recipes from public-domain cookbooks, one per book (01 to 07), and
+five classics written for Sous (08 to 12, at the end). Each original was copied
 from the fetched text listed below; nothing was quoted from memory. The printed
 page's line wrapping is not kept: wrapped lines are joined, while paragraphs and
 line-per-item ingredient lists stay as printed. The raw downloads
@@ -88,3 +89,60 @@ All books were published before 1929 and are public domain in the US.
 - **Image:** `data/07-peach-melba.jpg` (1000×720, 50 KB, padded to suit the card shape). A crop of p. 778 showing recipe 2699, Pêches Melba. This is a scan of the text, not a picture of the dish.
   - File page: https://commons.wikimedia.org/wiki/File:Escoffier_-_A_Guide_to_Modern_Cookery.djvu (page 804 of the DjVu; scan from archive.org `cu31924000610117`)
   - Licence: Public domain, Commons licence category "PD-old-80-expired"
+
+# Classic recipes, 08 to 12
+
+Five recipes written for Sous. Four are inspired by a chef's book; none copies,
+paraphrases or quotes it. Quantities, method, wording and notes are original.
+The books are cited only as the inspiration, and each book link was checked to
+resolve to the right record. Facts in the descriptions were checked against the
+pages listed. Photos are public domain or CC0 only.
+
+## 08-boeuf-bourguignon: Boeuf Bourguignon
+
+- **Book cited:** Julia Child (with Simone Beck and Louisette Bertholle), *Mastering the Art of French Cooking*, vol. 1, Alfred A. Knopf, 1961
+- **source_url:** https://en.wikipedia.org/wiki/Mastering_the_Art_of_French_Cooking (checked: vol. 1 1961, Knopf, the three co-authors, beef bourguignon among its traditional dishes)
+- **Facts in description:**
+  - Child co-authored the 1961 book: the Wikipedia page above.
+  - She cooked boeuf bourguignon on the first regular episode of *The French Chef*, aired 11 February 1963: https://en.wikipedia.org/wiki/The_French_Chef ("Season 1, Episode 1: Boeuf Bourguignon"; regular weekly series premiered 11 February 1963 after pilots the previous summer). The description says "first regular episode" because of those pilots.
+- **Image:** `08-boeuf-bourguignon.jpg` (1200×900, 156 KB). Bourguignon with tagliatelle and a tomate provençale, photographed in a French restaurant, 2010.
+  - File page: https://commons.wikimedia.org/wiki/File:Boeuf_Bourguignon.JPG
+  - Author: Véronique Pagnier. Licence: Public domain (PD-self)
+
+## 09-poulet-au-vinaigre: Poulet au Vinaigre
+
+- **Book cited:** Paul Bocuse, *Paul Bocuse's French Cooking*, translated by Colette Rossant, Pantheon Books, New York, 1977 (first American edition; a translation of *La Cuisine du marché*)
+- **source_url:** https://openlibrary.org/works/OL2383408W (checked: title, 1977, Pantheon; edition https://openlibrary.org/books/OL4563171M notes "Translation of La cuisine du marché"). Translator from Wikipedia's Bocuse "Works" section and the UPenn catalogue.
+- **Facts in description:**
+  - Poulet au vinaigre became a speciality of Lyonnais cooking in the 20th century, and Bocuse helped make it famous: https://fr.wikipedia.org/wiki/Poulet_au_vinaigre_(plat) ("est devenu une spécialité de la cuisine lyonnaise au XXe siècle"; Bocuse "a contribué à sa notoriété").
+  - His restaurant (L'Auberge du Pont de Collonges) is at Collonges-au-Mont-d'Or, near Lyon, and held three Michelin stars from 1965: https://en.wikipedia.org/wiki/Paul_Bocuse
+- **Not verified, so not stated:** whether *Paul Bocuse's French Cooking* itself contains a poulet au vinaigre recipe (the Eat Your Books index returned 403). The notes cite the book only as inspiration.
+- **Image:** none. The only CC0 photo found shows a cream sauce, not this recipe's tomato-and-vinegar one.
+
+## 10-steak-frites: Steak Frites with Maître d' Butter
+
+- **Book cited:** Anthony Bourdain (with José de Meirelles and Philippe Lajaunie), *Anthony Bourdain's Les Halles Cookbook: Strategies, Recipes, and Techniques of Classic Bistro Cooking*, Bloomsbury, 2004
+- **source_url:** https://openlibrary.org/works/OL3348005W (checked: title, subtitle, first published 2004)
+- **Facts in description:**
+  - Bourdain became executive chef at Brasserie Les Halles, Manhattan, in 1998: https://en.wikipedia.org/wiki/Anthony_Bourdain ("In 1998 Bourdain became an executive chef at Brasserie Les Halles").
+  - The 2004 book covers the restaurant's classic bistro cooking: book subtitle on Open Library; publisher and year in Wikipedia's bibliography.
+- **Image:** `10-steak-frites.jpg` (1200×848, 154 KB). Sliced steak, fries and a frisée salad, San Francisco, 2026. No herb butter is visible.
+  - File page: https://commons.wikimedia.org/wiki/File:Steak_frites_-_San_Francisco,_CA.jpg
+  - Author: Daderot. Licence: CC0 1.0 (CC-Zero)
+
+## 11-french-omelette: French Omelette
+
+- **Book cited:** Jacques Pépin, *La Technique: An Illustrated Guide to the Fundamental Techniques of Cooking*, Quadrangle/The New York Times Book Co., 1976
+- **source_url:** https://openlibrary.org/works/OL1883998W (checked: "La technique", 1976, Quadrangle/New York Times Book Co.)
+- **Facts in description:**
+  - *La Technique* (1976) teaches technique through photographs: https://en.wikipedia.org/wiki/Jacques_P%C3%A9pin (it "uses thousands of photographs to illustrate techniques").
+  - Pépin demonstrates a classic French omelette beside a browned country-style one on PBS: https://www.pbs.org/wnet/americanmasters/learn-jacques-pepins-famous-omelette-techniques/8589/ (clip from *American Masters*, *Jacques Pépin: The Art of Craft*). The 2017 date (premiere 26 May 2017) is from the Pépin Wikipedia page.
+- **Image:** none. The only PD/CC0 omelette photos on Commons show browned, flat-folded or filled omelettes (e.g. File:Eggs_omelette.jpg, File:FoodOmelete.jpg), not a pale rolled French omelette.
+
+## 12-flourless-chocolate-torte: Flourless Chocolate Torte
+
+- **Book cited:** none; a general classic. No source_url.
+- **Facts in description:** none needing a source.
+- **Image:** `12-flourless-chocolate-torte.jpg` (1200×903, 162 KB). A slice of flourless chocolate cake with cream, at Sugardough, Brighton, 2025. This café's version has a thin ganache top and a pale mocha layer under it, which the recipe doesn't have.
+  - File page: https://commons.wikimedia.org/wiki/File:Flourless_Chocolate_Cake_-_Sugardough_2025-07-01.jpg
+  - Author: Andy Li. Licence: CC0 1.0 (CC-Zero)
