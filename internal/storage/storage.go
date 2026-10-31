@@ -111,6 +111,12 @@ var commonPragmas = []string{
 // temp_store(MEMORY), and runs pending migrations, each in its own
 // transaction, logging "migrated" with from and to versions.
 func Open(ctx context.Context, dir string, log *slog.Logger) (*Store, error) {
+	return open(ctx, dir, log, migrations)
+}
+
+// open is Open with the migrations to apply, so tests can stop at an older
+// schema or add a migration that fails.
+func open(ctx context.Context, dir string, log *slog.Logger, ms []migration) (*Store, error) {
 	if log == nil {
 		log = slog.Default()
 	}
@@ -128,8 +134,8 @@ func Open(ctx context.Context, dir string, log *slog.Logger) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	if have > LatestVersion() {
-		return nil, &TooNewError{Have: have, Want: LatestVersion()}
+	if have > len(ms) {
+		return nil, &TooNewError{Have: have, Want: len(ms)}
 	}
 
 	s := &Store{Dir: dir, log: log}
@@ -147,7 +153,7 @@ func Open(ctx context.Context, dir string, log *slog.Logger) (*Store, error) {
 		return nil, fmt.Errorf("open database: %w", err)
 	}
 
-	if err := s.migrate(ctx); err != nil {
+	if err := s.migrate(ctx, ms); err != nil {
 		s.W.Close()
 		return nil, err
 	}
@@ -188,30 +194,85 @@ func peekVersion(ctx context.Context, file string) (int, error) {
 	return v, nil
 }
 
-func (s *Store) migrate(ctx context.Context) error {
+// migrate applies ms[user_version:]. Rebuilding a table, the only way
+// SQLite can change a CHECK constraint, needs foreign keys off, and that
+// pragma is ignored inside a transaction. So the migrations run on the
+// writer's one connection, pinned, with foreign keys off around them; each
+// still runs in its own transaction and must leave no foreign key broken.
+func (s *Store) migrate(ctx context.Context, ms []migration) (err error) {
 	if err := s.W.QueryRowContext(ctx, "PRAGMA user_version").Scan(&s.version); err != nil {
 		return fmt.Errorf("read schema version: %w", err)
 	}
 	// Re-checked under the writer in case the file changed since the peek.
-	if s.version > LatestVersion() {
-		return &TooNewError{Have: s.version, Want: LatestVersion()}
+	if s.version > len(ms) {
+		return &TooNewError{Have: s.version, Want: len(ms)}
 	}
-	for _, m := range migrations[s.version:] {
+	if s.version == len(ms) {
+		return nil
+	}
+	// W allows one connection, so nothing else can use it while it's pinned.
+	conn, err := s.W.Conn(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	if _, err := conn.ExecContext(ctx, "PRAGMA foreign_keys = OFF"); err != nil {
+		return err
+	}
+	defer func() {
+		// The connection goes back to the pool, so it must not keep foreign
+		// keys off, even when ctx is done.
+		if _, ferr := conn.ExecContext(context.WithoutCancel(ctx), "PRAGMA foreign_keys = ON"); ferr != nil {
+			err = errors.Join(err, fmt.Errorf("restore foreign keys: %w", ferr))
+		}
+	}()
+	for _, m := range ms[s.version:] {
 		from := s.version
-		err := s.Write(ctx, func(tx *sql.Tx) error {
-			if _, err := tx.ExecContext(ctx, m.sql); err != nil {
-				return err
-			}
-			_, err := tx.ExecContext(ctx, fmt.Sprintf("PRAGMA user_version = %d", m.version))
-			return err
-		})
-		if err != nil {
+		if err := applyMigration(ctx, conn, m); err != nil {
 			return fmt.Errorf("migration %s: %w", m.name, err)
 		}
 		s.version = m.version
 		s.log.Info("migrated", "from", from, "to", m.version, "migration", m.name)
 	}
 	return nil
+}
+
+// applyMigration runs m and sets user_version in one immediate transaction,
+// rolling back if m leaves a row whose foreign key points nowhere.
+func applyMigration(ctx context.Context, conn *sql.Conn, m migration) error {
+	tx, err := conn.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if _, err := tx.ExecContext(ctx, m.sql); err != nil {
+		return err
+	}
+	if err := foreignKeyCheck(ctx, tx); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, fmt.Sprintf("PRAGMA user_version = %d", m.version)); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func foreignKeyCheck(ctx context.Context, tx *sql.Tx) error {
+	rows, err := tx.QueryContext(ctx, "PRAGMA foreign_key_check")
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	if rows.Next() {
+		var table, parent string
+		var rowid sql.NullInt64
+		var fkid int
+		if err := rows.Scan(&table, &rowid, &parent, &fkid); err != nil {
+			return err
+		}
+		return fmt.Errorf("foreign key check: a row in %s refers to a missing %s", table, parent)
+	}
+	return rows.Err()
 }
 
 func clearDir(dir string) error {

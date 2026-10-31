@@ -13,11 +13,13 @@ import (
 	"github.com/sroberts/sous/internal/identity"
 )
 
-// ListPeople returns every household member, ordered by name.
+// ListPeople returns every household member, ordered by name. Sous itself,
+// the author of the sample recipes, isn't one.
 func (s *Service) ListPeople(ctx context.Context, c identity.Caller) ([]Person, error) {
 	out := []Person{}
 	err := s.st.Read(ctx, func(tx *sql.Tx) error {
-		rows, err := tx.QueryContext(ctx, `SELECT username, name FROM people ORDER BY name COLLATE NOCASE, username`)
+		rows, err := tx.QueryContext(ctx, `SELECT username, name FROM people WHERE source <> 'system'
+			ORDER BY name COLLATE NOCASE, username`)
 		if err != nil {
 			return err
 		}
@@ -89,12 +91,14 @@ func (s *Service) CreatePerson(ctx context.Context, c identity.Caller, name stri
 }
 
 // Lookup returns the person with username, or (nil, nil) if there is none.
-// It implements identity.Directory, so it takes no Caller.
+// The system person is never found, so no header, cookie or MCP caller can
+// act as it. It implements identity.Directory, so it takes no Caller.
 func (s *Service) Lookup(ctx context.Context, username string) (*identity.Person, error) {
 	var p *identity.Person
 	err := s.st.Read(ctx, func(tx *sql.Tx) error {
 		var q identity.Person
-		err := tx.QueryRowContext(ctx, `SELECT username, name, coalesce(email, '') FROM people WHERE username = ?`,
+		err := tx.QueryRowContext(ctx, `SELECT username, name, coalesce(email, '') FROM people
+			WHERE username = ? AND source <> 'system'`,
 			username).Scan(&q.Username, &q.Name, &q.Email)
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil
@@ -108,11 +112,15 @@ func (s *Service) Lookup(ctx context.Context, username string) (*identity.Person
 }
 
 // UpsertGateway creates or updates p with source "gateway", only writing
-// when the stored name or email differs. It implements identity.Directory,
-// so it takes no Caller.
+// when the stored name or email differs. identity.SystemUsername is
+// identity.ErrReservedUsername, and the system person is never overwritten.
+// It implements identity.Directory, so it takes no Caller.
 func (s *Service) UpsertGateway(ctx context.Context, p identity.Person) error {
 	if p.Username == "" {
 		return errors.New("recipes: gateway person has no username")
+	}
+	if p.Username == identity.SystemUsername {
+		return identity.ErrReservedUsername
 	}
 	var email *string
 	if p.Email != "" {
@@ -123,7 +131,7 @@ func (s *Service) UpsertGateway(ctx context.Context, p identity.Person) error {
 		_, err := tx.ExecContext(ctx, `INSERT INTO people (username, name, email, source, created_at, updated_at)
 			VALUES (?1, ?2, ?3, 'gateway', ?4, ?4)
 			ON CONFLICT (username) DO UPDATE SET name = ?2, email = ?3, source = 'gateway', updated_at = ?4
-			WHERE name IS NOT ?2 OR email IS NOT ?3 OR source IS NOT 'gateway'`,
+			WHERE source <> 'system' AND (name IS NOT ?2 OR email IS NOT ?3 OR source IS NOT 'gateway')`,
 			p.Username, p.Name, email, now)
 		return err
 	})

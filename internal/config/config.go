@@ -23,6 +23,7 @@ type Config struct {
 	Issuer         string     // OUTPOST_ISSUER; required in gateway mode
 	JWKSURL        string     // OUTPOST_JWKS_URL; required in gateway mode
 	RequireGateway bool       // SOUS_REQUIRE_GATEWAY
+	NoSamples      bool       // SOUS_SAMPLES=false: a new library starts empty
 	LogLevel       slog.Level // SOUS_LOG_LEVEL: debug, info (default), warn, error
 }
 
@@ -46,7 +47,8 @@ func (c Config) Gateway() bool { return c.Auth == "gateway" }
 // and created with MkdirAll(0700). OUTPOST_AUTH other than unset or
 // "gateway" is an error; gateway mode requires OUTPOST_ISSUER and
 // OUTPOST_JWKS_URL. SOUS_REQUIRE_GATEWAY=true without gateway mode is an
-// error. Every error message says which setting is wrong.
+// error. SOUS_SAMPLES is unset, "true" or "false". Every error message says
+// which setting is wrong.
 func Load(args []string, getenv func(string) string) (Config, error) {
 	var c Config
 
@@ -130,6 +132,14 @@ func Load(args []string, getenv func(string) string) (Config, error) {
 	}
 	if c.RequireGateway && !c.Gateway() {
 		return c, errors.New("SOUS_REQUIRE_GATEWAY=true needs OUTPOST_AUTH=gateway")
+	}
+
+	switch v := getenv("SOUS_SAMPLES"); v {
+	case "", "true":
+	case "false":
+		c.NoSamples = true
+	default:
+		return c, fmt.Errorf("SOUS_SAMPLES: %q is not \"true\" or \"false\"", v)
 	}
 
 	switch v := getenv("SOUS_LOG_LEVEL"); strings.ToLower(v) {

@@ -21,6 +21,7 @@ import (
 	"github.com/sroberts/sous/internal/mcp"
 	"github.com/sroberts/sous/internal/recipes"
 	"github.com/sroberts/sous/internal/safefetch"
+	"github.com/sroberts/sous/internal/samples"
 	"github.com/sroberts/sous/internal/storage"
 	"github.com/sroberts/sous/internal/ui"
 )
@@ -88,6 +89,13 @@ func run(args []string, getenv func(string) string, stdout io.Writer) int {
 	opened := make(chan openResult, 1)
 	go func() {
 		st, err := storage.Open(base, cfg.StorageDir, log)
+		if err == nil && !cfg.NoSamples {
+			// The samples are a welcome, not data anyone relies on, so
+			// failing to add them doesn't stop Sous starting.
+			if err := samples.Seed(base, recipes.New(st, log), log); err != nil && !errors.Is(err, context.Canceled) {
+				log.Warn("samples not added", "error", err.Error())
+			}
+		}
 		opened <- openResult{st, err}
 	}()
 
