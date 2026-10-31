@@ -99,7 +99,8 @@ Then open http://127.0.0.1:8080. `--data` is where Sous keeps everything
   Glasse's 1751 curry to Escoffier's 1907 Peach Melba, each with a modern
   adaptation, the original text and a period illustration. They're credited to
   "Sous" and tagged Historic. Delete them and they stay deleted. Sous only adds
-  them to a library that has never been used, never to a restore, and
+  them to a library that has never been used, so a restore that brings
+  recipes or history never gets them (restoring a never-used library can), and
   `SOUS_SAMPLES=false` skips them on that start.
 
 - **Who's cooking.** There are no accounts. The first time a device makes a

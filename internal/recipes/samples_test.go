@@ -226,6 +226,45 @@ func TestSeedSamplesUsernameTaken(t *testing.T) {
 	}
 }
 
+// TestSeedSamplesUsernameTakenWritesNothing: the conflict is found before
+// any image file is written, so a start that can't seed leaves no trace,
+// however many times it happens, and the error says why.
+func TestSeedSamplesUsernameTakenWritesNothing(t *testing.T) {
+	s := newTestService(t)
+	err := s.st.Write(ctx, func(tx *sql.Tx) error {
+		_, err := tx.Exec(`INSERT INTO people VALUES ('_sous', 'Impostor', NULL, 'local', 't', 't')`)
+		return err
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for range 2 {
+		n, err := s.SeedSamples(ctx, testSamples(t))
+		if n != 0 || !errors.Is(err, ErrSystemUsernameTaken) || !strings.Contains(err.Error(), "local person") {
+			t.Fatalf("SeedSamples = %d, %v, want ErrSystemUsernameTaken", n, err)
+		}
+	}
+	if got := imageFiles(t, s); got != 0 {
+		t.Errorf("%d image files written", got)
+	}
+	if used, err := s.LibraryUsed(ctx); used || err != nil {
+		t.Errorf("LibraryUsed = %v, %v, want false", used, err)
+	}
+}
+
+func TestLibraryUsed(t *testing.T) {
+	s := newTestService(t)
+	if used, err := s.LibraryUsed(ctx); used || err != nil {
+		t.Fatalf("new library: LibraryUsed = %v, %v", used, err)
+	}
+	if _, err := s.SeedSamples(ctx, testSamples(t)); err != nil {
+		t.Fatal(err)
+	}
+	if used, err := s.LibraryUsed(ctx); !used || err != nil {
+		t.Fatalf("seeded library: LibraryUsed = %v, %v", used, err)
+	}
+}
+
 func TestReservedUsername(t *testing.T) {
 	s := newTestService(t)
 	if _, err := s.SeedSamples(ctx, testSamples(t)); err != nil {

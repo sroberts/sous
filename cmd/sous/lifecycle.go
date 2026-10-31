@@ -84,22 +84,31 @@ func run(args []string, getenv func(string) string, stdout io.Writer) int {
 
 	type openResult struct {
 		store *storage.Store
+		svc   *recipes.Service
 		err   error
 	}
 	opened := make(chan openResult, 1)
 	go func() {
 		st, err := storage.Open(base, cfg.StorageDir, log)
-		if err == nil && !cfg.NoSamples {
+		if err != nil {
+			opened <- openResult{err: err}
+			return
+		}
+		svc := recipes.New(st, log)
+		if !cfg.NoSamples {
 			// The samples are a welcome, not data anyone relies on, so
-			// failing to add them doesn't stop Sous starting.
-			if err := samples.Seed(base, recipes.New(st, log), log); err != nil && !errors.Is(err, context.Canceled) {
+			// failing to add them doesn't stop Sous starting. Once base is
+			// done the failure is shutdown's doing (SQLite reports it as an
+			// interrupt, not context.Canceled), so it isn't worth a warning.
+			if err := samples.Seed(base, svc, log); err != nil && base.Err() == nil {
 				log.Warn("samples not added", "error", err.Error())
 			}
 		}
-		opened <- openResult{st, err}
+		opened <- openResult{st, svc, nil}
 	}()
 
 	var store *storage.Store
+	var svc *recipes.Service
 	for store == nil {
 		select {
 		case o := <-opened:
@@ -108,7 +117,7 @@ func run(args []string, getenv func(string) string, stdout io.Writer) int {
 				srv.Close()
 				return 1
 			}
-			store = o.store
+			store, svc = o.store, o.svc
 		case err := <-served:
 			log.Error("server failed", "error", err.Error())
 			cancelBase()
@@ -134,7 +143,6 @@ func run(args []string, getenv func(string) string, stdout io.Writer) int {
 		}
 	}
 
-	svc := recipes.New(store, log)
 	var jwks *identity.JWKS
 	if cfg.Gateway() {
 		jwks = identity.NewJWKS(cfg.JWKSURL, nil)

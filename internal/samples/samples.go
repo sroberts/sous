@@ -98,8 +98,12 @@ func decodeStrict(b []byte, v any) error {
 }
 
 // Seed adds the samples to svc's library if it has never been used, logging
-// "samples added" with the count when it does.
+// "samples added" with the count when it does. The check comes first, so an
+// established library's start doesn't load and decode the samples.
 func Seed(ctx context.Context, svc *recipes.Service, log *slog.Logger) error {
+	if used, err := svc.LibraryUsed(ctx); err != nil || used {
+		return err
+	}
 	all, err := All()
 	if err != nil {
 		return err

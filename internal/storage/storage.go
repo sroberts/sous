@@ -198,7 +198,7 @@ func peekVersion(ctx context.Context, file string) (int, error) {
 // SQLite can change a CHECK constraint, needs foreign keys off, and that
 // pragma is ignored inside a transaction. So the migrations run on the
 // writer's one connection, pinned, with foreign keys off around them; each
-// still runs in its own transaction and must leave no foreign key broken.
+// still runs in its own transaction and must break no foreign key.
 func (s *Store) migrate(ctx context.Context, ms []migration) (err error) {
 	if err := s.W.QueryRowContext(ctx, "PRAGMA user_version").Scan(&s.version); err != nil {
 		return fmt.Errorf("read schema version: %w", err)
@@ -238,18 +238,30 @@ func (s *Store) migrate(ctx context.Context, ms []migration) (err error) {
 }
 
 // applyMigration runs m and sets user_version in one immediate transaction,
-// rolling back if m leaves a row whose foreign key points nowhere.
+// rolling back if m leaves a row whose foreign key points nowhere. Rows
+// that were already dangling before m, say from a restore, are not m's
+// doing and don't stop it.
 func applyMigration(ctx context.Context, conn *sql.Conn, m migration) error {
 	tx, err := conn.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
+	before, err := danglingKeys(ctx, tx)
+	if err != nil {
+		return err
+	}
 	if _, err := tx.ExecContext(ctx, m.sql); err != nil {
 		return err
 	}
-	if err := foreignKeyCheck(ctx, tx); err != nil {
+	after, err := danglingKeys(ctx, tx)
+	if err != nil {
 		return err
+	}
+	for k, n := range after {
+		if n > before[k] {
+			return fmt.Errorf("foreign key check: a row in %s refers to a missing %s", k.table, k.parent)
+		}
 	}
 	if _, err := tx.ExecContext(ctx, fmt.Sprintf("PRAGMA user_version = %d", m.version)); err != nil {
 		return err
@@ -257,22 +269,31 @@ func applyMigration(ctx context.Context, conn *sql.Conn, m migration) error {
 	return tx.Commit()
 }
 
-func foreignKeyCheck(ctx context.Context, tx *sql.Tx) error {
+// fkPair is a child table and the parent its broken references point at.
+type fkPair struct{ table, parent string }
+
+// danglingKeys counts the rows PRAGMA foreign_key_check reports, by table
+// and parent. It counts rather than naming rows: the rowid is NULL for a
+// WITHOUT ROWID table, a rebuild can renumber rowids, and the fkid can move
+// when a rebuild reorders a table's constraints, so none of those identify
+// a row across a migration.
+func danglingKeys(ctx context.Context, tx *sql.Tx) (map[fkPair]int, error) {
 	rows, err := tx.QueryContext(ctx, "PRAGMA foreign_key_check")
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer rows.Close()
-	if rows.Next() {
-		var table, parent string
+	out := map[fkPair]int{}
+	for rows.Next() {
+		var k fkPair
 		var rowid sql.NullInt64
 		var fkid int
-		if err := rows.Scan(&table, &rowid, &parent, &fkid); err != nil {
-			return err
+		if err := rows.Scan(&k.table, &rowid, &k.parent, &fkid); err != nil {
+			return nil, err
 		}
-		return fmt.Errorf("foreign key check: a row in %s refers to a missing %s", table, parent)
+		out[k]++
 	}
-	return rows.Err()
+	return out, rows.Err()
 }
 
 func clearDir(dir string) error {
