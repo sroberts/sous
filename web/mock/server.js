@@ -206,6 +206,48 @@ async function importPreview(req, res) {
   return importFail(res, 'no_recipe_found', 'The page has no recipe data.', { source_url: url, title: titleFromSlug(url), image: null });
 }
 
+async function importSave(req, res, person, via) {
+  const body = JSON.parse((await readBody(req)).toString() || '{}');
+  const url = String(body.url ?? '').trim();
+  // The sentences Siri reads, as internal/importer/classify.go has them.
+  const said = {
+    blocked: 'The site turned Sous away, so nothing was saved.',
+    paywalled: "That recipe is only for the site's subscribers, so nothing was saved.",
+    not_found: "The site says that page doesn't exist, so nothing was saved.",
+    no_recipe_found: "Sous couldn't find a recipe on that page, so nothing was saved.",
+    timeout: 'The site took too long to answer. Try again later.',
+    too_large: 'That page is too large for Sous to read, so nothing was saved.',
+    unsupported_url: 'Sous can only save recipes from web links, so nothing was saved.',
+    site_error: 'The site had a problem serving that page. Try again later.',
+  };
+  const spoken = (status, code, message, page) => send(res, status, { error: { code, message }, ...(status === 422 ? { page: page ?? null } : {}), summary: (status === 422 && said[code]) || message });
+  if (!url) return spoken(400, 'invalid', 'Send a url.');
+  const key = normalizeSource(url);
+  if (!key) return spoken(422, 'unsupported_url', 'Sous reads web pages: links starting with http:// or https://.');
+  const reply = (r, summary, extra = {}) => send(res, 200, { summary, id: r.id, title: r.title, version: r.version, path: `/r/${r.id}`, url: outpost ? `http://localhost:5173/r/${r.id}` : null, duplicate: false, restored: false, missing: [], warnings: [], ...extra });
+  const [dup] = duplicatesOf([url]);
+  if (dup) {
+    const r = db.recipes.get(dup.id);
+    if (!r.deleted_at) return reply(r, `Already in Sous: ${r.title}.`, { duplicate: true });
+    r.deleted_at = null;
+    r.version += 1;
+    logChange(person, via, r.id, 'restore', `Restored ${r.title}`);
+    return reply(r, `Restored ${r.title} from the trash.`, { duplicate: true, restored: true });
+  }
+  const entry = JSON.parse(readFileSync(IMPORTS, 'utf8'))[key];
+  if (entry?.error) return spoken(422, entry.error.code, entry.error.message, entry.page);
+  if (!entry?.preview) return spoken(422, 'no_recipe_found', 'The page has no recipe data.');
+  const { draft, report } = entry.preview;
+  const now = new Date().toISOString();
+  const r = { id: randomUUID(), images: [], tags: [], ingredients: [], steps: [], version: 1, deleted_at: null, created_at: now, created_by: person, updated_at: now, updated_by: person };
+  applyPatch(r, { ...draft, source_url: draft.source_url ?? url });
+  db.recipes.set(r.id, r);
+  logChange(person, via, r.id, 'create', `Added ${r.title}`);
+  const missing = (report?.missing ?? []).filter((f) => f === 'ingredients' || f === 'steps');
+  const summary = missing.length ? `Saved ${r.title}, but no ${missing.join(' or ')} were found.` : `Saved ${r.title}.`;
+  return reply(r, summary, { missing: report?.missing ?? [], warnings: report?.warnings ?? [] });
+}
+
 async function handle(req, res) {
   db ??= load();
   const url = new URL(req.url, 'http://x');
@@ -250,6 +292,7 @@ async function handle(req, res) {
     logChange(person, via, r.id, 'create', `Added ${r.title}`);
     return send(res, 201, full(r, person), { etag: `"${r.version}"` });
   }
+  if (path === '/v1/recipes/import' && req.method === 'POST') return importSave(req, res, person, via);
   if (path === '/v1/recipes/import/preview' && req.method === 'POST') return importPreview(req, res);
   if ((m = path.match(/^\/v1\/recipes\/([\w-]+)$/))) {
     const r = db.recipes.get(m[1]);

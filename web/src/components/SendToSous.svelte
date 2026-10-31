@@ -1,7 +1,8 @@
 <script>
   // Ways to send the page you're reading to /import without copying links:
-  // a bookmarklet for desktop browsers and a Shortcut for the iOS Share sheet.
+  // a bookmarklet for desktop browsers and a Shortcut for the iOS Share sheet, and a Siri Shortcut that saves without opening Sous.
   import { Bookmark } from '@lucide/svelte';
+  import SaveToSous from './SaveToSous.svelte';
 
   const origin = location.origin;
 
@@ -35,8 +36,10 @@
         <li><span class="n fig" aria-hidden="true">4</span><span>Add <b>Text</b>: <code>{origin}/import?url=</code> followed by the <b>URL Encoded Text</b> variable.</span></li>
         <li><span class="n fig" aria-hidden="true">5</span><span>Add <b>Open URLs</b>, and name the shortcut “Send to Sous”.</span></li>
       </ol>
-      <p class="hint">Tailscale has to be connected, and Safari signed in to Sous through the gateway.</p>
+      <p class="hint">Tailscale has to be connected, and Safari signed in to Sous through the gateway. To save without opening Sous, use the Siri card below.</p>
     </div>
+
+    <SaveToSous />
   </div>
 </section>
 
