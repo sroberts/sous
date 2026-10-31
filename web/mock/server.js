@@ -2,7 +2,8 @@
 // Vite's dev server so the UI talks to real HTTP from day one. State is
 // in memory and resets on restart. Loads web/mock-local/ (a gitignored
 // sample of the household's Mela export, see scripts/mela-sample) when
-// present, otherwise the committed fixtures.
+// present, otherwise the committed fixtures, then the sample recipes a new
+// library starts with (internal/samples/data), added by Sous itself.
 
 import { createHash, randomUUID } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
@@ -12,6 +13,7 @@ import { splitText } from './importText.js';
 
 const LOCAL = new URL('../mock-local/', import.meta.url).pathname;
 const FIXTURES = new URL('./fixtures.json', import.meta.url).pathname;
+const SAMPLES = new URL('../../internal/samples/data/', import.meta.url).pathname;
 // Canned import results, keyed by normalizeSource(url). An entry is either
 // { preview } or { error, page, delay? }.
 const IMPORTS = new URL('./imports.json', import.meta.url).pathname;
@@ -29,7 +31,19 @@ function load() {
   const people = new Map([['scott', { username: 'scott', name: 'Scott' }]]);
   const recipes = new Map();
   const mine = new Map(); // `${person}:${id}` → flags
+  for (const f of readdirSync(SAMPLES).filter((f) => f.endsWith('.json'))) {
+    const r = JSON.parse(readFileSync(join(SAMPLES, f), 'utf8'));
+    r.created_by = '_sous';
+    const photo = ['jpg', 'png'].map((ext) => join(SAMPLES, f.replace(/json$/, ext))).find(existsSync);
+    if (photo) {
+      const hash = createHash('sha256').update(readFileSync(photo)).digest('hex');
+      images.set(hash, { path: photo, type: photo.endsWith('.png') ? 'image/png' : 'image/jpeg' });
+      r.images = [hash];
+    }
+    raw.push(r);
+  }
   for (const r of raw) {
+    const by = r.created_by === '_sous' ? '_sous' : 'scott';
     // Stable across dev-server restarts, so deep links keep working.
     const h = createHash('sha1').update(`${r.title}\0${r.created_at ?? ''}\0${r.source_url ?? ''}`).digest('hex');
     const id = `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`;
@@ -54,9 +68,9 @@ function load() {
       version: 1,
       deleted_at: null,
       created_at: at,
-      created_by: 'scott',
+      created_by: by,
       updated_at: at,
-      updated_by: 'scott',
+      updated_by: by,
     });
     if (r.favorite || r.want_to_cook) mine.set(`scott:${id}`, { favorite: !!r.favorite, want_to_cook: !!r.want_to_cook });
   }

@@ -28,15 +28,21 @@ func (s *Service) UploadImage(ctx context.Context, c identity.Caller, r io.Reade
 	}
 	now := s.stamp()
 	err = s.st.Write(ctx, func(tx *sql.Tx) error {
-		_, err := tx.ExecContext(ctx, `INSERT INTO images (hash, content_type, width, height, bytes, created_at, created_by)
-			VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT (hash) DO NOTHING`,
-			meta.Hash, meta.ContentType, meta.Width, meta.Height, meta.Bytes, now, who)
-		return err
+		return insertImage(ctx, tx, meta, who, now)
 	})
 	if err != nil {
 		return ImageRef{}, err
 	}
 	return ImageRef{Hash: meta.Hash}, nil
+}
+
+// insertImage records a stored image, once per hash: the first uploader
+// stays its creator.
+func insertImage(ctx context.Context, tx *sql.Tx, meta storage.ImageMeta, who, now string) error {
+	_, err := tx.ExecContext(ctx, `INSERT INTO images (hash, content_type, width, height, bytes, created_at, created_by)
+		VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT (hash) DO NOTHING`,
+		meta.Hash, meta.ContentType, meta.Width, meta.Height, meta.Bytes, now, who)
+	return err
 }
 
 // Image opens the stored image for hash. The caller closes the file. An

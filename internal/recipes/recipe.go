@@ -27,50 +27,62 @@ func (s *Service) Get(ctx context.Context, c identity.Caller, id string) (Recipe
 // ingredients and steps, deriving servings, creating unknown tags and
 // checking image hashes exist. A blank title is CodeInvalid.
 func (s *Service) Create(ctx context.Context, c identity.Caller, in RecipeInput) (Recipe, error) {
-	who, err := author(c)
-	if err != nil {
+	if _, err := author(c); err != nil {
 		return Recipe{}, err
 	}
-	title := strings.TrimSpace(in.Title)
-	if title == "" {
-		return Recipe{}, Errorf(CodeInvalid, "title is required")
-	}
-	if err := checkMinutes(map[string]*int{
-		"prep_minutes": in.PrepMinutes, "cook_minutes": in.CookMinutes, "total_minutes": in.TotalMinutes,
-	}); err != nil {
+	if err := validateInput(in); err != nil {
 		return Recipe{}, err
 	}
-	id := uuid.NewV7().String()
 	now := s.stamp()
 	var out Recipe
-	err = s.st.Write(ctx, func(tx *sql.Tx) error {
-		_, err := tx.ExecContext(ctx, `INSERT INTO recipes (id, title, source_url, description, notes, yield_text, servings,
-			prep_minutes, cook_minutes, total_minutes, time_text, nutrition_text, created_at, created_by, updated_at, updated_by)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-			id, title, in.SourceURL, in.Description, in.Notes, in.YieldText, servingsOf(in.YieldText),
-			in.PrepMinutes, in.CookMinutes, in.TotalMinutes, in.TimeText, in.NutritionText, now, who, now, who)
-		if err != nil {
-			return err
-		}
-		if err := setTags(ctx, tx, id, in.Tags, who, now); err != nil {
-			return err
-		}
-		if err := setImages(ctx, tx, id, in.Images); err != nil {
-			return err
-		}
-		if err := setIngredients(ctx, tx, id, ParseIngredientLines(in.Ingredients)); err != nil {
-			return err
-		}
-		if err := setSteps(ctx, tx, id, ParseStepLines(in.Steps)); err != nil {
-			return err
-		}
-		if err := s.logChange(ctx, tx, c, now, "recipe", id, "create", "Added "+title); err != nil {
-			return err
-		}
-		out, err = loadRecipe(ctx, tx, id, who)
+	err := s.st.Write(ctx, func(tx *sql.Tx) error {
+		var err error
+		out, err = s.createTx(ctx, tx, c, in, now)
 		return err
 	})
 	return out, err
+}
+
+// validateInput checks what Create checks before opening a transaction.
+func validateInput(in RecipeInput) error {
+	if strings.TrimSpace(in.Title) == "" {
+		return Errorf(CodeInvalid, "title is required")
+	}
+	return checkMinutes(map[string]*int{
+		"prep_minutes": in.PrepMinutes, "cook_minutes": in.CookMinutes, "total_minutes": in.TotalMinutes,
+	})
+}
+
+// createTx inserts in, already validated, as a new recipe by c inside tx and
+// logs it as added.
+func (s *Service) createTx(ctx context.Context, tx *sql.Tx, c identity.Caller, in RecipeInput, now string) (Recipe, error) {
+	who := c.Username()
+	title := strings.TrimSpace(in.Title)
+	id := uuid.NewV7().String()
+	_, err := tx.ExecContext(ctx, `INSERT INTO recipes (id, title, source_url, description, notes, yield_text, servings,
+		prep_minutes, cook_minutes, total_minutes, time_text, nutrition_text, created_at, created_by, updated_at, updated_by)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		id, title, in.SourceURL, in.Description, in.Notes, in.YieldText, servingsOf(in.YieldText),
+		in.PrepMinutes, in.CookMinutes, in.TotalMinutes, in.TimeText, in.NutritionText, now, who, now, who)
+	if err != nil {
+		return Recipe{}, err
+	}
+	if err := setTags(ctx, tx, id, in.Tags, who, now); err != nil {
+		return Recipe{}, err
+	}
+	if err := setImages(ctx, tx, id, in.Images); err != nil {
+		return Recipe{}, err
+	}
+	if err := setIngredients(ctx, tx, id, ParseIngredientLines(in.Ingredients)); err != nil {
+		return Recipe{}, err
+	}
+	if err := setSteps(ctx, tx, id, ParseStepLines(in.Steps)); err != nil {
+		return Recipe{}, err
+	}
+	if err := s.logChange(ctx, tx, c, now, "recipe", id, "create", "Added "+title); err != nil {
+		return Recipe{}, err
+	}
+	return loadRecipe(ctx, tx, id, who)
 }
 
 // Update applies patch if the recipe is still at version, bumping it.

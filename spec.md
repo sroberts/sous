@@ -34,8 +34,9 @@ behaves like one under Outpost with no gateway.
 3. Start serving immediately with `ready = false`: `/up` returns 503, every
    other route returns 503 `{"error":{"code":"starting"}}`.
 4. In the background, open storage (§3): create the layout, clear `tmp/`, open
-   the database, run migrations, rebuild in-memory state.
-   Failure → exit 1.
+   the database, run migrations, rebuild in-memory state. Then, in a library
+   that has never been used, add the sample recipes (§3). Failure to open →
+   exit 1; failure to add samples → log a warning and carry on.
 5. Set `ready = true`. Log one `ready` line with the port, storage path,
    version, schema version, and auth mode.
 
@@ -83,6 +84,7 @@ well-known path, and nothing prompts.
 | JWKS URL | `OUTPOST_JWKS_URL` | none | Required when `OUTPOST_AUTH=gateway`. |
 | Require gateway | `SOUS_REQUIRE_GATEWAY` | `false` | When `true` in gateway mode, requests without a valid identity token get 401 (§5). |
 | Log level | `SOUS_LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error`. |
+| Sample recipes | `SOUS_SAMPLES` | `true` | `false` skips adding the sample recipes (§3) on this start; it removes nothing. Any other value → exit 1. |
 
 Sous needs no secrets in the basics. If a later feature does (an API key for a
 nutrition service, say), it takes a *path* via `SOUS_<NAME>_FILE` and reads
@@ -126,11 +128,30 @@ the binary.
   `outpost restore` can swap in older contents between runs.
 - **Older database** (restored from backup) → migrations run forward from its
   `user_version`. Migrations are numbered, embedded in the binary, and each runs
-  in its own transaction.
+  in its own transaction, with foreign keys off (a table rebuild needs that,
+  and SQLite ignores the pragma inside a transaction) and a
+  `PRAGMA foreign_key_check` before it commits. A migration that leaves a
+  dangling reference rolls back and Sous exits 1.
 - **Newer database than the binary understands** (a downgrade) → refuse to
   touch it, log the two versions, exit 1. Opening it could corrupt it.
 - **Empty directory** (first run, or a restore of nothing) → create the layout
-  and an empty database. A fresh Sous is a valid Sous.
+  and a database, then seed it (next item). A fresh Sous is a valid Sous.
+- **Sample recipes.** A library that has never been used gets twelve sample
+  recipes on start (`internal/samples`; sources in its `SOURCES.md`). *Never
+  used* means no `changes` rows and no `recipes` rows, deleted ones included,
+  so deleting the samples is permanent, and a restore that brings data never
+  seeds. Signing in through the gateway alone doesn't count as use. Seven
+  are historic: each is a public-domain original (Glasse 1751, Simmons 1796, Randolph
+  1824, Acton 1845, Beeton 1861, Farmer 1896, Escoffier 1907) with a modern
+  adaptation as the recipe, the verbatim text and its citation in `notes`, a
+  period illustration, and the tags for its course plus `Historic`. Five are
+  classics written for Sous in its own words, four inspired by a named chef's
+  book (cited, never quoted), tagged with their course plus `Classic`, with a
+  public-domain or CC0 photo where one exists. All are
+  credited to the built-in author `_sous` (§5), and their changes are logged
+  `via = system`. Seeding runs once per start, before `ready`; if it fails,
+  Sous logs a warning and starts anyway. `SOUS_SAMPLES=false` skips it.
+  The same files are the test fixtures.
 - **Images** are written to `tmp/`, fsynced, then renamed into `images/`. Same
   filesystem, so the rename is atomic and a crash never leaves half an image
   under its final name. Identical bytes deduplicate for free.
@@ -250,8 +271,15 @@ A `people` row is keyed by a username:
 A username is the same person by either route, so enabling the gateway later
 keeps everyone's history.
 
+`_sous` ("Sous", `source = system`) is reserved. It is the author of the
+sample recipes (§3), and it never appears in `GET /v1/people`. Nobody can act
+as it: `X-Sous-Person`, the `sous_person` cookie and MCP's caller header treat
+it as unknown, and a gateway token whose `sub` is `_sous` gets 401
+`invalid_identity`.
+
 Each request also records **how** it arrived (`ui`, `api`, or `mcp`), so agent
-edits can be told apart from a person's.
+edits can be told apart from a person's. Changes Sous makes itself, the
+sample recipes, are `system`.
 
 ---
 
@@ -262,6 +290,8 @@ No colour, no progress output.
 
 - **Lifecycle:** `starting`, `migrated` (from/to version), `ready`,
   `shutting down`, `stopped`, and any fatal error just before a non-zero exit.
+- **Samples:** `samples added` with the `count`, when a new library is seeded
+  (§3). If seeding fails, a `samples not added` warning with the error.
 - **Requests:** method, path, status, duration, person, and route
   (gateway/direct/none). `/up` is never logged; at one probe every 3 seconds
   it would drown everything else.
@@ -339,7 +369,7 @@ same keyed-by-(person, recipe) shape.
 
 ```
 changes
-  id, at, person_id, via (ui|api|mcp), entity, entity_id,
+  id, at, person_id, via (ui|api|mcp|system), entity, entity_id,
   action (create|update|delete|restore), summary
 ```
 
@@ -364,7 +394,7 @@ JSON in and out. Errors are always
 |---|---|
 | `GET /v1/status` | System status (§4.1) |
 | `GET /v1/me` | The resolved person, with `source`: `outpost` (a verified gateway login) or `device` (named by header or cookie), and for `outpost` the `portal` URL; or 401 |
-| `GET /v1/people` · `POST /v1/people` | List, or create (no-gateway mode) |
+| `GET /v1/people` · `POST /v1/people` | List, or create (no-gateway mode). `_sous` is never listed (§5) |
 | `GET /v1/recipes` | List and search: `q` (full text), `tag` (repeatable), `ingredient` (repeatable, all must match), `favorite`, `want_to_cook`, `sort` (`title`, `updated`, `created`), `cursor`, `limit` (default 50, max 200) |
 | `POST /v1/recipes` | Create. Body: recipe fields, `ingredients` as raw lines, `steps` as text, `tags` as names, `images` as hashes |
 | `GET /v1/recipes/{id}` | Full recipe with parsed ingredients, steps, tags, images, and the caller's `person_recipe` flags |
@@ -542,7 +572,7 @@ Every item from the Outpost conformance checklist (Outpost §11):
 | No config file at a well-known path | §2 |
 | All state under `OUTPOST_STORAGE_DIR` | §3 |
 | No state anywhere else | §3, including `tmp/` inside storage |
-| Starts after a restore replaces storage | §3: forward migrations, empty-dir start, downgrade refusal |
+| Starts after a restore replaces storage | §3: forward migrations, empty-dir start, downgrade refusal; a restore with data is never seeded |
 | Symlinks stay inside storage | §3: none are created |
 | Exits non-zero on unrecoverable failure | §1 startup and shutdown |
 | Never exits zero on an error | §1: exit 0 only after a clean, requested stop |

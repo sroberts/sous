@@ -8,8 +8,21 @@ include breaking changes, and they're called out here.
 ## [Unreleased]
 
 ### Added
+- A new Sous comes with twelve recipes, credited to "Sous": seven historic
+  ones (Glasse 1751 to Escoffier 1907), each with a modern adaptation, the
+  original text and a period illustration, and five classics written for
+  Sous, four inspired by Julia Child, Paul Bocuse, Anthony Bourdain and
+  Jacques Pépin, plus a flourless chocolate torte. They're added only to a library that has
+  never been used, and deleting them is permanent. Set `SOUS_SAMPLES=false`
+  to skip them.
 - `SECURITY.md`, `SUPPORT.md`, and issue forms for feedback, import
   failures, bugs and feature requests.
+
+### Changed
+- The database upgrades to schema version 2 on start, so Sous can be named as
+  the author of its own changes. Migrations now run with foreign keys checked
+  before they commit. The username `_sous` is reserved: it isn't listed, can't
+  be chosen, and a gateway sign-in with it is refused.
 
 ## [0.2.0] - 2026-10-30
 

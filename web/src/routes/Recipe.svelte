@@ -3,7 +3,7 @@
   import { link } from '../lib/router.svelte.js';
   import { api } from '../lib/api.js';
   import { session, asPerson, patchSummary } from '../lib/session.svelte.js';
-  import { amount, ago } from '../lib/format.js';
+  import { amount, ago, personName } from '../lib/format.js';
   import Plate from '../components/Plate.svelte';
   import Facts from '../components/Facts.svelte';
 
@@ -37,7 +37,7 @@
     patchSummary(id, { mine: saved });
   }
 
-  const person = (u) => session.people.find((p) => p.username === u)?.name ?? u;
+  const person = (u) => personName(u, session.people);
 </script>
 
 {#if error}

@@ -36,7 +36,7 @@
           {
             "name": "via",
             "in": "query",
-            "description": "only changes made via ui, api or mcp",
+            "description": "only changes made via ui, api, mcp or system",
             "schema": {
               "type": "string"
             }
@@ -1786,7 +1786,7 @@
           },
           "via": {
             "type": "string",
-            "description": "ui, api or mcp"
+            "description": "ui, api, mcp or system"
           },
           "entity": {
             "type": "string",

@@ -3,7 +3,10 @@
 // direct request, or nobody.
 package identity
 
-import "context"
+import (
+	"context"
+	"errors"
+)
 
 // Person is a household member as identity resolution sees them. Username is
 // the stable key across both the gateway and direct routes.
@@ -32,7 +35,22 @@ const (
 	ViaUI  Via = "ui"
 	ViaAPI Via = "api"
 	ViaMCP Via = "mcp"
+	// ViaSystem marks what Sous does on its own, like adding the sample
+	// recipes to a new library. No request carries it.
+	ViaSystem Via = "system"
 )
+
+// SystemUsername and SystemName are Sous itself as an author: the sample
+// recipes are added by it. It is stored as a person so recipes can point at
+// it, but it is never in the household and nobody can sign in as it.
+const (
+	SystemUsername = "_sous"
+	SystemName     = "Sous"
+)
+
+// ErrReservedUsername is returned when a gateway person would take
+// SystemUsername.
+var ErrReservedUsername = errors.New("the username " + SystemUsername + " is reserved by Sous")
 
 // ViaFromHeader maps an x-sous-via header value to a Via. Only "ui" is
 // honoured; anything else is an API client.
