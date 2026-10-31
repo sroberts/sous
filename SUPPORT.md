@@ -1,8 +1,9 @@
 # Getting help
 
-- **Using Sous:** start with the [README](README.md), which covers installing
-  it, running it with Outpost or on its own, importing, and connecting AI
-  agents.
+- **Using Sous:** start with the [README](README.md), then the guides in
+  [`docs/`](docs): [running Sous](docs/running.md),
+  [getting recipes in](docs/importing.md), and
+  [AI agents and the API](docs/agents.md).
 - **Questions, ideas, or how it's working for you:** use the
   [feedback form](https://github.com/sroberts/sous/issues/new?template=feedback.yml).
 - **A recipe site didn't import:** use the

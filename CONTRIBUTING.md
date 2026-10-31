@@ -45,7 +45,7 @@ login gateway.
 
 The importer's tests run offline against saved fixtures. To check the real
 recipe sites, run `go test -tags live -run Live -v -count=1 ./internal/importer`.
-The README explains re-recording fixtures.
+[`docs/development.md`](docs/development.md) explains re-recording fixtures.
 
 ## What CI and the scheduled jobs check
 
@@ -94,7 +94,7 @@ section, what nobody has verified. A PR is reviewed for:
 
 - behaviour that still works both with Outpost and on its own;
 - tests for new behaviour, and the full CI suite passing;
-- docs (`README.md`, `spec.md`) updated when behaviour or configuration
+- docs (`README.md`, `docs/`, `spec.md`) updated when behaviour or configuration
   changes;
 - no personal data, secrets or whole third-party pages in the diff.
 
