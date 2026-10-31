@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/sroberts/sous/internal/identity"
@@ -38,6 +39,8 @@ type Importer struct {
 	fetch Fetcher
 	log   *slog.Logger
 	sem   chan struct{}
+
+	saving sync.Mutex // a capture's last duplicate check and its save
 }
 
 func New(svc *recipes.Service, fetcher Fetcher, log *slog.Logger) *Importer {

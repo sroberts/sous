@@ -19,12 +19,28 @@ var messages = map[string]string{
 	recipes.CodeSiteError:      "The site had a problem serving that page. Try again later.",
 }
 
+// spoken holds a sentence per code for a shortcut to read aloud after a
+// failed capture: no advice to paste, since there is nowhere to paste it.
+var spoken = map[string]string{
+	recipes.CodeBlocked:        "The site turned Sous away, so nothing was saved.",
+	recipes.CodePaywalled:      "That recipe is only for the site's subscribers, so nothing was saved.",
+	recipes.CodePageNotFound:   "The site says that page doesn't exist, so nothing was saved.",
+	recipes.CodeNoRecipe:       "Sous couldn't find a recipe on that page, so nothing was saved.",
+	recipes.CodeTimeout:        "The site took too long to answer. Try again later.",
+	recipes.CodePageTooLarge:   "That page is too large for Sous to read, so nothing was saved.",
+	recipes.CodeUnsupportedURL: "Sous can only save recipes from web links, so nothing was saved.",
+	recipes.CodeSiteError:      "The site had a problem serving that page. Try again later.",
+}
+
 // MessageLocalAddress is the unsupported_url message for an address on
 // the local network.
 const MessageLocalAddress = "Sous won't fetch addresses on the local network."
 
 // Message is the person-facing message for an import error code.
 func Message(code string) string { return messages[code] }
+
+// Spoken is the sentence to read aloud for an import error code.
+func Spoken(code string) string { return spoken[code] }
 
 // Classify maps a fetched page that yielded no recipe to an import error
 // code, or "" when extracted is true and the page is usable. Fetch errors
