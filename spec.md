@@ -551,6 +551,9 @@ It reads the `.melarecipes` zip, and for each recipe:
 
 It sends `X-Sous-Person`, so the import is attributed to that person like
 any other API client; `--name` adds them to the household first if needed.
+When `SOUS_TOKEN` is set (an Outpost access token, for Sous under Outpost),
+it also sends that as `Authorization: Bearer`; the gateway then names the
+person from the token (§5), and `--person` has no effect.
 It is idempotent by `source_url` plus title: a re-run skips recipes already
 present, so an interrupted import can be resumed. A recipe that appears
 twice in the export is imported once, and the second copy is reported.
