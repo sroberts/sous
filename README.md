@@ -95,6 +95,13 @@ Then open http://127.0.0.1:8080. `--data` is where Sous keeps everything
 (a SQLite database and a folder of photos) and is created if it's missing.
 `sous --help` lists every setting.
 
+- **First run.** A new Sous comes with seven historic recipes, from Hannah
+  Glasse's 1751 curry to Escoffier's 1907 Peach Melba, each with a modern
+  adaptation, the original text and a period illustration. They're credited to
+  "Sous" and tagged Historic. Delete them and they stay deleted. Sous only adds
+  them to a library that has never been used, never to a restore, and
+  `SOUS_SAMPLES=false` skips them on that start.
+
 - **Who's cooking.** There are no accounts. The first time a device makes a
   change, Sous asks who's cooking and remembers the answer on that device.
   Anyone who can reach Sous can pick any name; it records who did what, it
@@ -219,7 +226,8 @@ Outpost gateway, signed in as that person.
 cd web && npm install && npm run dev
 ```
 
-The mock serves a few sample recipes from `web/mock/fixtures.json`. To design
+The mock serves a few sample recipes from `web/mock/fixtures.json`, plus the
+seven historic ones a new library starts with (`internal/samples/data`). To design
 against the real library instead, extract the Mela export into the
 gitignored `web/mock-local/`:
 
