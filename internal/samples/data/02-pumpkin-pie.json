@@ -1,0 +1,43 @@
+{
+  "title": "Pumpkin Pie",
+  "source_url": "https://www.gutenberg.org/ebooks/12815",
+  "description": "A spiced pumpkin custard in pastry from American Cookery, the first cookbook by an American author published in the United States. Simmons' \"Pompkin\" is one of the earliest printed recipes for what became the Thanksgiving pie.",
+  "notes": "Pompkin.\n\nNo. 1. One quart stewed and strained, 3 pints cream, 9 beaten eggs, sugar, mace, nutmeg and ginger, laid into paste No. 7 or 3, and with a dough spur, cross and chequer it, and baked in dishes three quarters of an hour.\n\nNo. 2. One quart of milk, 1 pint pompkin, 4 eggs, molasses, allspice and ginger in a crust, bake 1 hour.\n\nAmelia Simmons, *American Cookery* (Hartford, 1796), \"Pompkin\" in the puddings section, Project Gutenberg eBook #12815. Gutenberg's italic markers (underscores) on the heading are omitted.\n\nAdapted from No. 1: scaled to one 9-inch deep-dish pie with slightly less cream and a little more egg so the custard sets, sugar and salt quantified, and a plain butter crust in place of Simmons' puff paste.",
+  "yield_text": "One 9-inch deep-dish pie (serves 8)",
+  "prep_minutes": 30,
+  "cook_minutes": 60,
+  "total_minutes": 210,
+  "tags": [
+    "Dessert",
+    "Historic",
+    "Pie",
+    "Thanksgiving"
+  ],
+  "ingredients": [
+    "# For the crust",
+    "1 1/4 cups (160 g) all-purpose flour",
+    "1/2 teaspoon salt",
+    "1/2 cup (113 g) cold unsalted butter, cubed",
+    "3 to 4 tablespoons ice water",
+    "# For the filling",
+    "1 1/2 cups (365 g) pumpkin purée, homemade or canned",
+    "2 cups (480 ml) heavy cream",
+    "4 large eggs, beaten",
+    "2/3 cup (135 g) sugar",
+    "1 teaspoon ground ginger",
+    "1/2 teaspoon ground nutmeg",
+    "1/2 teaspoon ground mace",
+    "1/4 teaspoon salt"
+  ],
+  "steps": [
+    "# The crust:",
+    "Whisk the flour and salt together. Rub in the butter until the largest pieces are the size of peas. Sprinkle in the ice water a tablespoon at a time, tossing, until the dough holds together when squeezed. Flatten into a disc, wrap, and chill for 1 hour.",
+    "Roll the dough into a 13-inch round and fit it into a 9-inch deep-dish pie plate. Trim and crimp the edge; save the scraps. Chill while you make the filling.",
+    "# The filling:",
+    "Heat the oven to 425°F (220°C) with a rack in the lower third.",
+    "Whisk the pumpkin, cream, eggs, sugar, spices, and salt until smooth. Pour into the crust.",
+    "For Simmons' \"cross and chequer\", roll the scraps thin, cut narrow strips with a fluted pastry wheel, and lay them over the filling in a lattice. This is optional.",
+    "Bake for 15 minutes, then lower the oven to 350°F (175°C) and bake until the edges are set and the centre still jiggles slightly, 40 to 45 minutes. Cover the rim with foil if it browns too fast.",
+    "Cool on a rack for at least 2 hours before slicing."
+  ]
+}

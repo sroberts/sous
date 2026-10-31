@@ -14,6 +14,10 @@ Everything is attributed to --person, who must exist in Sous; --name creates
 them first if they don't. Favorites and want-to-cook flags become that
 person's. Re-running skips recipes already present (same source link and
 title), so an interrupted import can simply be run again.
+
+Under Outpost, set SOUS_TOKEN to an access token from
+`outpost token create <user> --name mela-import --app sous --expires 1d`.
+The gateway names the person from the token, whatever --person says.
 """
 
 import argparse
@@ -21,6 +25,7 @@ import base64
 import binascii
 import io
 import json
+import os
 import re
 import sys
 import urllib.error
@@ -167,11 +172,14 @@ class ApiError(Exception):
 class Sous:
     url: str
     person: str
+    token: str | None = None
 
     def call(self, method: str, path: str, body=None, raw: bytes | None = None, person=True):
         headers = {"Content-Type": "application/octet-stream" if raw is not None else "application/json"}
         if person:
             headers["X-Sous-Person"] = self.person
+        if self.token:
+            headers["Authorization"] = f"Bearer {self.token}"
         data = raw if raw is not None else (json.dumps(body).encode() if body is not None else None)
         req = urllib.request.Request(self.url + path, data=data, method=method, headers=headers)
         try:
@@ -334,7 +342,7 @@ def main() -> None:
     ap.add_argument("--dry-run", action="store_true", help="read and map the export; send nothing")
     a = ap.parse_args()
 
-    sous = Sous(a.url.rstrip("/"), a.person)
+    sous = Sous(a.url.rstrip("/"), a.person, os.environ.get("SOUS_TOKEN") or None)
     try:
         if not a.dry_run:
             ensure_person(sous, a.name)

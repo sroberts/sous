@@ -55,7 +55,7 @@ func author(c identity.Caller) (string, error) {
 
 func viaOf(c identity.Caller) string {
 	switch c.Via {
-	case identity.ViaUI, identity.ViaMCP:
+	case identity.ViaUI, identity.ViaMCP, identity.ViaSystem:
 		return string(c.Via)
 	}
 	return string(identity.ViaAPI)

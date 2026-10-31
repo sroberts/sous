@@ -1,0 +1,35 @@
+{
+  "title": "Victoria Sandwich",
+  "source_url": "https://www.gutenberg.org/ebooks/10136",
+  "description": "Mrs Beeton's 1861 Victoria sandwich, an early printed version of the jam-filled butter sponge named for Queen Victoria. Beeton bakes it in one shallow tin, sandwiches the halves, and cuts it into fingers stacked in a criss-cross pile.",
+  "notes": "VICTORIA SANDWICHES.\n\n1491. INGREDIENTS.--4 eggs; their weight in pounded sugar, butter, and flour; 1/4 saltspoonful of salt, a layer of any kind of jam or marmalade.\n\nMode.--Beat the butter to a cream; dredge in the flour and pounded sugar; stir these ingredients well together, and add the eggs, which should be previously thoroughly whisked. When the mixture has been well beaten for about 10 minutes, butter a Yorkshire-pudding tin, pour in the batter, and bake it in a moderate oven for 20 minutes. Let it cool, spread one half of the cake with a layer of nice preserve, place over it the other half of the cake, press the pieces slightly together, and then cut it into long finger-pieces; pile them in crossbars on a glass dish, and serve.\n\nTime.--20 minutes.\n\nAverage cost, 1s. 3d.\n\nSufficient for 5 or 6 persons.\n\nSeasonable at any time.\n\nIsabella Beeton, *The Book of Household Management* (London, 1861), Chapter XXIX, recipe 1491, Project Gutenberg eBook #10136. Gutenberg's italic markers (underscores) are omitted.\n\nAdapted: the weights of four eggs (about 225 g each of butter, sugar and flour) are given directly, and 2 teaspoons of baking powder are added for a reliable rise; Beeton relied on 10 minutes of beating alone.",
+  "yield_text": "About 18 fingers",
+  "prep_minutes": 20,
+  "cook_minutes": 22,
+  "total_minutes": 90,
+  "tags": [
+    "Dessert",
+    "Historic",
+    "Cake",
+    "Baking"
+  ],
+  "ingredients": [
+    "1 cup (225 g) unsalted butter, softened",
+    "1 3/4 cups (225 g) all-purpose flour",
+    "2 teaspoons baking powder",
+    "1/8 teaspoon salt",
+    "1 cup plus 2 tablespoons (225 g) superfine sugar",
+    "4 large eggs, at room temperature",
+    "1/2 cup (160 g) raspberry jam or marmalade"
+  ],
+  "steps": [
+    "Heat the oven to 350°F (175°C). Butter a 9-by-13-inch pan and line the bottom with parchment.",
+    "Whisk the flour, baking powder, and salt together.",
+    "Beat the butter until creamy, about 2 minutes. Add the sugar and beat until pale and fluffy, 3 to 4 minutes more.",
+    "Whisk the eggs in a separate bowl until frothy, then beat them into the butter a little at a time. Fold in the flour mixture until just combined.",
+    "Spread the batter evenly in the pan and bake until golden and springy, and a skewer comes out clean, 20 to 25 minutes.",
+    "Cool for 10 minutes in the pan, then turn out onto a rack and cool completely.",
+    "Cut the cake in half crosswise. Spread one half with jam, lay the other half on top, and press gently.",
+    "Trim the edges and cut into fingers about 1 inch wide. Stack them in criss-cross layers on a glass plate to serve."
+  ]
+}

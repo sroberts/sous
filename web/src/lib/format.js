@@ -61,3 +61,10 @@ export function ticketTime(min, text) {
   }
   return text ? { text } : null;
 }
+
+/** The display name for a username. The built-in author of the sample
+ *  recipes, _sous, isn't in the household list, so it is named here. */
+export function personName(username, people) {
+  if (username === '_sous') return 'Sous';
+  return people.find((p) => p.username === username)?.name ?? username;
+}

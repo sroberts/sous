@@ -25,10 +25,10 @@ func (s *Service) Changes(ctx context.Context, c identity.Caller, q ChangeQuery)
 	}
 	switch identity.Via(q.Via) {
 	case "":
-	case identity.ViaUI, identity.ViaAPI, identity.ViaMCP:
+	case identity.ViaUI, identity.ViaAPI, identity.ViaMCP, identity.ViaSystem:
 		where, args = append(where, "via = ?"), append(args, q.Via)
 	default:
-		return ChangePage{}, Errorf(CodeInvalid, "via must be ui, api or mcp")
+		return ChangePage{}, Errorf(CodeInvalid, "via must be ui, api, mcp or system")
 	}
 	if q.Cursor != "" {
 		cur, err := decodeCursor(q.Cursor, "changes")

@@ -25,6 +25,8 @@ Environment:
                         Outpost sets this, with OUTPOST_ISSUER and
                         OUTPOST_JWKS_URL
   SOUS_REQUIRE_GATEWAY  true refuses requests that skip the gateway
+  SOUS_SAMPLES          false starts a new library empty, without the
+                        sample recipes (default true)
 
 Run on its own, Sous asks each device who is cooking. Under Outpost, its
 login says who you are. https://github.com/sroberts/sous

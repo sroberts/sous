@@ -4,7 +4,7 @@
   import { go, link } from '../lib/router.svelte.js';
   import { api } from '../lib/api.js';
   import { session, asPerson, refreshIndex, toast } from '../lib/session.svelte.js';
-  import { amount, ago } from '../lib/format.js';
+  import { amount, ago, personName } from '../lib/format.js';
   import Plate from '../components/Plate.svelte';
 
   // draft: an unsaved recipe from an import. With id and merge, the draft
@@ -273,7 +273,7 @@
     });
   }
 
-  const person = (u) => session.people.find((p) => p.username === u)?.name ?? u;
+  const person = (u) => personName(u, session.people);
 </script>
 
 <form class="editor" onsubmit={save} oninput={touch} novalidate>
