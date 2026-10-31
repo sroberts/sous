@@ -30,31 +30,57 @@ it keeps lives in one folder you can back up.
   [Outpost](https://github.com/sroberts/outpost), which signs everyone in and
   backs it up, or on its own.
 
-## Quick start
+Sous is young: the basics work today, and the [roadmap](#roadmap) lists
+what's coming.
 
-On a Mac with Apple silicon (Linux binaries are on the
-[releases page](https://github.com/sroberts/sous/releases/latest)):
+## Getting started
+
+### With Outpost
 
 ```sh
-gh release download -R sroberts/sous -p sous-darwin-arm64
-chmod +x sous-darwin-arm64
-./sous-darwin-arm64 --port 8080 --data ~/sous-library   # then open http://127.0.0.1:8080
+outpost add sroberts/sous    # latest release, checksum verified, port picked
+outpost apply                # a running daemon starts it
 ```
+
+Outpost gives Sous its port and storage, restarts it if it fails, backs it
+up, and lists it in the portal as "Sous". With the login gateway on, Sous
+knows who you are from your Outpost sign-in, so there's nothing else to set
+up. `outpost status sous` shows where it's running.
+
+### On its own
+
+Download the binary for your machine from the
+[latest release](https://github.com/sroberts/sous/releases/latest)
+(`sous-darwin-arm64` for Apple silicon Macs, or `sous-linux-amd64` /
+`sous-linux-arm64`), then run it:
+
+```sh
+gh release download -R sroberts/sous -p sous-darwin-arm64 -p SHA256SUMS
+shasum -a 256 -c SHA256SUMS --ignore-missing
+chmod +x sous-darwin-arm64 && mv sous-darwin-arm64 /usr/local/bin/sous
+sous --port 8080 --data ~/sous-library
+```
+
+Then open http://127.0.0.1:8080. `--data` is where Sous keeps everything
+(a SQLite database and a folder of photos) and is created if it's missing.
+`sous --help` lists every setting. A binary downloaded with a browser on
+macOS is quarantined; `xattr -d com.apple.quarantine sous-darwin-arm64`
+clears that.
+
+- **Who's cooking.** There are no accounts. The first time a device makes a
+  change, Sous asks who's cooking and remembers the answer on that device.
+  It records who did what; it doesn't keep anyone out.
+- **Phones and tablets.** Sous only listens on `127.0.0.1`. To reach it from
+  another device, put something in front that decides who gets in, such as
+  `tailscale serve --bg 8080` for your tailnet.
+
+### Your first library
 
 A new library starts with twelve recipes, from Hannah Glasse's 1751 curry to
 a flourless chocolate torte, so there's something to cook straight away.
-Delete them and they stay deleted.
-
-With [Outpost](https://github.com/sroberts/outpost), it's two commands, and
-Outpost signs everyone in, keeps Sous running and backs it up:
-
-```sh
-outpost add sroberts/sous
-outpost apply
-```
-
-Sous is young: the basics work today, and the [roadmap](#roadmap) lists
-what's coming.
+Delete them and they stay deleted. To bring in your own, choose **Import**
+and paste a link, or see [Getting recipes in](docs/importing.md) for the
+bookmarklet, the iOS Shortcut and moving from Mela.
 
 ![Cook mode: the current step in large type, ingredients ticked off on the left, and an eight-minute timer running](docs/images/cook.png)
 
@@ -62,8 +88,8 @@ what's coming.
 
 ## Guides
 
-- [Installing and running Sous](docs/running.md): checking the download,
-  Outpost, running it on its own, other devices, backups and updates.
+- [Running Sous](docs/running.md): Outpost day to day, the login gateway,
+  keeping Sous running on its own, backups and updates.
 - [Getting recipes in](docs/importing.md): links, the bookmarklet, the iOS
   Shortcut, and moving from Mela.
 - [AI agents and the API](docs/agents.md): connecting MCP clients, and the

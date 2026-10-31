@@ -1,7 +1,7 @@
 # Getting help
 
 - **Using Sous:** start with the [README](README.md), then the guides in
-  [`docs/`](docs): [installing and running](docs/running.md),
+  [`docs/`](docs): [running Sous](docs/running.md),
   [getting recipes in](docs/importing.md), and
   [AI agents and the API](docs/agents.md).
 - **Questions, ideas, or how it's working for you:** use the
