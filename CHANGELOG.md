@@ -8,6 +8,11 @@ include breaking changes, and they're called out here.
 ## [Unreleased]
 
 ### Added
+- `POST /v1/recipes/import` reads a recipe link and saves it in one call,
+  returning a short `summary` to speak. A link already in Sous returns the
+  existing recipe, restoring it from the trash if needed.
+- A "Save to Sous" Siri Shortcut, with setup steps on the `/import` page, to
+  save a recipe from your phone without opening Sous.
 - `SECURITY.md`, `SUPPORT.md`, and issue forms for feedback, import
   failures, bugs and feature requests.
 

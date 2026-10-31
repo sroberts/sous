@@ -125,6 +125,10 @@ REST API, including `import_recipe`. Every change is attributed to a person:
   `outpost status sous`) with the same header. The gateway itself only lets
   in people signed in with a browser, and `SOUS_REQUIRE_GATEWAY=true` closes
   the loopback route too, so leave it unset if agents need MCP.
+- **Access tokens:** the gateway also accepts an Outpost access token
+  (`Authorization: Bearer opat_…`) and passes Sous the same signed identity as
+  a login. Scripts and the Siri Shortcut use this to reach Sous from outside.
+  MCP still connects on loopback, as above.
 
 The REST API is described at `/v1/openapi.json`.
 
@@ -137,6 +141,11 @@ bookmarklet for desktop browsers and an iOS Shortcut for the Share Sheet; both
 open `/import?url=…`. If a site blocks Sous or has no recipe data, paste the
 recipe text instead. Agents use the MCP tool `import_recipe`. Details are in
 [`spec.md`](spec.md) §14.
+
+To read and save in one step, `POST /v1/recipes/import` with `{"url": "…"}`.
+It saves the recipe, or returns the copy you already have, and replies with a
+`summary` short enough to speak. The `/import` page shows how to build a Siri
+Shortcut on it: share a recipe page, or say "Hey Siri, Save to Sous".
 
 ## Moving from Mela
 
