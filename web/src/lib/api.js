@@ -40,7 +40,7 @@ async function request(method, path, { body, version, raw } = {}) {
     // Sous never redirects, so a redirect is the gateway sending us to log in.
     res = await fetch(path, { method, headers, body: payload, redirect: 'manual' });
   } catch {
-    throw new ApiError(0, { error: { code: 'offline', message: "Sous isn't answering. Check the connection and try again." } });
+    throw new ApiError(0, { error: { code: 'offline', message: "Sous isn’t answering. Check the connection and try again." } });
   }
   // Sous answers in JSON. A redirect, or a 401 page, comes from the Outpost
   // gateway: the sign-in has ended (spec.md §5).

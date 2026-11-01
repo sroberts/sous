@@ -167,7 +167,7 @@ type ImageRef struct {
 // raw lines; a line starting with # is a section heading.
 type RecipeInput struct {
 	Title         string   `json:"title"`
-	SourceURL     *string  `json:"source_url,omitempty"`
+	SourceURL     *string  `json:"source_url,omitempty" jsonschema:"an http or https link"`
 	Description   *string  `json:"description,omitempty"`
 	Notes         *string  `json:"notes,omitempty"`
 	YieldText     *string  `json:"yield_text,omitempty" jsonschema:"the yield as written; servings are derived from it"`
@@ -187,7 +187,7 @@ type RecipeInput struct {
 // images replaces that whole list.
 type RecipePatch struct {
 	Title         Optional[string]   `json:"title,omitzero"`
-	SourceURL     Optional[string]   `json:"source_url,omitzero"`
+	SourceURL     Optional[string]   `json:"source_url,omitzero" jsonschema:"an http or https link; a stored value that isn't one can be sent back unchanged"`
 	Description   Optional[string]   `json:"description,omitzero"`
 	Notes         Optional[string]   `json:"notes,omitzero"`
 	YieldText     Optional[string]   `json:"yield_text,omitzero"`

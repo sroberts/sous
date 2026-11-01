@@ -117,7 +117,7 @@
       show(p);
     } catch (err) {
       if (!alive) return;
-      pasteError = err.status === 422 ? "Sous couldn't find ingredients or steps in that text. Put each on its own line, under headings like Ingredients and Method." : err.message;
+      pasteError = err.status === 422 ? "Sous couldn’t find ingredients or steps in that text. Put each on its own line, under headings like Ingredients and Method." : err.message;
       if (phase === 'loading') ((phase = 'form'), (pasting = true), (paste = text));
     } finally {
       reading = false;
