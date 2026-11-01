@@ -27,13 +27,14 @@ export const session = $state({
   toast: null, // { id, message, action? }
 });
 
-/** A short note at the foot of the page, with an optional action such as Undo. */
+/** A short note at the foot of the page, with an optional action such as Undo.
+ *  One with an action stays longer, so there is time to reach it. */
 export function toast(message, action = null) {
   const id = crypto.randomUUID();
   session.toast = { id, message, action };
   setTimeout(() => {
     if (session.toast?.id === id) session.toast = null;
-  }, 8000);
+  }, action ? 15000 : 8000);
 }
 
 onSignedOut(() => (session.signedOut = true));

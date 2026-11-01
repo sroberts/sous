@@ -31,7 +31,7 @@
 </script>
 
 <dialog bind:this={dialog} onclose={() => (session.asking = false)} aria-labelledby="who-title">
-  <h2 id="who-title">Who's cooking?</h2>
+  <h2 id="who-title">Who’s cooking?</h2>
   <p>Changes are signed with your name, so the household can see who did what. This device will remember you.</p>
   <ul>
     {#each session.people as p (p.username)}

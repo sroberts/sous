@@ -6,6 +6,7 @@
   import { session, asPerson, refreshIndex, toast } from '../lib/session.svelte.js';
   import { amount, ago, personName } from '../lib/format.js';
   import Plate from '../components/Plate.svelte';
+  import { stickIfFits } from '../lib/stick.js';
 
   // draft: an unsaved recipe from an import. With id and merge, the draft
   // updates that recipe instead (spec.md §14): tags, notes and photos stay.
@@ -159,12 +160,14 @@
   let leaving = $state(null); // the router's proceed, while asking
   let keepBtn = $state();
   let askedAt = 0;
+  let askedFrom = null; // where focus was when the question took it
   $effect(() => {
     if (!dirty) return;
     return setLeaveGuard((proceed) => {
       if (!dirty) return true;
       leaving = proceed;
       askedAt = performance.now();
+      askedFrom = document.activeElement;
       tick().then(() => keepBtn?.focus());
       return false;
     });
@@ -178,8 +181,13 @@
     dirty = false;
     proceed?.();
   }
-  function keepEditing() {
+  // Back to where you were; if that was Cancel, which the question replaced,
+  // to the Cancel that returns in its place.
+  async function keepEditing() {
     leaving = null;
+    await tick();
+    const back = askedFrom?.isConnected && askedFrom !== document.body ? askedFrom : document.querySelector('.acts .cancel');
+    back?.focus();
   }
 
   function onkey(e) {
@@ -354,7 +362,7 @@
         </div>
       {:else}
         <span class="state label" aria-live="polite">{saving ? 'Saving…' : dirty ? (draft && !merge ? 'Not saved yet' : 'Unsaved changes') : ''}</span>
-        <a class="btn quiet" href={back} use:link>Cancel</a>
+        <a class="btn quiet cancel" href={back} use:link>Cancel</a>
         <button class="btn primary" disabled={saving || !loaded}>{id ? 'Save recipe' : 'Add to the library'}</button>
       {/if}
     </div>
@@ -439,7 +447,7 @@
         </label>
       </div>
 
-      <aside class="side panel">
+      <aside class="side panel" use:stickIfFits={84}>
         <div class="photo">
           <Plate hash={form.images[0]} title={form.title} />
           <label class="btn photo-btn">
@@ -747,11 +755,15 @@
     text-underline-offset: 0.2em;
   }
 
+  /* The panel sticks beside the recipe only while all of it fits, so Move to
+     trash at its foot is never out of reach. */
   .side {
-    position: sticky;
-    top: calc(var(--bar) + 68px);
     display: grid;
     align-content: start;
+  }
+  .side:global(.stuck) {
+    position: sticky;
+    top: calc(var(--bar) + 68px);
   }
   .photo {
     display: flex;
@@ -834,7 +846,7 @@
     .sheet {
       grid-template-columns: 1fr;
     }
-    .side {
+    .side:global(.stuck) {
       position: static;
     }
     .main,

@@ -22,6 +22,9 @@ the UI built: `cd web && npm run build && cd .. && go run ./cmd/sous --port
    - On phones the title, facts and Begin cooking come before the photo.
    - The colophon reads "Added by Sous …", never `_sous`.
    - The notes hold the original text and the source citation.
+   - On phones, past the header, Ingredients and Method are tabs that stick
+     under the masthead; switching keeps each tab's place. The masthead
+     slides away on scroll down and returns on scroll up.
 2. Open the French omelette.
    - No image: on desktop the letter tile shows instead of a broken image;
      on phones the photo slot is left out, so Begin cooking moves up.
@@ -70,6 +73,11 @@ the UI built: `cd web && npm run build && cd .. && go run ./cmd/sous --port
 ## 8. Delete and restore
 
 1. In the editor for the Victoria sandwich, delete it.
-   - It leaves the library; a toast offers Undo.
+   - It leaves the library; a toast offers Undo for 15 seconds.
 2. Press Undo.
-   - It's back, still credited to Sous.
+   - It's back, still credited to Sous; focus is on the Library heading.
+
+## 9. Source links
+
+1. In the editor, set a source to `javascript:alert(1)` and save.
+   - "source_url must be an http or https link"; nothing is saved.
