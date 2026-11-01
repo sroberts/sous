@@ -2625,7 +2625,8 @@
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "an http or https link"
           },
           "description": {
             "type": [
@@ -2735,7 +2736,8 @@
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "an http or https link; a stored value that isn't one can be sent back unchanged"
           },
           "description": {
             "type": [

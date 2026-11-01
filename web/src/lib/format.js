@@ -33,6 +33,13 @@ export function duration(min) {
   return m ? `${h} hr ${m}` : `${h} hr`;
 }
 
+/** True for an http or https link, the only kind shown as a link: a stored
+ *  source can be anything (a book title from Mela), and a javascript: link
+ *  would run when clicked. */
+export function webLink(u) {
+  return /^https?:\/\/[^/\s]/i.test(u?.trim() ?? '');
+}
+
 export function recipeTime(r) {
   return duration(r.total_minutes) || r.time_text || '';
 }

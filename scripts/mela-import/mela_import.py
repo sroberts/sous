@@ -122,11 +122,17 @@ def recipe_body(d: dict, images: list[str]) -> dict:
         return (d.get(key) or "").strip() or None
 
     tags = list(dict.fromkeys(t.strip() for t in d.get("categories") or [] if t.strip()))
+    # Sous only takes web links as a source; anything else Mela kept there,
+    # such as a book and page, goes at the end of the notes instead.
+    link, notes = text("link"), text("notes")
+    if link and not re.match(r"(?i)https?://", link):
+        notes = f"{notes}\n\nSource: {link}" if notes else f"Source: {link}"
+        link = None
     return {k: v for k, v in {
         "title": text("title") or "Untitled",
-        "source_url": text("link"),
+        "source_url": link,
         "description": text("text"),
-        "notes": text("notes"),
+        "notes": notes,
         "yield_text": text("yield"),
         "prep_minutes": minutes(d.get("prepTime")),
         "cook_minutes": minutes(d.get("cookTime")),
