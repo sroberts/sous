@@ -168,6 +168,32 @@ class ApiError(Exception):
         super().__init__(f"{status} {self.code}: {self.message}" if status else self.message)
 
 
+def _origin(url: str) -> tuple[str, str | None, int | None] | None:
+    try:
+        u = urlsplit(url)
+        return u.scheme.lower(), u.hostname, u.port or {"http": 80, "https": 443}.get(u.scheme.lower())
+    except ValueError:  # a bad port
+        return None
+
+
+class _TokenStaysHome(urllib.request.HTTPRedirectHandler):
+    """urllib copies every header to wherever a redirect points, Authorization
+    included, so a redirect to another site, or from https to http, would
+    hand it SOUS_TOKEN. A request carrying the token follows redirects only
+    within its own origin."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        to = _origin(newurl)
+        if req.has_header("Authorization") and (to is None or to != _origin(req.full_url)):
+            fp.close()
+            raise ApiError(0, f"Sous at {req.full_url} redirected to {to[1] if to else newurl}; "
+                              "not following it with SOUS_TOKEN".encode())
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+_opener = urllib.request.build_opener(_TokenStaysHome)
+
+
 @dataclass
 class Sous:
     url: str
@@ -183,7 +209,7 @@ class Sous:
         data = raw if raw is not None else (json.dumps(body).encode() if body is not None else None)
         req = urllib.request.Request(self.url + path, data=data, method=method, headers=headers)
         try:
-            with urllib.request.urlopen(req, timeout=60) as r:
+            with _opener.open(req, timeout=60) as r:
                 b = r.read()
                 return json.loads(b) if b else None
         except urllib.error.HTTPError as e:
