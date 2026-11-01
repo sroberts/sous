@@ -117,8 +117,8 @@
   <header class="bar">
     <button class="icon-btn" onclick={() => go(`/r/${id}`)} aria-label="Leave cook mode"><X size={26} /></button>
     <div class="title">
-      <p class="name">{recipe?.title ?? ''}</p>
-      {#if recipe}<p class="where label">Step {step + 1} of {total}{#if awake}<span class="awake" title="The screen won't sleep while cooking"><Sun size={13} aria-hidden="true" />Screen stays on</span>{/if}</p>{/if}
+      <h1 class="name">{recipe?.title ?? ''}</h1>
+      {#if recipe}<p class="where label">Step {step + 1} of {total}{#if awake}<span class="awake" title="The screen won’t sleep while cooking"><Sun size={13} aria-hidden="true" />Screen stays on</span>{/if}</p>{/if}
     </div>
     <button class="btn ing-toggle" aria-expanded={sheet} onclick={() => (sheet = !sheet)}><ListChecks aria-hidden="true" />Ingredients<span class="fig left">{left}</span></button>
   </header>

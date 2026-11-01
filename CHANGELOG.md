@@ -23,6 +23,25 @@ include breaking changes, and they're called out here.
   the author of its own changes. Migrations now run with foreign keys checked
   before they commit. The username `_sous` is reserved: it isn't listed, can't
   be chosen, and a gateway sign-in with it is refused.
+- A recipe's source must be an http or https link when it's added or
+  changed, over the REST API and MCP alike. A source saved earlier that isn't
+  one (a book title from Mela, say) can still be saved back unchanged, and
+  shows as plain text. The Mela import script now puts such a source at the
+  end of the notes.
+- The editor asks before you leave it with unsaved changes ("Discard your
+  changes?"), and Cmd/Ctrl+S saves.
+- On a phone, the masthead slides away while you scroll down and comes back
+  when you scroll up, and a recipe's ingredients and method are two tabs, each
+  keeping its place.
+- Undo after moving a recipe to the trash stays on screen for 15 seconds.
+
+### Fixed
+- A long ingredient list on a recipe no longer runs past the bottom of the
+  screen, and Move to trash in the editor can always be reached.
+- A pre-existing person named `_sous` could still make changes credited to
+  "Sous".
+- The Mela import script won't send your token on to another site if the
+  server redirects there.
 
 ## [0.2.0] - 2026-10-30
 

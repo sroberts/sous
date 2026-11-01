@@ -92,8 +92,13 @@ func (s *Service) CreatePerson(ctx context.Context, c identity.Caller, name stri
 
 // Lookup returns the person with username, or (nil, nil) if there is none.
 // The system person is never found, so no header, cookie or MCP caller can
-// act as it. It implements identity.Directory, so it takes no Caller.
+// act as it. Neither is anyone else holding its username, as a library from
+// before the system person could: the name is reserved, whoever has it. It
+// implements identity.Directory, so it takes no Caller.
 func (s *Service) Lookup(ctx context.Context, username string) (*identity.Person, error) {
+	if username == identity.SystemUsername {
+		return nil, nil
+	}
 	var p *identity.Person
 	err := s.st.Read(ctx, func(tx *sql.Tx) error {
 		var q identity.Person

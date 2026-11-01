@@ -1,11 +1,12 @@
 <script>
   import { tick } from 'svelte';
   import { ArrowLeft, X, ImagePlus, Trash2, Link2 } from '@lucide/svelte';
-  import { go, link } from '../lib/router.svelte.js';
+  import { go, link, setLeaveGuard } from '../lib/router.svelte.js';
   import { api } from '../lib/api.js';
   import { session, asPerson, refreshIndex, toast } from '../lib/session.svelte.js';
   import { amount, ago, personName } from '../lib/format.js';
   import Plate from '../components/Plate.svelte';
+  import { stickIfFits } from '../lib/stick.js';
 
   // draft: an unsaved recipe from an import. With id and merge, the draft
   // updates that recipe instead (spec.md §14): tags, notes and photos stay.
@@ -18,6 +19,9 @@
   let problem = $state(null); // { message } or { conflict: recipe }
   let titleError = $state(false);
   let allTags = $state([]);
+  // The page's heading, for screen readers: the router focuses it on arrival.
+  let loadedTitle = $state('');
+  const heading = $derived(id ? loadedTitle && `Editing ${loadedTitle}` : 'New recipe');
 
   let form = $state({
     title: '',
@@ -125,6 +129,7 @@
         fill(r);
         if (merge && draft) mergeDraft(draft);
         loaded = true;
+        loadedTitle = r.title;
         document.title = `Editing ${r.title} · Sous`;
       },
       (err) => (problem = { message: err.message }),
@@ -149,6 +154,58 @@
     return () => removeEventListener('beforeunload', warn);
   });
 
+  // Leaving in the app (Cancel, a link, Back) with unsaved changes asks first,
+  // in the toolbar. The guard reads dirty when asked, so a save or trash that
+  // clears it and then navigates is never stopped.
+  let leaving = $state(null); // the router's proceed, while asking
+  let keepBtn = $state();
+  let askedAt = 0;
+  let askedFrom = null; // where focus was when the question took it
+  $effect(() => {
+    if (!dirty) return;
+    return setLeaveGuard((proceed) => {
+      if (!dirty) return true;
+      leaving = proceed;
+      askedAt = performance.now();
+      askedFrom = document.activeElement;
+      tick().then(() => keepBtn?.focus());
+      return false;
+    });
+  });
+  function discard() {
+    // Discard sits near where Cancel was: a double click on Cancel must not
+    // answer the question it just asked.
+    if (performance.now() - askedAt < 500) return;
+    const proceed = leaving;
+    leaving = null;
+    dirty = false;
+    proceed?.();
+  }
+  // Back to where you were; if that was Cancel, which the question replaced,
+  // to the Cancel that returns in its place.
+  async function keepEditing() {
+    leaving = null;
+    await tick();
+    const back = askedFrom?.isConnected && askedFrom !== document.body ? askedFrom : document.querySelector('.acts .cancel');
+    back?.focus();
+  }
+
+  function onkey(e) {
+    if ((e.metaKey || e.ctrlKey) && !e.altKey && e.key.toLowerCase() === 's') {
+      e.preventDefault();
+      if (!saving && loaded) save();
+    } else if (e.key === 'Escape' && leaving) {
+      keepEditing();
+    }
+  }
+
+  // Step numbers count steps only; a # heading line takes no number, as on
+  // the recipe page and in cook mode.
+  const stepNumbers = $derived.by(() => {
+    let n = 0;
+    return form.steps.map((l) => (l.trim().startsWith('#') ? null : ++n));
+  });
+
   const touch = () => (dirty = true);
 
   // Line lists: Enter adds a line, Backspace on an empty line removes it,
@@ -159,7 +216,9 @@
   }
   function lineKey(list, i, e) {
     const lines = form[list];
-    if (e.key === 'Enter' && !e.shiftKey) {
+    // An ingredient is one line, so Shift+Enter starts a new one too; a step
+    // can hold a line break.
+    if (e.key === 'Enter' && (!e.shiftKey || list === 'ingredients')) {
       e.preventDefault();
       lines.splice(i + 1, 0, '');
       touch();
@@ -227,13 +286,14 @@
       notes: form.notes.trim() || null,
       tags: form.tags,
       images: form.images,
-      ingredients: form.ingredients.map((l) => l.trim()).filter(Boolean),
+      ingredients: form.ingredients.flatMap((l) => l.split(/\r?\n/)).map((l) => l.trim()).filter(Boolean),
       steps: form.steps.map((l) => l.trim()).filter(Boolean),
     };
   }
 
   async function save(e, overVersion) {
     e?.preventDefault();
+    leaving = null;
     if (!form.title.trim()) {
       titleError = true;
       document.getElementById('title')?.focus();
@@ -246,6 +306,10 @@
       if (!r) return;
       dirty = false;
       await refreshIndex();
+      // Saved: leave even if a key was pressed while the index refreshed, so
+      // the leave guard can't hold the page on a version (or, for a new
+      // recipe, a create) that has already gone through.
+      dirty = false;
       // An import's URL would fetch again, so it never stays in history.
       go(`/r/${r.id}`, { replace: !id || !!draft });
     } catch (err) {
@@ -263,6 +327,7 @@
     // Leaving the page clears the id prop, so Undo needs its own copy.
     const { title } = form;
     const trashed = id;
+    dirty = false; // trashed: leave even if a key was pressed meanwhile
     go('/');
     toast(`${title} is in the trash.`, {
       label: 'Undo',
@@ -276,15 +341,31 @@
   const person = (u) => personName(u, session.people);
 </script>
 
+<svelte:window onkeydown={onkey} />
+
 <form class="editor" onsubmit={save} oninput={touch} novalidate>
+  <!-- An import has its own heading in the banner above. -->
+  {#if heading && !draft}<h1 class="visually-hidden">{heading}</h1>{/if}
   <div class="toolbar">
     <a class="back" href={back} use:link><ArrowLeft size={16} aria-hidden="true" />{backLabel}</a>
     {#if !id && !draft}
       <a class="import-link" href="/import" use:link><Link2 size={16} aria-hidden="true" />Import from a link</a>
     {/if}
-    <span class="state label" aria-live="polite">{saving ? 'Saving…' : dirty ? (draft && !merge ? 'Not saved yet' : 'Unsaved changes') : ''}</span>
-    <a class="btn quiet" href={back} use:link>Cancel</a>
-    <button class="btn primary" disabled={saving || !loaded}>{id ? 'Save recipe' : 'Add to the library'}</button>
+    <!-- On phones these become a bar along the bottom, so Save stays in reach. -->
+    <div class="acts">
+      {#if leaving}
+        <div class="leave" role="alertdialog" aria-labelledby="leave-q">
+          <p id="leave-q">Discard your changes?</p>
+          <!-- Keep editing takes Save's place, so a habitual click there is safe. -->
+          <button type="button" class="btn quiet" onclick={discard}>Discard</button>
+          <button type="button" class="btn keep" bind:this={keepBtn} onclick={keepEditing}>Keep editing</button>
+        </div>
+      {:else}
+        <span class="state label" aria-live="polite">{saving ? 'Saving…' : dirty ? (draft && !merge ? 'Not saved yet' : 'Unsaved changes') : ''}</span>
+        <a class="btn quiet cancel" href={back} use:link>Cancel</a>
+        <button class="btn primary" disabled={saving || !loaded}>{id ? 'Save recipe' : 'Add to the library'}</button>
+      {/if}
+    </div>
   </div>
 
   {#if problem?.conflict}
@@ -303,8 +384,8 @@
     <div class="sheet">
       <div class="main panel">
         <label class="visually-hidden" for="title">Title</label>
-        <textarea id="title" class="title" rows="1" placeholder="Name the dish" bind:value={form.title} aria-invalid={titleError} oninput={() => (titleError = false)}></textarea>
-        {#if titleError}<p class="field-error">A recipe needs a name.</p>{/if}
+        <textarea id="title" class="title" rows="1" placeholder="Name the dish" bind:value={form.title} aria-invalid={titleError} aria-describedby={titleError ? 'title-error' : undefined} oninput={() => (titleError = false)}></textarea>
+        {#if titleError}<p id="title-error" class="field-error">A recipe needs a name.</p>{/if}
 
         <label class="field">
           <span class="label">Source</span>
@@ -324,14 +405,15 @@
             {#each form.ingredients as _, i}
               {@const p = parsed[i]}
               <li class:heading={form.ingredients[i].trim().startsWith('#')}>
-                <input data-list="ingredients" data-i={i} bind:value={form.ingredients[i]} onkeydown={(e) => lineKey('ingredients', i, e)} onpaste={(e) => linePaste('ingredients', i, e)} placeholder={i === 0 ? '2 tablespoons Dijon mustard' : ''} aria-label="Ingredient {i + 1}" />
-                <span class="parsed" aria-label="Read as">
+                <textarea data-list="ingredients" data-i={i} rows="1" bind:value={form.ingredients[i]} onkeydown={(e) => lineKey('ingredients', i, e)} onpaste={(e) => linePaste('ingredients', i, e)} placeholder={i === 0 ? 'e.g. an amount, then the ingredient' : ''} aria-label="Ingredient {i + 1}" aria-describedby="parsed-{i}"></textarea>
+                <span class="parsed" id="parsed-{i}">
                   {#if p && !p.section && form.ingredients[i].trim()}
+                    <span class="visually-hidden">Read as</span>
                     <span class="p-amt fig" class:none={!amount(p)}>{amount(p) || 'no amount'}</span>
                     <span class="p-item">{p.item}</span>
                     {#if p.note}<span class="p-note">{p.note}</span>{/if}
                   {:else if p?.section}
-                    <span class="p-note">heading</span>
+                    <span class="visually-hidden">Read as a heading</span><span class="p-note" aria-hidden="true">heading</span>
                   {/if}
                 </span>
                 <button type="button" class="rm" onclick={() => removeLine('ingredients', i)} aria-label="Remove ingredient {i + 1}"><X size={16} /></button>
@@ -348,10 +430,11 @@
           </div>
           <ol class="lines steps">
             {#each form.steps as _, i}
-              <li class:heading={form.steps[i].trim().startsWith('#')}>
-                <span class="n fig" aria-hidden="true">{i + 1}</span>
-                <textarea data-list="steps" data-i={i} rows="2" bind:value={form.steps[i]} onkeydown={(e) => lineKey('steps', i, e)} onpaste={(e) => linePaste('steps', i, e)} aria-label="Step {i + 1}"></textarea>
-                <button type="button" class="rm" onclick={() => removeLine('steps', i)} aria-label="Remove step {i + 1}"><X size={16} /></button>
+              {@const n = stepNumbers[i]}
+              <li class:heading={n === null}>
+                <span class="n fig" aria-hidden="true">{n ?? ''}</span>
+                <textarea data-list="steps" data-i={i} rows="2" bind:value={form.steps[i]} onkeydown={(e) => lineKey('steps', i, e)} onpaste={(e) => linePaste('steps', i, e)} aria-label={n === null ? 'Heading' : `Step ${n}`}></textarea>
+                <button type="button" class="rm" onclick={() => removeLine('steps', i)} aria-label={n === null ? 'Remove heading' : `Remove step ${n}`}><X size={16} /></button>
               </li>
             {/each}
           </ol>
@@ -364,7 +447,7 @@
         </label>
       </div>
 
-      <aside class="side panel">
+      <aside class="side panel" use:stickIfFits={84}>
         <div class="photo">
           <Plate hash={form.images[0]} title={form.title} />
           <label class="btn photo-btn">
@@ -378,7 +461,7 @@
 
         <label class="field">
           <span class="label">Yield</span>
-          <input bind:value={form.yield_text} placeholder="Serves 4" />
+          <input bind:value={form.yield_text} placeholder="e.g. how many it serves or makes" />
         </label>
         <fieldset class="times">
           <legend class="label">Minutes</legend>
@@ -388,11 +471,11 @@
         </fieldset>
         <label class="field">
           <span class="label">Time note</span>
-          <input bind:value={form.time_text} placeholder="Plus overnight to chill" />
+          <input bind:value={form.time_text} placeholder="e.g. resting, rising or chilling time" />
         </label>
         <label class="field">
           <span class="label">Nutrition</span>
-          <textarea rows="2" bind:value={form.nutrition_text} placeholder="Per serving: 420 calories · 18 g protein"></textarea>
+          <textarea rows="2" bind:value={form.nutrition_text} placeholder="e.g. calories and protein per serving"></textarea>
         </label>
 
         <div class="field">
@@ -457,9 +540,26 @@
     color: var(--ink-2);
     text-decoration: none;
   }
-  .state {
+  .acts {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
     margin-left: auto;
+  }
+  .state {
     color: var(--ink-3);
+  }
+  .leave {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-2);
+  }
+  .leave p {
+    margin-right: var(--space-2);
+    font-size: var(--ui);
+    font-weight: 700;
   }
   .notice {
     margin-bottom: var(--space-4);
@@ -569,20 +669,21 @@
     align-items: center;
     border-bottom: 1.5px dashed var(--ticket-press);
   }
-  .lines input,
   .lines textarea {
     width: 100%;
     border: 0;
     background: none;
     padding: var(--space-2) 0;
     font-size: var(--read);
+    line-height: var(--read-lh);
     outline: none;
+    resize: none;
+    field-sizing: content;
   }
   .lines li:focus-within {
     background: var(--ticket-press);
     box-shadow: -8px 0 0 var(--ticket-press), 8px 0 0 var(--ticket-press);
   }
-  .lines li.heading input,
   .lines li.heading textarea {
     font-weight: 800;
   }
@@ -636,11 +737,6 @@
     font-size: 1.375rem;
     padding-top: var(--space-2);
   }
-  .steps textarea {
-    resize: none;
-    field-sizing: content;
-    line-height: var(--read-lh);
-  }
   .steps .rm {
     margin-top: 4px;
   }
@@ -659,11 +755,15 @@
     text-underline-offset: 0.2em;
   }
 
+  /* The panel sticks beside the recipe only while all of it fits, so Move to
+     trash at its foot is never out of reach. */
   .side {
-    position: sticky;
-    top: calc(var(--bar) + 68px);
     display: grid;
     align-content: start;
+  }
+  .side:global(.stuck) {
+    position: sticky;
+    top: calc(var(--bar) + 68px);
   }
   .photo {
     display: flex;
@@ -733,9 +833,11 @@
     padding: 0;
     font-size: 0.875rem;
     font-weight: 700;
-    color: var(--red);
+    color: var(--ink-2);
   }
-  .trash:hover {
+  .trash:hover,
+  .trash:focus-visible {
+    color: var(--red);
     text-decoration: underline;
     text-underline-offset: 0.2em;
   }
@@ -744,9 +846,8 @@
     .sheet {
       grid-template-columns: 1fr;
     }
-    .side {
+    .side:global(.stuck) {
       position: static;
-      order: -1;
     }
     .main,
     .side {
@@ -770,6 +871,9 @@
     }
   }
   @media (max-width: 760px) {
+    .editor {
+      padding-bottom: calc(var(--space-8) + 68px);
+    }
     .toolbar {
       top: 0;
       position: relative;
@@ -779,14 +883,36 @@
       margin-left: 0;
       padding-left: var(--space-3);
     }
+    .acts {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 10;
+      flex-wrap: wrap;
+      padding: var(--space-3) var(--gutter) max(var(--space-3), env(safe-area-inset-bottom));
+      background: var(--ticket);
+      border-top: 1px solid var(--perf);
+    }
     .state:empty {
       display: none;
     }
     .state:empty + .btn {
       margin-left: auto;
     }
-    .toolbar .primary {
+    .acts .primary {
       flex: 1 0 auto;
+    }
+    .leave {
+      flex: 1;
+    }
+    /* As Cancel and Save were: Discard beside the question, Keep editing
+       across the full width where Save was. */
+    .leave p {
+      flex: 1 1 auto;
+    }
+    .leave .keep {
+      flex: 1 0 100%;
     }
   }
 </style>

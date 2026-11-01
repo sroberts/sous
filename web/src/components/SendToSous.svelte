@@ -13,7 +13,7 @@
 
 <section class="send" aria-labelledby="send-h">
   <h2 id="send-h">Send recipes from anywhere</h2>
-  <p class="lede">Import the page you're reading in one step, without copying its link.</p>
+  <p class="lede">Import the page you’re reading in one step, without copying its link.</p>
 
   <div class="ways">
     <div class="way">
@@ -22,12 +22,12 @@
       <a class="btn bookmarklet" href="/import" use:bookmarklet draggable="true" onclick={(e) => e.preventDefault()} title="Drag to your bookmarks bar">
         <Bookmark aria-hidden="true" />Send to Sous
       </a>
-      <p class="hint">Clicking it on this page does nothing. It works from the recipe's page.</p>
+      <p class="hint">Clicking it on this page does nothing. It works from the recipe’s page.</p>
     </div>
 
     <div class="way">
       <h3 class="label">iPhone and iPad</h3>
-      <p>Build a shortcut once in the Shortcuts app, then send any page from Safari's Share button.</p>
+      <p>Build a shortcut once in the Shortcuts app, then send any page from Safari’s Share button.</p>
       <ol class="steps">
         <li><span class="n fig" aria-hidden="true">1</span><span>New shortcut. In its details, turn on <b>Show in Share Sheet</b> and have it receive <b>URLs</b> and <b>Safari web pages</b>.</span></li>
         <li><span class="n fig" aria-hidden="true">2</span><span>Add <b>Get URLs from Input</b>.</span></li>

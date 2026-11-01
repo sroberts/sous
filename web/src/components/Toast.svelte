@@ -1,10 +1,18 @@
 <script>
   import { session } from '../lib/session.svelte.js';
 
-  async function act() {
+  // The button goes with the toast, so focus that was on it moves to the
+  // page heading, where arriving on the page put it.
+  async function act(e) {
     const { action } = session.toast;
+    const hadFocus = e.currentTarget === document.activeElement;
     session.toast = null;
     await action.run();
+    const h = hadFocus && document.querySelector('main h1, h1');
+    if (h) {
+      if (!h.hasAttribute('tabindex')) h.setAttribute('tabindex', '-1');
+      h.focus({ preventScroll: true });
+    }
   }
 </script>
 
