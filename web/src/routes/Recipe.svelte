@@ -38,6 +38,24 @@
   }
 
   const person = (u) => personName(u, session.people);
+
+  // The ingredients panel sticks beside the method only while all of it fits
+  // under the masthead; a longer list scrolls with the page, so nothing is cut.
+  function stickIfFits(node) {
+    const check = () => {
+      const bar = parseFloat(getComputedStyle(node).getPropertyValue('--bar')) || 56;
+      node.classList.toggle('stuck', node.offsetHeight <= innerHeight - bar - 32);
+    };
+    const ro = new ResizeObserver(check);
+    ro.observe(node);
+    addEventListener('resize', check);
+    return {
+      destroy() {
+        ro.disconnect();
+        removeEventListener('resize', check);
+      },
+    };
+  }
 </script>
 
 {#if error}
@@ -78,16 +96,14 @@
           </button>
         </div>
       </div>
-      <div class="photo"><Plate hash={recipe.images[0]} title={recipe.title} /></div>
+      <div class="photo" class:none={!recipe.images[0]}><Plate hash={recipe.images[0]} title={recipe.title} /></div>
     </header>
 
     <div class="body">
-      <section class="ingredients sheet" aria-labelledby="ing-h">
+      <section class="ingredients sheet" aria-labelledby="ing-h" use:stickIfFits>
         <div class="col-head">
           <h2 id="ing-h" class="label">Ingredients</h2>
-          <button class="as-written" aria-pressed={asWritten} onclick={() => (asWritten = !asWritten)}>
-            {asWritten ? 'Show measured' : 'Show as written'}
-          </button>
+          <button class="as-written" aria-pressed={asWritten} onclick={() => (asWritten = !asWritten)}>Show as written</button>
         </div>
         {#each groups(recipe.ingredients) as g}
           {#if g.section}<h3 class="sect">{g.section}</h3>{/if}
@@ -110,7 +126,7 @@
         <div class="col-head"><h2 id="method-h" class="label">Method</h2><span class="label steps">{recipe.steps.length} steps</span></div>
         {#each groups(recipe.steps) as g}
           {#if g.section}<h3 class="sect">{g.section}</h3>{/if}
-          <ol>
+          <ol start={recipe.steps.indexOf(g.rows[0]) + 1}>
             {#each g.rows as s}
               <li><span class="n fig" aria-hidden="true">{recipe.steps.indexOf(s) + 1}</span><p>{s.text}</p></li>
             {/each}
@@ -245,12 +261,9 @@
     background: var(--ticket);
     padding: var(--space-4) var(--space-5) var(--space-6);
   }
-  .ingredients {
+  .ingredients:global(.stuck) {
     position: sticky;
     top: calc(var(--bar) + var(--space-4));
-    max-height: calc(100dvh - var(--bar) - var(--space-6));
-    overflow-y: auto;
-    scrollbar-width: thin;
   }
   .col-head {
     display: flex;
@@ -274,8 +287,12 @@
     text-underline-offset: 0.2em;
     padding: var(--space-1) 0;
   }
-  .as-written:hover {
+  .as-written:hover,
+  .as-written[aria-pressed='true'] {
     color: var(--red);
+  }
+  .as-written[aria-pressed='true'] {
+    text-decoration-color: var(--red);
   }
   .sect {
     font-size: var(--ui);
@@ -320,7 +337,7 @@
   }
   .notes {
     margin-top: var(--space-3);
-    max-width: calc(65ch + 3rem + var(--space-3));
+    max-width: 65ch;
     white-space: pre-line;
   }
   .colophon {
@@ -346,15 +363,27 @@
       margin: -4px var(--space-2) 0;
       padding: var(--space-5) var(--space-4) calc(var(--space-5) + var(--tear));
     }
-    .photo {
-      order: -1;
+    /* Title, facts and Begin cooking come first; the description and the
+       photo follow, the photo as a short band, and a photo-less recipe shows
+       no initial here. */
+    .head {
+      display: flex;
+      flex-direction: column;
+    }
+    .desc {
+      order: 1;
+    }
+    .photo :global(.plate) {
+      max-height: 40vh;
+    }
+    .photo.none {
+      display: none;
     }
     .body {
       grid-template-columns: 1fr;
     }
-    .ingredients {
+    .ingredients:global(.stuck) {
       position: static;
-      max-height: none;
     }
     .ingredients,
     .method {
@@ -366,6 +395,15 @@
     }
   }
   @media (max-width: 760px) {
+    /* Tags and source each take a line, so no separator is left hanging at
+       the end of the tags when the source wraps. */
+    .src {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .dot {
+      display: none;
+    }
     .acts .btn:not(.cook) {
       flex: 1;
     }

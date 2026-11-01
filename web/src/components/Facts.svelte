@@ -28,7 +28,10 @@
       <div class:wordy={!c.fig}>
         <dt class="label">{c.label}</dt>
         <dd>
-          {#if c.fig}<span class="fig">{c.fig}</span>{#if c.unit}<span class="unit">{c.unit}</span>{/if}{:else}{c.text}{/if}
+          {#if c.said}
+            <!-- 4:10 HR reads as letters; a screen reader gets the words. -->
+            <span class="fig" aria-hidden="true">{c.fig}</span><span class="unit" aria-hidden="true">{c.unit}</span><span class="visually-hidden">{c.said}</span>
+          {:else if c.fig}<span class="fig">{c.fig}</span>{:else}{c.text}{/if}
         </dd>
       </div>
     {/each}

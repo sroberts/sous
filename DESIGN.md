@@ -242,9 +242,9 @@ A cool, near-monochrome kitchen palette (grey counter, white paper, black print)
 A fixed 56px masthead over full-bleed grids on the pass. Gutter is clamp(16px, 2.5vw, 32px); spacing follows a 4px base (4, 8, 12, 16, 24, 32, 48, 64).
 
 - **Library:** a 200px course list with figure counts, then the pass. When there are want-to-cook recipes, the rail runs across the top with 15rem tickets hanging from it; below, the library is an auto-fill grid of tickets (min 176px; 16px row and 12px column gaps). From the wide breakpoint a third column, minmax(360px, 26vw), holds the selected ticket's preview as a sticky panel. Below 860px the course list becomes a horizontal strip of ticket chips.
-- **Recipe:** a rail across the content width with the recipe's header ticket clipped beneath it (7fr text, 5fr photo); below, two straight-edged panels: a sticky ingredients panel (17 to 23rem) and the method panel. Collapses to one column at 900px.
+- **Recipe:** a rail across the content width with the recipe's header ticket clipped beneath it (7fr text, 5fr photo); below, two straight-edged panels: the ingredients panel (17 to 23rem) and the method panel. The ingredients panel is sticky only while the whole list fits under the masthead; a longer list scrolls with the page rather than inside the panel. Collapses to one column at 900px, with the title, facts and Begin cooking first, then the description, then the photo as a band no taller than 40vh (omitted when the recipe has no photo).
 - **Cook:** full-height. A ticket-white bar, then a 18 to 24rem ingredients panel beside the stage. The stage is a sticky rail with the fired step (up to 50rem), then up to two queued steps and a lane of timers, all hanging from it. Queued tickets drop away at 1439px and 1180px; at 900px ingredients become a sheet and the timer hangs over the step's top-right corner. A pager of Previous (1fr) and Next step (2fr), 72px tall, closes the screen.
-- **Editor:** a main panel and a 20rem side panel, single column at 960px.
+- **Editor:** a sticky toolbar (back, unsaved state, Cancel, Save) over a main panel and a 20rem side panel. Single column at 960px, the main panel first and the side panel (ending in Move to trash) after it. Below 760px Cancel and Save move to a ticket-white bar fixed along the bottom with a `perf` top hairline. Leaving with unsaved changes asks in place of those actions: "Discard your changes?" with Keep editing, focused, in Save's place and a quiet Discard to its left; Esc keeps editing.
 
 ### Named Rules
 **The Fixed Column Rule.** Figures sit in fixed columns so they align down a list: 5 to 5.25rem for quantities, 3rem for step numbers in the method, 2.25rem in the editor, 4.5rem minimum for each facts cell, 4.2ch for a timer clock.
@@ -291,7 +291,7 @@ Ticket-printed and square-shouldered.
 
 ### Inputs / Fields
 - **Search:** 40px, 2px black stroke, 3px corners, white; stroke turns red on focus. Shows a ⌘K hint key on desktop.
-- **Editor fields:** borderless with a 1.5px `perf` underline that turns red on focus; the title field is a display-size line over a 2px black underline. The caret is red.
+- **Editor fields:** borderless with a 1.5px `perf` underline that turns red on focus; the title field is a display-size line over a 2px black underline. The caret is red. Ingredient and step lines grow to fit their text rather than cut it off. Placeholders are instructions or start "e.g." in general words, never a plausible value.
 - **Error:** red underline and red 0.875rem/600 message beneath.
 
 ### Navigation
@@ -325,7 +325,7 @@ Black slip with white text and a white-stroked button, 3px corners, rising 12px 
 - **Do** hang tickets from the rail only when they stand for a recipe, a step or a timer, and only when there is at least one to hang.
 - **Do** keep recipe reading text at 1.0625rem / 1.55 within 65ch.
 - **Do** separate a ticket's head from its body with the 1.5px dashed perforation.
-- **Do** show photos as shot: cropped to the slot with object-fit, never filtered or tinted. A missing photo prints the dish's initial as a figure on `pass-deep`.
+- **Do** show photos as shot: cropped to the slot with object-fit, never filtered or tinted. A missing photo prints the dish's initial as a figure on `pass-deep`, except in the recipe header's one-column layout, where the slot is left out.
 
 ### Don't:
 - **Don't** add drop shadows, glows or lifted cards; the rail clip is the only modelled depth.

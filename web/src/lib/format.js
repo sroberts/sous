@@ -51,15 +51,24 @@ export function ago(iso) {
 }
 
 /** A time as a ticket prints it: 45 → { fig: '45', unit: 'min' },
- *  165 → { fig: '2:45', unit: 'hr' }. Wording that never parsed comes back
- *  as { text }; no time at all as null. */
+ *  165 → { fig: '2:45', unit: 'hr' }, each with `said`, the same time in
+ *  words for a screen reader ('2 hours 45 minutes'). Wording that never
+ *  parsed comes back as { text }; no time at all as null. */
 export function ticketTime(min, text) {
   if (min) {
-    if (min < 60) return { fig: String(min), unit: 'min' };
+    const said = spokenTime(min);
+    if (min < 60) return { fig: String(min), unit: 'min', said };
     const m = min % 60;
-    return { fig: `${Math.floor(min / 60)}:${String(m).padStart(2, '0')}`, unit: 'hr' };
+    return { fig: `${Math.floor(min / 60)}:${String(m).padStart(2, '0')}`, unit: 'hr', said };
   }
   return text ? { text } : null;
+}
+
+function spokenTime(min) {
+  const count = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return [h && count(h, 'hour'), m && count(m, 'minute')].filter(Boolean).join(' ');
 }
 
 /** The display name for a username. The built-in author of the sample

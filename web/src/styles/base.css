@@ -83,6 +83,12 @@ button {
   outline-offset: 2px;
 }
 
+/* A page heading takes focus only from the router, on arriving at the page,
+   to start a screen reader there; it is not a control, so it shows no ring. */
+h1[tabindex='-1']:focus {
+  outline: none;
+}
+
 input,
 textarea {
   caret-color: var(--red);
