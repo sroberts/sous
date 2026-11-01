@@ -13,10 +13,10 @@
   <h3 class="label">Save without opening Sous (Siri)</h3>
   <p>A second shortcut saves the recipe for you and Siri tells you what happened. Say “Hey Siri, Save to Sous” or use the Share button.</p>
   {#if phoneCannotReach}
-    <p class="warn">You're on <code>{location.hostname}</code>, which your phone can't reach. Open Sous at the address your phone uses, then come back to this page.</p>
+    <p class="warn">You’re on <code>{location.hostname}</code>, which your phone can’t reach. Open Sous at the address your phone uses, then come back to this page.</p>
   {/if}
   <ol class="steps">
-    <li><span class="n fig" aria-hidden="true">1</span><span>New shortcut named “Save to Sous”. Turn on <b>Show in Share Sheet</b> and have it receive <b>URLs</b> and <b>Safari web pages</b>. If there's no input, <b>Ask For</b> <b>URLs</b>.</span></li>
+    <li><span class="n fig" aria-hidden="true">1</span><span>New shortcut named “Save to Sous”. Turn on <b>Show in Share Sheet</b> and have it receive <b>URLs</b> and <b>Safari web pages</b>. If there’s no input, <b>Ask For</b> <b>URLs</b>.</span></li>
     <li><span class="n fig" aria-hidden="true">2</span><span>Add <b>Get URLs from Input</b>.</span></li>
     <li><span class="n fig" aria-hidden="true">3</span><span>Add <b>Get Contents of URL</b>: <code>{origin}/v1/recipes/import</code>, Method <b>POST</b>, Request Body <b>JSON</b> with a Text key <code>url</code> set to the <b>URLs</b> variable. Add the header below.</span></li>
     <li><span class="n fig" aria-hidden="true">4</span><span>Add <b>Get Dictionary Value</b> for <code>summary</code>.</span></li>
@@ -29,8 +29,8 @@
     <p class="hint">Add <code>--expires 90d</code> to have it lapse. The token is shown once. List yours with <code>outpost token list {who}</code> and cancel one with <code>outpost token revoke &lt;id&gt;</code>.</p>
     <p class="hint">The token can do anything you can do in Sous, so revoke it if the phone is lost.</p>
   {:else}
-    <p>Header: <code>X-Sous-Person</code> = <code>{who}</code>.{#if !username}{' '}Pick who's cooking first.{/if}</p>
-    <p class="hint">This names who is saving; it isn't a password. Your phone has to reach Sous through <code>tailscale serve</code> or a reverse proxy, because Sous only listens on 127.0.0.1.</p>
+    <p>Header: <code>X-Sous-Person</code> = <code>{who}</code>.{#if !username}{' '}Pick who’s cooking first.{/if}</p>
+    <p class="hint">This names who is saving; it isn’t a password. Your phone has to reach Sous through <code>tailscale serve</code> or a reverse proxy, because Sous only listens on 127.0.0.1.</p>
   {/if}
 </div>
 

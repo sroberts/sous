@@ -65,7 +65,7 @@
         <li><CircleDashed size={18} aria-hidden="true" /><span>Not on the page: {list(missing)}. Fill in what you know below.</span></li>
       {/if}
       {#if photoProblem}
-        <li><CircleDashed size={18} aria-hidden="true" /><span>The photo couldn't be saved: {photoProblem} Add one of your own below.</span></li>
+        <li><CircleDashed size={18} aria-hidden="true" /><span>The photo couldn’t be saved: {photoProblem} Add one of your own below.</span></li>
       {/if}
       {#each report.warnings as w}
         <li><TriangleAlert size={18} aria-hidden="true" /><span>{w}</span></li>

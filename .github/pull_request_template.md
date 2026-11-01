@@ -18,5 +18,5 @@
 - [ ] New behaviour has tests
 - [ ] Works both under Outpost and on its own, where it applies
 - [ ] UI changes checked at phone width (390px) and on desktop
-- [ ] `README.md` and `spec.md` updated if behaviour or configuration changed
+- [ ] `README.md`, `docs/` and `spec.md` updated if behaviour or configuration changed
 - [ ] No personal data (`*.melarecipes`, `web/mock-local/`), secrets or whole third-party pages

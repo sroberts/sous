@@ -48,6 +48,9 @@ func validateInput(in RecipeInput) error {
 	if strings.TrimSpace(in.Title) == "" {
 		return Errorf(CodeInvalid, "title is required")
 	}
+	if err := checkSource(in.SourceURL); err != nil {
+		return err
+	}
 	return checkMinutes(map[string]*int{
 		"prep_minutes": in.PrepMinutes, "cook_minutes": in.CookMinutes, "total_minutes": in.TotalMinutes,
 	})
@@ -112,6 +115,13 @@ func (s *Service) Update(ctx context.Context, c identity.Caller, id string, vers
 		before, err := loadRecipe(ctx, tx, id, who)
 		if err != nil {
 			return err
+		}
+		// A source from before links were checked (a book title from Mela,
+		// say) can be saved back unchanged; a new one must be a web link.
+		if p := patch.SourceURL.Ptr(); p != nil && (before.SourceURL == nil || *p != *before.SourceURL) {
+			if err := checkSource(p); err != nil {
+				return err
+			}
 		}
 		if len(sets) > 0 {
 			q := "UPDATE recipes SET " + strings.Join(sets, ", ") + " WHERE id = ?"

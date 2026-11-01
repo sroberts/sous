@@ -17,6 +17,43 @@
     go(`/${params.size ? `?${params}` : ''}`, { replace: route.name === 'library' });
   }
 
+  // On a phone the masthead takes a fifth of the screen, so it slides away
+  // while you scroll down and comes back as soon as you scroll up, at the
+  // top of the page, or when focus or the person menu is in it. --bar-shown
+  // is how much of it is showing, for anything that sticks below it.
+  let bar;
+  let hidden = $state(false);
+  let height = $state(0);
+  $effect(() => {
+    const phone = matchMedia('(max-width: 760px)');
+    let last = scrollY;
+    const onscroll = () => {
+      const y = scrollY;
+      if (!phone.matches || y < height || menuOpen || bar.contains(document.activeElement)) {
+        hidden = false;
+        last = y;
+      } else if (Math.abs(y - last) > 8) {
+        hidden = y > last;
+        last = y;
+      }
+    };
+    const ro = new ResizeObserver(() => (height = bar.offsetHeight));
+    ro.observe(bar);
+    addEventListener('scroll', onscroll, { passive: true });
+    phone.addEventListener('change', onscroll);
+    return () => {
+      ro.disconnect();
+      removeEventListener('scroll', onscroll);
+      phone.removeEventListener('change', onscroll);
+    };
+  });
+  $effect(() => {
+    if (menuOpen) hidden = false;
+  });
+  $effect(() => {
+    document.documentElement.style.setProperty('--bar-shown', `${hidden ? 0 : height}px`);
+  });
+
   function onkey(e) {
     if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
       e.preventDefault();
@@ -30,7 +67,7 @@
 
 <svelte:window onkeydown={onkey} />
 
-<header class="bar">
+<header class="bar" class:hidden bind:this={bar} onfocusin={() => (hidden = false)}>
   <a class="mark" href="/" use:link aria-label="Sous, the library">Sous</a>
   <nav aria-label="Library">
     <a href="/" use:link class:on={route.name === 'library' && !show} aria-current={route.name === 'library' && !show ? 'page' : undefined}>Library</a>
@@ -257,11 +294,15 @@
   }
   @media (max-width: 760px) {
     .bar {
+      transition: transform 240ms var(--ease-out);
       height: auto;
       flex-wrap: wrap;
       gap: var(--space-2) var(--space-4);
       padding-top: var(--space-2);
       padding-bottom: var(--space-3);
+    }
+    .bar.hidden {
+      transform: translateY(-100%);
     }
     .who {
       margin-left: auto;

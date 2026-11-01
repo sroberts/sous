@@ -24,7 +24,7 @@
 
 {#if session.error && !session.loaded}
   <main class="down">
-    <h1>Sous isn't answering.</h1>
+    <h1>Sous isn’t answering.</h1>
     <p>{session.error.message}</p>
     <button class="btn" onclick={boot}>Try again</button>
   </main>
@@ -50,7 +50,7 @@
 {#if session.signedOut}
   <!-- Reloading this page takes the gateway's login, which returns here. -->
   <div class="signed-out" role="alert">
-    <p>Your Outpost sign-in has ended, so changes aren't being saved.</p>
+    <p>Your Outpost sign-in has ended, so changes aren’t being saved.</p>
     <a class="btn" href={location.href}>Sign in again</a>
   </div>
 {:else}

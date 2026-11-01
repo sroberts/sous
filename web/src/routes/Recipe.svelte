@@ -1,11 +1,13 @@
 <script>
+  import { tick } from 'svelte';
   import { ArrowLeft, Heart, Bookmark, Pencil, ExternalLink } from '@lucide/svelte';
   import { link } from '../lib/router.svelte.js';
   import { api } from '../lib/api.js';
   import { session, asPerson, patchSummary } from '../lib/session.svelte.js';
-  import { amount, ago, personName } from '../lib/format.js';
+  import { amount, ago, personName, webLink } from '../lib/format.js';
   import Plate from '../components/Plate.svelte';
   import Facts from '../components/Facts.svelte';
+  import { stickIfFits } from '../lib/stick.js';
 
   let { id } = $props();
   let recipe = $state(null);
@@ -38,6 +40,42 @@
   }
 
   const person = (u) => personName(u, session.people);
+
+  // Below 900px the columns stack, which puts the whole ingredient list
+  // between you and the method. There they become two tabs that stick under
+  // the masthead, each keeping its own place on the page.
+  let narrow = $state(false);
+  let tab = $state('ingredients');
+  let tabs = $state();
+  let tabsAt = $state(); // where the tabs sit before they stick
+  const placeOf = { ingredients: null, method: null };
+  $effect(() => {
+    const mq = matchMedia('(max-width: 900px)');
+    const set = () => (narrow = mq.matches);
+    set();
+    mq.addEventListener('change', set);
+    return () => mq.removeEventListener('change', set);
+  });
+
+  async function show(next, focus = false) {
+    if (next !== tab) {
+      const stickTop = parseFloat(getComputedStyle(tabs).top) || 0;
+      const home = tabsAt.getBoundingClientRect().top + scrollY - stickTop;
+      const stuck = scrollY > home;
+      placeOf[tab] = stuck ? scrollY : null;
+      tab = next;
+      await tick();
+      // Scrolled into one tab: open the other where you left it, or at its top.
+      if (stuck) scrollTo({ top: Math.max(placeOf[next] ?? home, home) });
+    }
+    if (focus) document.getElementById(`tab-${next}`)?.focus();
+  }
+  function tabKey(e) {
+    const to = { ArrowLeft: 'ingredients', Home: 'ingredients', ArrowRight: 'method', End: 'method' }[e.key];
+    if (!to) return;
+    e.preventDefault();
+    show(to, true);
+  }
 </script>
 
 {#if error}
@@ -63,7 +101,7 @@
         {#if recipe.source_url || recipe.tags.length}
           <p class="src">
             {#if recipe.tags.length}<span>{recipe.tags.join(', ')}</span>{#if recipe.source_url}<span class="dot" aria-hidden="true">·</span>{/if}{/if}
-            {#if recipe.source_url}<a href={recipe.source_url} target="_blank" rel="noreferrer">{recipe.source_host ?? recipe.source_url}<ExternalLink size={13} aria-hidden="true" /></a>{/if}
+            {#if webLink(recipe.source_url)}<a href={recipe.source_url.trim()} target="_blank" rel="noreferrer">{recipe.source_host ?? recipe.source_url}<ExternalLink size={13} aria-hidden="true" /></a>{:else if recipe.source_url}<span>{recipe.source_url}</span>{/if}
           </p>
         {/if}
         <div class="facts"><Facts {recipe} size="l" /></div>
@@ -78,16 +116,25 @@
           </button>
         </div>
       </div>
-      <div class="photo"><Plate hash={recipe.images[0]} title={recipe.title} /></div>
+      <div class="photo" class:none={!recipe.images[0]}><Plate hash={recipe.images[0]} title={recipe.title} /></div>
     </header>
 
     <div class="body">
-      <section class="ingredients sheet" aria-labelledby="ing-h">
-        <div class="col-head">
-          <h2 id="ing-h" class="label">Ingredients</h2>
-          <button class="as-written" aria-pressed={asWritten} onclick={() => (asWritten = !asWritten)}>
-            {asWritten ? 'Show measured' : 'Show as written'}
+      {#if narrow}
+        <div bind:this={tabsAt}></div>
+        <div class="tabs" role="tablist" aria-label="Recipe" bind:this={tabs}>
+          <button role="tab" id="tab-ingredients" aria-selected={tab === 'ingredients'} aria-controls="panel-ingredients" tabindex={tab === 'ingredients' ? 0 : -1} onkeydown={tabKey} onclick={() => show('ingredients')}>
+            Ingredients<span class="count fig">{recipe.ingredients.length}</span>
           </button>
+          <button role="tab" id="tab-method" aria-selected={tab === 'method'} aria-controls="panel-method" tabindex={tab === 'method' ? 0 : -1} onkeydown={tabKey} onclick={() => show('method')}>
+            Method<span class="count fig">{recipe.steps.length}</span>
+          </button>
+        </div>
+      {/if}
+      <section id="panel-ingredients" class="ingredients sheet" role={narrow ? 'tabpanel' : undefined} aria-labelledby={narrow ? 'tab-ingredients' : 'ing-h'} hidden={narrow && tab !== 'ingredients'} use:stickIfFits={32}>
+        <div class="col-head">
+          <h2 id="ing-h" class="label" class:visually-hidden={narrow}>Ingredients</h2>
+          <button class="as-written" aria-pressed={asWritten} onclick={() => (asWritten = !asWritten)}>Show as written</button>
         </div>
         {#each groups(recipe.ingredients) as g}
           {#if g.section}<h3 class="sect">{g.section}</h3>{/if}
@@ -106,11 +153,11 @@
         {/each}
       </section>
 
-      <section class="method sheet" aria-labelledby="method-h">
-        <div class="col-head"><h2 id="method-h" class="label">Method</h2><span class="label steps">{recipe.steps.length} steps</span></div>
+      <section id="panel-method" class="method sheet" role={narrow ? 'tabpanel' : undefined} aria-labelledby={narrow ? 'tab-method' : 'method-h'} hidden={narrow && tab !== 'method'}>
+        <div class="col-head"><h2 id="method-h" class="label" class:visually-hidden={narrow}>Method</h2><span class="label steps">{recipe.steps.length} {recipe.steps.length === 1 ? 'step' : 'steps'}</span></div>
         {#each groups(recipe.steps) as g}
           {#if g.section}<h3 class="sect">{g.section}</h3>{/if}
-          <ol>
+          <ol start={recipe.steps.indexOf(g.rows[0]) + 1}>
             {#each g.rows as s}
               <li><span class="n fig" aria-hidden="true">{recipe.steps.indexOf(s) + 1}</span><p>{s.text}</p></li>
             {/each}
@@ -241,16 +288,46 @@
     margin-top: var(--space-4);
     align-items: start;
   }
+  .tabs {
+    position: sticky;
+    top: var(--bar-shown, 0px);
+    z-index: 4;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin: 0 calc(var(--gutter) * -1) calc(var(--space-4) * -1);
+    padding: 0 var(--gutter);
+    background: var(--pass);
+    border-bottom: 1px solid var(--perf);
+    transition: top 240ms var(--ease-out);
+  }
+  .tabs button {
+    display: inline-flex;
+    justify-content: center;
+    align-items: baseline;
+    gap: var(--space-2);
+    min-height: 48px;
+    padding: var(--space-3) 0 0;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    background: none;
+    font-size: var(--ui);
+    font-weight: 700;
+    color: var(--ink-2);
+  }
+  .tabs button[aria-selected='true'] {
+    color: var(--ink);
+    border-bottom-color: var(--ink);
+  }
+  .count {
+    color: var(--ink-3);
+  }
   .sheet {
     background: var(--ticket);
     padding: var(--space-4) var(--space-5) var(--space-6);
   }
-  .ingredients {
+  .ingredients:global(.stuck) {
     position: sticky;
     top: calc(var(--bar) + var(--space-4));
-    max-height: calc(100dvh - var(--bar) - var(--space-6));
-    overflow-y: auto;
-    scrollbar-width: thin;
   }
   .col-head {
     display: flex;
@@ -274,8 +351,12 @@
     text-underline-offset: 0.2em;
     padding: var(--space-1) 0;
   }
-  .as-written:hover {
+  .as-written:hover,
+  .as-written[aria-pressed='true'] {
     color: var(--red);
+  }
+  .as-written[aria-pressed='true'] {
+    text-decoration-color: var(--red);
   }
   .sect {
     font-size: var(--ui);
@@ -320,7 +401,7 @@
   }
   .notes {
     margin-top: var(--space-3);
-    max-width: calc(65ch + 3rem + var(--space-3));
+    max-width: 65ch;
     white-space: pre-line;
   }
   .colophon {
@@ -346,15 +427,27 @@
       margin: -4px var(--space-2) 0;
       padding: var(--space-5) var(--space-4) calc(var(--space-5) + var(--tear));
     }
-    .photo {
-      order: -1;
+    /* Title, facts and Begin cooking come first; the description and the
+       photo follow, the photo as a short band, and a photo-less recipe shows
+       no initial here. */
+    .head {
+      display: flex;
+      flex-direction: column;
+    }
+    .desc {
+      order: 1;
+    }
+    .photo :global(.plate) {
+      max-height: 40vh;
+    }
+    .photo.none {
+      display: none;
     }
     .body {
       grid-template-columns: 1fr;
     }
-    .ingredients {
+    .ingredients:global(.stuck) {
       position: static;
-      max-height: none;
     }
     .ingredients,
     .method {
@@ -366,6 +459,15 @@
     }
   }
   @media (max-width: 760px) {
+    /* Tags and source each take a line, so no separator is left hanging at
+       the end of the tags when the source wraps. */
+    .src {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .dot {
+      display: none;
+    }
     .acts .btn:not(.cook) {
       flex: 1;
     }

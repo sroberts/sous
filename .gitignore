@@ -8,6 +8,7 @@ web/mock-local/
 internal/ui/dist/
 .impeccable/mocks/
 .impeccable/review/
+.impeccable/critique/
 .impeccable/questions/*
 !.impeccable/questions/roll.json
 

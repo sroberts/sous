@@ -36,6 +36,22 @@ func NormalizeSourceURL(u string) string {
 	return out
 }
 
+// IsWebLink reports whether u is an absolute http or https link. A source is
+// shown as a link, so it may only newly be set to one of these: a
+// javascript: or data: link would run when someone clicked it.
+func IsWebLink(u string) bool {
+	p, err := url.Parse(strings.TrimSpace(u))
+	return err == nil && p.Host != "" && (p.Scheme == "http" || p.Scheme == "https")
+}
+
+// checkSource rejects a source that is neither empty nor a web link.
+func checkSource(u *string) error {
+	if u == nil || strings.TrimSpace(*u) == "" || IsWebLink(*u) {
+		return nil
+	}
+	return Errorf(CodeInvalid, "source_url must be an http or https link")
+}
+
 // FindBySource returns the recipes whose source link matches any of urls once
 // normalized, trashed ones included (Deleted is set). Live recipes come
 // first, then the most recently updated. The result is never nil.
