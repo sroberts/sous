@@ -19,10 +19,12 @@ the UI built: `cd web && npm run build && cd .. && go run ./cmd/sous --port
 
 1. Open the Peach Melba recipe from the library.
    - URL is `/r/<id>`; title, cover image, ingredients and steps show.
+   - On phones the title, facts and Begin cooking come before the photo.
    - The colophon reads "Added by Sous …", never `_sous`.
    - The notes hold the original text and the source citation.
 2. Open the French omelette.
-   - No image: the letter tile shows instead of a broken image.
+   - No image: on desktop the letter tile shows instead of a broken image;
+     on phones the photo slot is left out, so Begin cooking moves up.
 
 ## 3. Who's cooking
 
@@ -45,7 +47,9 @@ the UI built: `cd web && npm run build && cd .. && go run ./cmd/sous --port
 1. On the gazpacho, choose Edit (`/r/<id>/edit`).
    - The editor shows "Sous" as the author, not `_sous`.
    - Ingredient lines show the live parse preview.
-2. Change the title and save.
+2. Change the title, then Cancel: "Discard your changes?" appears with
+   focus on Keep editing (a double click on Cancel doesn't discard).
+   Keep editing, then save with Cmd/Ctrl+S.
    - The recipe page shows the new title; the colophon names the editor
      (Ada) as last changed.
 

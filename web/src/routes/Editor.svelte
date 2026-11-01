@@ -158,16 +158,21 @@
   // clears it and then navigates is never stopped.
   let leaving = $state(null); // the router's proceed, while asking
   let keepBtn = $state();
+  let askedAt = 0;
   $effect(() => {
     if (!dirty) return;
     return setLeaveGuard((proceed) => {
       if (!dirty) return true;
       leaving = proceed;
+      askedAt = performance.now();
       tick().then(() => keepBtn?.focus());
       return false;
     });
   });
   function discard() {
+    // Discard sits near where Cancel was: a double click on Cancel must not
+    // answer the question it just asked.
+    if (performance.now() - askedAt < 500) return;
     const proceed = leaving;
     leaving = null;
     dirty = false;
@@ -293,6 +298,10 @@
       if (!r) return;
       dirty = false;
       await refreshIndex();
+      // Saved: leave even if a key was pressed while the index refreshed, so
+      // the leave guard can't hold the page on a version (or, for a new
+      // recipe, a create) that has already gone through.
+      dirty = false;
       // An import's URL would fetch again, so it never stays in history.
       go(`/r/${r.id}`, { replace: !id || !!draft });
     } catch (err) {
@@ -310,6 +319,7 @@
     // Leaving the page clears the id prop, so Undo needs its own copy.
     const { title } = form;
     const trashed = id;
+    dirty = false; // trashed: leave even if a key was pressed meanwhile
     go('/');
     toast(`${title} is in the trash.`, {
       label: 'Undo',
