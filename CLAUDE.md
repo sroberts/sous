@@ -3,9 +3,14 @@
 A household recipe manager: web UI, REST API, and MCP from one Go binary. It
 runs as a service under Outpost or on its own; keep both working.
 
-- [`README.md`](README.md): what Sous is and the decisions behind it.
+- [`README.md`](README.md): what Sous is and how to get it running. The
+  guides in [`docs/`](docs) cover the rest for people using Sous; keep both
+  in step with behaviour.
 - [`spec.md`](spec.md): the basics design spec. Read it before changing
   anything structural.
+- [`DESIGN.md`](DESIGN.md) and [`PRODUCT.md`](PRODUCT.md): the UI's visual
+  system and who it's for. UI work follows them rather than inventing a new
+  look.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md): workflow, CI commands, and review rules.
 - [`outpost-spec.md`](outpost-spec.md): the Outpost service spec Sous must
   conform to. Don't change behaviour in a way that breaks its checklist
@@ -30,5 +35,13 @@ Never commit or push directly to `main`.
   dependencies).
 - **Python** (the Mela import script, any tooling) is managed with `uv`.
 - **Tests** are not changed without the user's explicit authorization. If a
-  test looks wrong, say so; don't edit it.
-- The Mela export (`*.melarecipes`) is personal data and is never committed.
+  test looks wrong, say so; don't edit it. Golden files
+  (`openapi.golden.json`, `parse_golden.json`) count as tests.
+- **Personal data is never committed:** the Mela export (`*.melarecipes`),
+  `web/mock-local/`, and `*.local.json`.
+- **User-facing changes** get an entry under `[Unreleased]` in
+  [`CHANGELOG.md`](CHANGELOG.md).
+- **Sample recipes** (`internal/samples/`) use only public-domain text and
+  public-domain or CC0 images, recorded in `SOURCES.md`. Recipes inspired by
+  living or recent chefs are written fresh, never copied or closely
+  paraphrased from their books.
