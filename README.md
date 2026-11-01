@@ -16,7 +16,7 @@ it keeps lives in one folder you can back up.
 - **Import from a link.** Paste a link, or use the bookmarklet or iOS share
   sheet. Sous reads the recipe the page publishes and opens it for you to
   check before anything is saved. Sites that block it fall back to pasting
-  the text.
+  the text. A "Save to Sous" Siri Shortcut saves a link without opening Sous.
 - **Find what to cook.** Browse by course, search by title, tag or
   ingredient, or find recipes that use what you have.
 - **Cook mode.** One step at a time in large type, with ingredients to tick

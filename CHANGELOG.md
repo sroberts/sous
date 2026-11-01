@@ -8,6 +8,11 @@ include breaking changes, and they're called out here.
 ## [Unreleased]
 
 ### Added
+- `POST /v1/recipes/import` reads a recipe link and saves it in one call,
+  returning a short `summary` to speak. A link already in Sous returns the
+  existing recipe, restoring it from the trash if needed.
+- A "Save to Sous" Siri Shortcut, with setup steps on the `/import` page, to
+  save a recipe from your phone without opening Sous.
 - A new Sous comes with twelve recipes, credited to "Sous": seven historic
   ones (Glasse 1751 to Escoffier 1907), each with a modern adaptation, the
   original text and a period illustration, and five classics written for

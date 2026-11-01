@@ -65,6 +65,27 @@ type ImportResult struct {
 	Saved *Recipe `json:"saved" jsonschema:"the created recipe, when save was true"`
 }
 
+// CaptureRequest is the body of POST /v1/recipes/import.
+type CaptureRequest struct {
+	URL string `json:"url" jsonschema:"the recipe page to read and save"`
+}
+
+// CaptureResult is a link read and saved in one step (issue #33), shaped
+// for a shortcut: Summary is the sentence it speaks, the rest is for
+// opening the recipe. A link already in Sous is that copy, not a new one.
+type CaptureResult struct {
+	Summary   string   `json:"summary" jsonschema:"one sentence saying what happened, to read aloud"`
+	ID        string   `json:"id" jsonschema:"recipe ID"`
+	Title     string   `json:"title"`
+	Version   int      `json:"version"`
+	Path      string   `json:"path" jsonschema:"the recipe's page in the web UI, relative to Sous"`
+	URL       *string  `json:"url" jsonschema:"the recipe's page as a full link, through the Outpost gateway; null on the direct route"`
+	Duplicate bool     `json:"duplicate" jsonschema:"the link was already in Sous; nothing new was saved"`
+	Restored  bool     `json:"restored" jsonschema:"the copy already in Sous was in the trash and has been restored"`
+	Missing   []string `json:"missing" jsonschema:"what the page lacked: title, ingredients, steps, times, yield or image"`
+	Warnings  []string `json:"warnings"`
+}
+
 // Import error codes. They travel as 422 responses, separate from
 // recipes.Error, because not_found and too_large already mean other
 // statuses there.

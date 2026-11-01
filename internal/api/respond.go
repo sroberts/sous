@@ -10,12 +10,15 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/sroberts/sous/internal/importer"
 	"github.com/sroberts/sous/internal/recipes"
 )
 
 // errorBody is every error response: {"error":{"code","message"}}.
+// Summary is set only on a spoken route's errors.
 type errorBody struct {
-	Error errorDetail `json:"error"`
+	Error   errorDetail `json:"error"`
+	Summary string      `json:"summary,omitempty" jsonschema:"one sentence to read aloud; only importRecipe sends it"`
 }
 
 type errorDetail struct {
@@ -26,8 +29,9 @@ type errorDetail struct {
 // importErrorBody is a 422: the error plus what the page still offered, to
 // start a pasted recipe from.
 type importErrorBody struct {
-	Error errorDetail         `json:"error"`
-	Page  *recipes.ImportPage `json:"page" jsonschema:"the page's link, title and photo, when it was reached"`
+	Error   errorDetail         `json:"error"`
+	Page    *recipes.ImportPage `json:"page" jsonschema:"the page's link, title and photo, when it was reached"`
+	Summary string              `json:"summary,omitempty" jsonschema:"one sentence to read aloud; only importRecipe sends it"`
 }
 
 // staleBody is a 412: the error plus the recipe as it now stands.
@@ -63,8 +67,28 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 }
 
 func writeError(w http.ResponseWriter, status int, code, message string) {
+	writeErrorFor(w, false, status, code, message)
+}
+
+// writeErrorFor writes an error, adding a summary to read aloud when the
+// route is spoken.
+func writeErrorFor(w http.ResponseWriter, spoken bool, status int, code, message string) {
+	b := errorBody{Error: errorDetail{code, message}}
+	if spoken {
+		b.Summary = spokenSummary(code, message)
+	}
 	w.Header().Set("Cache-Control", "no-store")
-	writeJSON(w, status, errorBody{errorDetail{code, message}})
+	writeJSON(w, status, b)
+}
+
+// spokenSummary is the sentence a shortcut reads aloud for an error that
+// isn't an import's: the message, except for who_are_you, where the fix is
+// in the shortcut rather than in Sous.
+func spokenSummary(code, message string) string {
+	if code == recipes.CodeWhoAreYou {
+		return "Sous doesn't know who you are. Check the header in the shortcut: an Outpost token, or X-Sous-Person when Sous runs on its own."
+	}
+	return message
 }
 
 // writeRecipe sends a full recipe with its version as the ETag.
@@ -75,16 +99,23 @@ func writeRecipe(w http.ResponseWriter, status int, r recipes.Recipe) {
 
 func etag(version int) string { return `"` + strconv.Itoa(version) + `"` }
 
-// fail writes err as a JSON error. Anything that isn't a domain error is a
-// storage failure: logged, and reported as 503 (spec §4.1) without its cause.
-func (a *api) fail(w http.ResponseWriter, r *http.Request, err error) {
+// fail writes err as a JSON error, with a summary when spoken. Anything that
+// isn't a domain error is a storage failure: logged, and reported as 503
+// (spec §4.1) without its cause.
+func (a *api) fail(w http.ResponseWriter, r *http.Request, err error, spoken bool) {
 	var re *recipes.Error
 	var ie *recipes.ImportError
 	var tooBig *http.MaxBytesError
 	switch {
 	case errors.As(err, &ie):
+		b := importErrorBody{Error: errorDetail{ie.Code, ie.Message}, Page: ie.Page}
+		if spoken {
+			if b.Summary = importer.Spoken(ie.Code); b.Summary == "" {
+				b.Summary = ie.Message
+			}
+		}
 		w.Header().Set("Cache-Control", "no-store")
-		writeJSON(w, http.StatusUnprocessableEntity, importErrorBody{errorDetail{ie.Code, ie.Message}, ie.Page})
+		writeJSON(w, http.StatusUnprocessableEntity, b)
 		return
 	case errors.As(err, &re):
 		status, ok := statusOf[re.Code]
@@ -97,15 +128,15 @@ func (a *api) fail(w http.ResponseWriter, r *http.Request, err error) {
 			writeJSON(w, status, staleBody{errorDetail{re.Code, re.Message}, *re.Current})
 			return
 		}
-		writeError(w, status, re.Code, re.Message)
+		writeErrorFor(w, spoken, status, re.Code, re.Message)
 		return
 	case errors.As(err, &tooBig):
-		writeError(w, http.StatusRequestEntityTooLarge, codeTooLarge,
+		writeErrorFor(w, spoken, http.StatusRequestEntityTooLarge, codeTooLarge,
 			fmt.Sprintf("the body is larger than the %d byte limit", tooBig.Limit))
 		return
 	}
 	a.d.Log.Error("request failed", "method", r.Method, "path", r.URL.Path, "err", err)
-	writeError(w, http.StatusServiceUnavailable, "unavailable", "Sous can't reach its storage right now")
+	writeErrorFor(w, spoken, http.StatusServiceUnavailable, "unavailable", "Sous can't reach its storage right now")
 }
 
 // ifMatch reads the recipe version from If-Match, accepting "3", W/"3" or 3.

@@ -16,6 +16,15 @@ Both open `/import?url=…`. Agents use the MCP tool `import_recipe`
 ([AI agents and the API](agents.md)). Details are in
 [`spec.md`](../spec.md) §14.
 
+## With Siri
+
+To read and save in one step, `POST /v1/recipes/import` with `{"url": "…"}`.
+It saves the recipe, or returns the copy you already have, and replies with a
+`summary` short enough to speak. The `/import` page shows how to build a Siri
+Shortcut on it: share a recipe page, or say "Hey Siri, Save to Sous". Under
+Outpost, the Shortcut signs in with an access token
+([AI agents and the API](agents.md)).
+
 ## Moving from Mela
 
 A one-time, throwaway script loads the Mela export through the REST API. The

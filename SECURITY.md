@@ -23,6 +23,13 @@ The areas where a bug could hurt someone running Sous:
 - **Fetching pages for import** (`internal/safefetch`): Sous fetches links
   people give it, and must never reach private or local addresses, or the
   machine it runs on.
+- **Saving links without a browser** (`POST /v1/recipes/import`): it fetches
+  and saves arbitrary links in one call, through the same `safefetch` guard.
+  Under Outpost it is reached with an Outpost access token, which Outpost
+  checks before Sous sees the request; on its own it relies on the household
+  trust model below. Rate limiting is deliberately not built: every call needs
+  a person, the same fetch is open through preview and MCP, the importer caps
+  concurrency and time, and Outpost throttles rejected tokens.
 - **Identity** (`internal/identity`): verifying the Outpost gateway's signed
   token, and never letting a request act as someone else when the gateway is
   in use.

@@ -3,7 +3,7 @@
   "info": {
     "title": "Sous",
     "version": "test",
-    "description": "Sous is a household recipe manager. Every response is JSON except images.\n\nErrors are always {\"error\":{\"code\",\"message\"}}; branch on code, which is stable.\n\nIdentity: behind the Outpost gateway, the caller comes from its signed token. Otherwise\nname yourself with the X-Sous-Person header (a username from GET /v1/people). Reads need\nno person; writes from nobody get 401 who_are_you.\n\nConcurrency: recipes carry a version, returned as the ETag. PATCH and DELETE need\nIf-Match with that version; a stale one gets 412 with the current recipe.\n\nLists page by opaque cursor: pass next_cursor back as cursor until it is null."
+    "description": "Sous is a household recipe manager. Every response is JSON except images.\n\nErrors are always {\"error\":{\"code\",\"message\"}}; branch on code, which is stable. importRecipe\nadds a top-level summary, a sentence to read aloud.\n\nIdentity: behind the Outpost gateway, the caller comes from its signed token. Otherwise\nname yourself with the X-Sous-Person header (a username from GET /v1/people). Reads need\nno person; writes from nobody get 401 who_are_you.\n\nConcurrency: recipes carry a version, returned as the ETag. PATCH and DELETE need\nIf-Match with that version; a stale one gets 412 with the current recipe.\n\nLists page by opaque cursor: pass next_cursor back as cursor until it is null."
   },
   "paths": {
     "/v1/changes": {
@@ -872,6 +872,112 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "starting, or identity_unavailable: the gateway's keys cannot be fetched",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/recipes/import": {
+      "post": {
+        "operationId": "importRecipe",
+        "summary": "Read a recipe from a link and save it in one step, for a shortcut. A link already in Sous answers with that copy, restored if it was in the trash. Errors carry a summary to read aloud",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Person"
+          },
+          {
+            "$ref": "#/components/parameters/Via"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaptureRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaptureResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid, invalid_cursor or unknown_image; the message says what is wrong",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "who_are_you (a write from nobody), unknown_person, invalid_identity or gateway_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "cross_origin: a browser request from another site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "too_large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "the import failed: blocked, paywalled, not_found, no_recipe_found, timeout, too_large, unsupported_url or site_error; page holds what the page still offered, to start a pasted recipe from",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportError"
                 }
               }
             }
@@ -1768,6 +1874,89 @@
   },
   "components": {
     "schemas": {
+      "CaptureRequest": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "the recipe page to read and save"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "additionalProperties": false
+      },
+      "CaptureResult": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "string",
+            "description": "one sentence saying what happened, to read aloud"
+          },
+          "id": {
+            "type": "string",
+            "description": "recipe ID"
+          },
+          "title": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer"
+          },
+          "path": {
+            "type": "string",
+            "description": "the recipe's page in the web UI, relative to Sous"
+          },
+          "url": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "the recipe's page as a full link, through the Outpost gateway; null on the direct route"
+          },
+          "duplicate": {
+            "type": "boolean",
+            "description": "the link was already in Sous; nothing new was saved"
+          },
+          "restored": {
+            "type": "boolean",
+            "description": "the copy already in Sous was in the trash and has been restored"
+          },
+          "missing": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "what the page lacked: title, ingredients, steps, times, yield or image"
+          },
+          "warnings": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "summary",
+          "id",
+          "title",
+          "version",
+          "path",
+          "url",
+          "duplicate",
+          "restored",
+          "missing",
+          "warnings"
+        ],
+        "additionalProperties": false
+      },
       "Change": {
         "type": "object",
         "properties": {
@@ -1870,6 +2059,10 @@
         "properties": {
           "error": {
             "$ref": "#/components/schemas/ErrorDetail"
+          },
+          "summary": {
+            "type": "string",
+            "description": "one sentence to read aloud; only importRecipe sends it"
           }
         },
         "required": [
@@ -1966,6 +2159,10 @@
                 "type": "null"
               }
             ]
+          },
+          "summary": {
+            "type": "string",
+            "description": "one sentence to read aloud; only importRecipe sends it"
           }
         },
         "required": [
