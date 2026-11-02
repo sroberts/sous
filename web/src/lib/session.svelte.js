@@ -31,6 +31,7 @@ export const session = $state({
   error: null,
   asking: false, // the who's-cooking prompt is open
   toast: null, // { id, message, action? }
+  version: null, // the running Sous, from /v1/status
 });
 
 /** A short note at the foot of the page, with an optional action such as Undo.
@@ -49,6 +50,8 @@ onSignedOut(() => {
 });
 
 export async function boot() {
+  // For the footer; offline it stays as it was.
+  api.status().then((st) => (session.version = st.version), () => {});
   try {
     const [me, { items: people }, recipes] = await Promise.all([signedIn(), api.people(), api.allRecipes()]);
     session.people = people;
