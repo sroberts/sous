@@ -7,7 +7,7 @@ include breaking changes, and they're called out here.
 
 ## [Unreleased]
 
-## [0.3.0] - 2026-11-01
+## [0.3.0] - 2026-11-02
 
 ### Added
 - A footer shows the running version of Sous, linked to its release notes,
