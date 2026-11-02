@@ -42,6 +42,30 @@ gitignored `web/mock-local/`:
 uv run --no-project scripts/mela-sample/sample.py Recipes.melarecipes web/mock-local
 ```
 
+### Offline and the service worker
+
+`npm run dev` registers no service worker (and removes one left behind), so
+hot reload behaves as usual. To try the installed app, run the production
+build against the mock API:
+
+```sh
+cd web && npm run build && npm run preview
+```
+
+Open the preview address in a browser and load the library once. To go
+offline, stop the preview server rather than switching the network off in
+DevTools: the DevTools switch doesn't stop the worker's own requests, so the
+worker still reaches the server. `curl -X POST localhost:4173/__mock/session
+-d '{"signedIn":false}'` makes the mock behave like a lapsed Outpost sign-in
+(`{"signedIn":true}` undoes it).
+
+`npm test` runs the unit tests for the offline helpers (`node --test`, no
+dependencies). The build stamps `sw.js` with a hash of the bundle, so every
+build is a new version of the worker. The app icons live in
+`web/public/icons`; `uv run scripts/icons/icons.py` redraws them all. If a
+worker from an earlier build gets in the way of `127.0.0.1:8099`, remove it
+under DevTools, Application, Service workers.
+
 ## Checking the importer against real sites
 
 The importer's tests run offline against saved fixtures. To check the real

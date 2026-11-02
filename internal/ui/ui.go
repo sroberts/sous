@@ -26,16 +26,24 @@ const notBuiltPage = `<!doctype html>
 </body></html>
 `
 
-// Handler serves dist: /assets/* with an immutable cache header, a missing
-// path with a file extension as 404, and anything else as index.html with
-// no-cache for client-side routing. Without dist it serves a "UI not built"
-// page.
+// Handler serves dist: /assets/* with an immutable cache header, the service
+// worker and web app manifest with no-cache (a stale worker would pin old
+// builds, and Go has no MIME type for .webmanifest), a missing path with a file
+// extension as 404, and anything else as index.html with no-cache for
+// client-side routing. Without dist it serves a "UI not built" page.
 func Handler(log *slog.Logger) http.Handler {
 	dist, err := fs.Sub(files, "dist")
 	if err != nil {
 		panic(err) // fs.Sub fails only on an invalid path
 	}
 	return newHandler(dist, log)
+}
+
+// rootFiles are the files at the root of dist that need headers of their own.
+// Every other root file is served as the file server has it.
+var rootFiles = map[string]map[string]string{
+	"sw.js":                {"Cache-Control": "no-cache"},
+	"manifest.webmanifest": {"Cache-Control": "no-cache", "Content-Type": "application/manifest+json"},
 }
 
 func newHandler(dist fs.FS, log *slog.Logger) http.Handler {
@@ -58,6 +66,9 @@ func newHandler(dist fs.FS, log *slog.Logger) http.Handler {
 			if fi, err := fs.Stat(dist, name); err == nil && !fi.IsDir() {
 				if strings.HasPrefix(name, "assets/") {
 					w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+				}
+				for k, v := range rootFiles[name] {
+					w.Header().Set(k, v)
 				}
 				files.ServeHTTP(w, r)
 				return

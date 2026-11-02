@@ -24,6 +24,9 @@ it keeps lives in one folder you can back up.
 - **Shared, but personal.** One library for the household; favorites and
   want-to-cook are each person's own, every change records who made it, and
   deleted recipes can be restored.
+- **Works offline.** Install it to your home screen; the library, recipes
+  and Cook mode keep working without a connection, with photos you've already
+  seen. Changes need one.
 - **Agents built in.** AI assistants such as Claude can use the whole
   library over MCP, with the same rights and the same history as the web UI.
 - **Run it your way.** As a service under
@@ -89,7 +92,8 @@ bookmarklet, the iOS Shortcut and moving from Mela.
 ## Guides
 
 - [Running Sous](docs/running.md): Outpost day to day, the login gateway,
-  keeping Sous running on its own, backups and updates.
+  keeping Sous running on its own, backups and updates, and installing it on
+  a phone.
 - [Getting recipes in](docs/importing.md): links, the bookmarklet, the iOS
   Shortcut, and moving from Mela.
 - [AI agents and the API](docs/agents.md): connecting MCP clients, and the
@@ -104,7 +108,7 @@ Planned in [`spec.md`](spec.md) §13, not built yet:
 - Scaling a recipe by servings, and US ↔ metric conversion
 - A weekly meal plan and a combined shopping list grouped by aisle
 - Collections, ratings, personal notes and cook history
-- An installable app that works offline for recipes you've opened
+- An offline shopping list that syncs when you're back online
 - Passwords for running Sous on its own ([#6](https://github.com/sroberts/sous/issues/6))
 
 ## Help and contributing

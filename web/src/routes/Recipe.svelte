@@ -3,7 +3,9 @@
   import { ArrowLeft, Heart, Bookmark, Pencil, ExternalLink } from '@lucide/svelte';
   import { link } from '../lib/router.svelte.js';
   import { api } from '../lib/api.js';
-  import { session, asPerson, patchSummary } from '../lib/session.svelte.js';
+  import { session, asPerson, patchSummary, toast } from '../lib/session.svelte.js';
+  import { getRecipe } from '../lib/library.js';
+  import { isOffline } from '../lib/net.svelte.js';
   import { amount, ago, personName, webLink } from '../lib/format.js';
   import Plate from '../components/Plate.svelte';
   import Facts from '../components/Facts.svelte';
@@ -14,7 +16,7 @@
   let error = $state(null);
   let asWritten = $state(false);
 
-  api.recipe(id).then(
+  getRecipe(id).then(
     (r) => {
       recipe = r;
       document.title = `${r.title} · Sous`;
@@ -33,7 +35,13 @@
 
   async function toggle(flag) {
     const next = { ...recipe.mine, [flag]: !recipe.mine[flag] };
-    const saved = await asPerson(() => api.setMine(id, { [flag]: next[flag] }));
+    let saved;
+    try {
+      saved = await asPerson(() => api.setMine(id, { [flag]: next[flag] }));
+    } catch (err) {
+      toast(err.message);
+      return;
+    }
     if (!saved) return;
     recipe.mine = saved;
     patchSummary(id, { mine: saved });
@@ -80,8 +88,13 @@
 
 {#if error}
   <main class="missing">
-    <h1>{error.status === 404 ? 'That recipe isn’t in the library.' : 'This recipe didn’t load.'}</h1>
-    <p>{error.message}</p>
+    {#if error.code === 'not_on_device'}
+      <h1>This recipe isn’t on this device yet.</h1>
+      <p>It will be once you’re back online.</p>
+    {:else}
+      <h1>{error.status === 404 ? 'That recipe isn’t in the library.' : 'This recipe didn’t load.'}</h1>
+      <p>{error.message}</p>
+    {/if}
     <a class="btn" href="/" use:link>Back to the library</a>
   </main>
 {:else if !recipe}
@@ -108,10 +121,10 @@
         {#if recipe.description}<p class="desc">{recipe.description}</p>{/if}
         <div class="acts">
           <a class="btn primary cook" href="/r/{id}/cook" use:link>Begin cooking</a>
-          <button class="btn" aria-pressed={recipe.mine.favorite} onclick={() => toggle('favorite')}>
+          <button class="btn" aria-pressed={recipe.mine.favorite} disabled={isOffline()} onclick={() => toggle('favorite')}>
             <Heart aria-hidden="true" fill={recipe.mine.favorite ? 'currentColor' : 'none'} />Favorite
           </button>
-          <button class="btn" aria-pressed={recipe.mine.want_to_cook} onclick={() => toggle('want_to_cook')}>
+          <button class="btn" aria-pressed={recipe.mine.want_to_cook} disabled={isOffline()} onclick={() => toggle('want_to_cook')}>
             <Bookmark aria-hidden="true" fill={recipe.mine.want_to_cook ? 'currentColor' : 'none'} />Want to cook
           </button>
         </div>

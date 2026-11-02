@@ -8,6 +8,11 @@ include breaking changes, and they're called out here.
 ## [Unreleased]
 
 ### Added
+- Sous installs as an app and works offline. The library, recipes and Cook
+  mode keep working without a connection, with the library saved to the device
+  and photos saved as you view them. Saving changes needs a connection. Under
+  the Outpost gateway, a lapsed sign-in still opens the saved library
+  read-only. See "On your phone or tablet" in `docs/running.md`.
 - `POST /v1/recipes/import` reads a recipe link and saves it in one call,
   returning a short `summary` to speak. A link already in Sous returns the
   existing recipe, restoring it from the trash if needed.

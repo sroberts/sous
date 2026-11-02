@@ -1,5 +1,7 @@
 // The /v1 client. The UI uses only what any API client could (spec.md §4).
 
+import { net, isOffline, unreachable, reached, OFFLINE_SAVE } from './net.svelte.js';
+
 export class ApiError extends Error {
   constructor(status, body) {
     super(body?.error?.message || `Request failed (${status})`);
@@ -7,6 +9,14 @@ export class ApiError extends Error {
     this.code = body?.error?.code || 'error';
     this.body = body;
   }
+}
+
+/** A request that needs a connection Sous doesn't have. */
+function offline(message) {
+  message ??= net.online ? 'Sous isn’t answering. Check the connection and try again.' : 'You’re offline.';
+  const err = new ApiError(0, { error: { code: 'offline', message } });
+  err.deviceOffline = !net.online; // as it was when the request failed
+  return err;
 }
 
 let person = null;
@@ -35,13 +45,23 @@ async function request(method, path, { body, version, raw } = {}) {
     payload = JSON.stringify(body);
     headers['content-type'] = 'application/json';
   }
+  // Reading works offline from what this device has stored; changes don't
+  // queue, so a write without a connection stops here.
+  if (method !== 'GET' && isOffline()) throw offline(OFFLINE_SAVE);
   let res;
   try {
     // Sous never redirects, so a redirect is the gateway sending us to log in.
     res = await fetch(path, { method, headers, body: payload, redirect: 'manual' });
   } catch {
-    throw new ApiError(0, { error: { code: 'offline', message: "Sous isn’t answering. Check the connection and try again." } });
+    unreachable();
+    throw offline();
   }
+  // A proxy in front of Sous (tailscale serve, say) answers for it while it is down.
+  if (method === 'GET' && [502, 503, 504].includes(res.status) && !res.headers.get('content-type')?.includes('json')) {
+    unreachable();
+    throw offline();
+  }
+  reached();
   // Sous answers in JSON. A redirect, or a 401 page, comes from the Outpost
   // gateway: the sign-in has ended (spec.md §5).
   if (res.type === 'opaqueredirect' || (res.status === 401 && !res.headers.get('content-type')?.includes('json'))) {
@@ -50,11 +70,16 @@ async function request(method, path, { body, version, raw } = {}) {
   }
   if (res.status === 204) return null;
   const data = await res.json().catch(() => null);
-  if (!res.ok) throw new ApiError(res.status, data);
+  if (!res.ok) {
+    const err = new ApiError(res.status, data);
+    err.retryAfter = res.headers.get('retry-after');
+    throw err;
+  }
   return data;
 }
 
 export const api = {
+  status: () => request('GET', '/v1/status'),
   me: () => request('GET', '/v1/me'),
   people: () => request('GET', '/v1/people'),
   addPerson: (name) => request('POST', '/v1/people', { body: { name } }),

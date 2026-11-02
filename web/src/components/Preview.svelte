@@ -1,22 +1,32 @@
 <script>
+  import { untrack } from 'svelte';
   import { link } from '../lib/router.svelte.js';
-  import { api } from '../lib/api.js';
+  import { getRecipe } from '../lib/library.js';
   import { amount } from '../lib/format.js';
+  import { NOT_ON_DEVICE } from '../lib/net.svelte.js';
   import Facts from './Facts.svelte';
   import Plate from './Plate.svelte';
 
   let { summary, using = [] } = $props();
 
-  // Full records are fetched as rows are selected, and remembered.
+  // Full records are fetched as rows are selected, and remembered. The
+  // library keys this on the id, so it fetches again only when the summary's
+  // version moves; what comes back may be older (a copy on this device, or a
+  // stale index) and is shown as it is.
   const cache = (globalThis.__sousPreview ??= new Map());
   let recipe = $state(cache.get(summary.id) ?? null);
+  let missing = $state(false); // offline, and not stored on this device yet
   $effect(() => {
-    if (recipe && recipe.version === summary.version) return;
+    const version = summary.version;
+    if (untrack(() => recipe)?.version === version) return;
     let live = true;
-    api.recipe(summary.id).then((r) => {
-      cache.set(r.id, r);
-      if (live) recipe = r;
-    });
+    getRecipe(summary.id).then(
+      (r) => {
+        cache.set(r.id, r);
+        if (live) recipe = r;
+      },
+      (err) => live && (missing = err.code === 'not_on_device'),
+    );
     return () => (live = false);
   });
 
@@ -32,6 +42,7 @@
     <div class="facts">
       {#if recipe}<Facts {recipe} />{:else}<div class="ghost"></div>{/if}
     </div>
+    {#if missing && !recipe}<p class="missing">{NOT_ON_DEVICE}</p>{/if}
     <div class="acts">
       <a class="btn primary" href="/r/{summary.id}/cook" use:link>Begin cooking</a>
       <a class="btn" href="/r/{summary.id}" use:link>Open</a>
@@ -74,6 +85,11 @@
   .ghost {
     height: 76px;
     border-top: 3px solid var(--ink);
+  }
+  .missing {
+    margin-top: var(--space-3);
+    color: var(--ink-2);
+    font-size: var(--ui);
   }
   .acts {
     display: flex;
