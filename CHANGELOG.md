@@ -10,6 +10,8 @@ include breaking changes, and they're called out here.
 ## [0.3.0] - 2026-11-01
 
 ### Added
+- A footer shows the running version of Sous, linked to its release notes,
+  and a link to the source on GitHub.
 - Sous installs as an app and works offline. The library, recipes and Cook
   mode keep working without a connection, with the library saved to the device
   and photos saved as you view them. Saving changes needs a connection. Under

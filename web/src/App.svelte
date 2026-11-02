@@ -5,6 +5,7 @@
   import Masthead from './components/Masthead.svelte';
   import WhoIsCooking from './components/WhoIsCooking.svelte';
   import Toast from './components/Toast.svelte';
+  import Footer from './components/Footer.svelte';
   import Library from './routes/Library.svelte';
   import Recipe from './routes/Recipe.svelte';
   import Cook from './routes/Cook.svelte';
@@ -49,6 +50,10 @@
 {:else if route.name === 'import'}
   <!-- A new ?url= is a new import, so the page starts over. -->
   {#key route.search.toString()}<Import />{/key}
+{/if}
+
+{#if route.name !== 'cook'}
+  <Footer />
 {/if}
 
 {#if session.asking}

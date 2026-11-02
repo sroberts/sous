@@ -325,6 +325,9 @@ A chef's toque in solid ink `#141516` on ticket white `#fafbfc`: three overlappi
 ### Toast
 Black slip with white text and a white-stroked button, 3px corners, rising 12px into place over 320ms. "Sous has been updated." with Reload waits until cook mode is closed.
 
+### Footer
+One quiet line on the pass under every screen but cook mode, in the tracked label style in `--ink-3`: "Sous v0.3.0 · Source on GitHub". A release's version links its release notes; a dev build shows the version without a link. Offline, before the server has answered, only the GitHub link shows.
+
 ## Do's and Don'ts
 
 ### Do:
