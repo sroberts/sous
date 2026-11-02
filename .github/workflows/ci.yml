@@ -29,6 +29,10 @@ jobs:
         working-directory: web
         run: npm ci && npm run build && npm run check
 
+      - name: UI unit tests
+        working-directory: web
+        run: npm test
+
       - name: gofmt
         run: test -z "$(gofmt -l .)"
 

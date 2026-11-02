@@ -4,6 +4,8 @@
   import { go, link, setLeaveGuard } from '../lib/router.svelte.js';
   import { api } from '../lib/api.js';
   import { session, asPerson, refreshIndex, toast } from '../lib/session.svelte.js';
+  import { getRecipe } from '../lib/library.js';
+  import { isOffline } from '../lib/net.svelte.js';
   import { amount, ago, personName } from '../lib/format.js';
   import Plate from '../components/Plate.svelte';
   import { stickIfFits } from '../lib/stick.js';
@@ -124,7 +126,7 @@
   startFromDraft();
 
   if (id) {
-    api.recipe(id).then(
+    getRecipe(id).then(
       (r) => {
         fill(r);
         if (merge && draft) mergeDraft(draft);
@@ -135,7 +137,8 @@
       (err) => (problem = { message: err.message }),
     );
   }
-  api.tags().then((t) => (allTags = t.items.map((x) => x.name)));
+  // Suggestions only: without them, tags are typed in full.
+  api.tags().then((t) => (allTags = t.items.map((x) => x.name))).catch(() => {});
 
   // Parsed preview of each ingredient line, from the API's own parser.
   let parsed = $state([]);
@@ -332,8 +335,12 @@
     toast(`${title} is in the trash.`, {
       label: 'Undo',
       run: async () => {
-        await api.restoreRecipe(trashed);
-        await refreshIndex();
+        try {
+          await api.restoreRecipe(trashed);
+          await refreshIndex();
+        } catch (err) {
+          toast(`${title} couldn’t be restored: ${err.message}`);
+        }
       },
     });
   }
@@ -362,8 +369,10 @@
         </div>
       {:else}
         <span class="state label" aria-live="polite">{saving ? 'Saving…' : dirty ? (draft && !merge ? 'Not saved yet' : 'Unsaved changes') : ''}</span>
+        <!-- The form stays open offline; only saving waits for a connection. -->
+        {#if isOffline()}<span class="offline" role="status">You’re offline. Saving needs a connection.</span>{/if}
         <a class="btn quiet cancel" href={back} use:link>Cancel</a>
-        <button class="btn primary" disabled={saving || !loaded}>{id ? 'Save recipe' : 'Add to the library'}</button>
+        <button class="btn primary" disabled={saving || !loaded || isOffline()}>{id ? 'Save recipe' : 'Add to the library'}</button>
       {/if}
     </div>
   </div>
@@ -450,9 +459,9 @@
       <aside class="side panel" use:stickIfFits={84}>
         <div class="photo">
           <Plate hash={form.images[0]} title={form.title} />
-          <label class="btn photo-btn">
+          <label class="btn photo-btn" class:off={isOffline()}>
             <ImagePlus aria-hidden="true" />{uploading ? 'Uploading…' : form.images.length ? 'Replace photo' : 'Add a photo'}
-            <input type="file" accept="image/*" class="visually-hidden" onchange={addPhoto} />
+            <input type="file" accept="image/*" class="visually-hidden" disabled={isOffline()} onchange={addPhoto} />
           </label>
           {#if form.images.length}
             <button type="button" class="btn quiet" onclick={() => ((form.images = form.images.slice(1)), touch())}>Remove</button>
@@ -490,7 +499,7 @@
         </div>
 
         {#if id && !draft}
-          <button type="button" class="trash" onclick={trash}><Trash2 size={16} aria-hidden="true" />Move to trash</button>
+          <button type="button" class="trash" disabled={isOffline()} onclick={trash}><Trash2 size={16} aria-hidden="true" />Move to trash</button>
         {/if}
       </aside>
     </div>
@@ -773,6 +782,17 @@
   .photo-btn {
     flex: 1;
   }
+  .photo-btn.off {
+    border-color: var(--perf);
+    color: var(--ink-3);
+    background: transparent;
+    cursor: not-allowed;
+  }
+  .offline {
+    font-size: var(--ui);
+    font-weight: 600;
+    color: var(--ink-2);
+  }
   .times {
     border: 0;
     padding: 0;
@@ -835,7 +855,11 @@
     font-weight: 700;
     color: var(--ink-2);
   }
-  .trash:hover,
+  .trash:disabled {
+    color: var(--ink-3);
+    cursor: not-allowed;
+  }
+  .trash:not(:disabled):hover,
   .trash:focus-visible {
     color: var(--red);
     text-decoration: underline;
@@ -902,6 +926,9 @@
     }
     .acts .primary {
       flex: 1 0 auto;
+    }
+    .offline {
+      flex: 1 0 100%;
     }
     .leave {
       flex: 1;

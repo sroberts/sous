@@ -7,6 +7,7 @@
   import { route, go, link } from '../lib/router.svelte.js';
   import { api } from '../lib/api.js';
   import { session, asPerson, refreshIndex, toast } from '../lib/session.svelte.js';
+  import { isOffline } from '../lib/net.svelte.js';
   import Editor from './Editor.svelte';
   import ImportBanner from '../components/ImportBanner.svelte';
   import SendToSous from '../components/SendToSous.svelte';
@@ -76,9 +77,15 @@
   }
 
   // Wait for boot, so a saved cook is known before asking who's cooking.
+  // Offline, the link or text waits in the form for a connection instead.
   let started = false;
   $effect(() => {
     if (!session.loaded || started || phase !== 'loading') return;
+    if (isOffline()) {
+      phase = 'form';
+      pasting = !asked.url;
+      return;
+    }
     started = true;
     if (asked.url) run({ url: asked.url });
     else readPaste(null, asked.text, asked.title);
@@ -166,6 +173,8 @@
     }
   });
   let photoFailed = $state(false);
+
+  const OFFLINE_READ = 'You’re offline. Reading a recipe needs a connection.';
 </script>
 
 {#snippet pasteBox(intro, primary)}
@@ -182,7 +191,8 @@
     </label>
     {#if pasteError}<p class="field-error" role="alert">{pasteError}</p>{/if}
     <div class="row-end">
-      <button class="btn" class:primary disabled={reading}>{reading ? 'Reading…' : 'Read the recipe'}</button>
+      {#if isOffline()}<p class="offline" role="status">{OFFLINE_READ}</p>{/if}
+      <button class="btn" class:primary disabled={reading || isOffline()}>{reading ? 'Reading…' : 'Read the recipe'}</button>
     </div>
   </form>
 {/snippet}
@@ -243,8 +253,9 @@
         <label class="label" for="import-url">Recipe link</label>
         <div class="row">
           <input id="import-url" type="url" inputmode="url" autocomplete="url" bind:value={linkDraft} oninput={() => (linkError = '')} aria-invalid={!!linkError} placeholder="https://" />
-          <button class="btn primary">Fetch</button>
+          <button class="btn primary" disabled={isOffline()}>Fetch</button>
         </div>
+        {#if isOffline()}<p class="offline" role="status">{OFFLINE_READ}</p>{/if}
         {#if linkError}<p class="field-error" role="alert">{linkError}</p>{/if}
         {#if !pasting}
           <button type="button" class="text-btn" onclick={() => (pasting = true)}>No link? Paste the recipe text instead</button>
@@ -468,8 +479,20 @@
   }
   .row-end {
     display: flex;
+    flex-wrap: wrap;
     justify-content: flex-end;
+    align-items: center;
+    gap: var(--space-2) var(--space-4);
     margin-top: var(--space-4);
+  }
+  .offline {
+    margin-top: var(--space-2);
+    font-size: var(--ui);
+    font-weight: 600;
+    color: var(--ink-2);
+  }
+  .row-end .offline {
+    margin-top: 0;
   }
 
   .banner-wrap,

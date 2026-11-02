@@ -3,6 +3,7 @@
   // A modal is right here: the change the cook just made waits on it.
   import { session, choosePerson } from '../lib/session.svelte.js';
   import { api } from '../lib/api.js';
+  import { isOffline } from '../lib/net.svelte.js';
 
   let dialog;
   let name = $state('');
@@ -42,8 +43,9 @@
     <label for="who-new" class="label">Someone new</label>
     <div class="row">
       <input id="who-new" bind:value={name} placeholder="Their name" autocomplete="given-name" />
-      <button class="btn" disabled={!name.trim()}>Add</button>
+      <button class="btn" disabled={!name.trim() || isOffline()}>Add</button>
     </div>
+    {#if isOffline()}<p class="note" role="status">You’re offline. Adding someone needs a connection.</p>{/if}
     {#if error}<p class="error" role="alert">{error}</p>{/if}
   </form>
   <button class="btn quiet cancel" onclick={() => dialog.close()}>Not now</button>

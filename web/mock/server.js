@@ -370,18 +370,50 @@ async function handle(req, res) {
   return fail(res, 404, 'not_found', `No route for ${req.method} ${path}.`);
 }
 
+// POST /__mock/session {"signedIn": false} makes the mock behave like an
+// Outpost gateway whose sign-in has lapsed: page loads and /v1 reads redirect
+// to a login page nothing answers, and writes get a plain-text 401. Send
+// {"signedIn": true} to sign back in. For trying the offline paths by hand.
+let signedIn = true;
+const LOGIN = 'http://127.0.0.1:1/login';
+
+async function session(req, res) {
+  const body = JSON.parse((await readBody(req)).toString() || '{}');
+  signedIn = body.signedIn !== false;
+  send(res, 200, { signedIn });
+}
+
+function middleware(req, res, next) {
+  const path = req.url.split('?')[0];
+  if (path === '/__mock/session' && req.method === 'POST') {
+    return session(req, res).catch((err) => fail(res, 400, 'invalid', err.message));
+  }
+  const api = path.startsWith('/v1/');
+  if (!signedIn && (api || (req.method === 'GET' && (req.headers.accept || '').includes('text/html')))) {
+    if (api && req.method !== 'GET') {
+      res.writeHead(401, { 'content-type': 'text/plain' });
+      return res.end('Unauthorized');
+    }
+    res.writeHead(302, { location: LOGIN });
+    return res.end();
+  }
+  if (!api) return next();
+  handle(req, res).catch((err) => {
+    console.error(err);
+    fail(res, 500, 'internal', err.message);
+  });
+}
+
+// Serves the mock under both `vite` and `vite preview`, so the production
+// bundle and its service worker can be tried against it.
 export function mockApi() {
   return {
     name: 'sous-mock-api',
-    apply: 'serve',
     configureServer(server) {
-      server.middlewares.use((req, res, next) => {
-        if (!req.url.startsWith('/v1/')) return next();
-        handle(req, res).catch((err) => {
-          console.error(err);
-          fail(res, 500, 'internal', err.message);
-        });
-      });
+      server.middlewares.use(middleware);
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use(middleware);
     },
   };
 }

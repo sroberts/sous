@@ -1,7 +1,8 @@
 <script>
-  import { Search, Plus, Link2, ChevronDown, Check, ExternalLink } from '@lucide/svelte';
+  import { Search, Plus, Link2, ChevronDown, Check, ExternalLink, CloudOff } from '@lucide/svelte';
   import { route, go, link } from '../lib/router.svelte.js';
   import { session, choosePerson } from '../lib/session.svelte.js';
+  import { net, isOffline } from '../lib/net.svelte.js';
 
   let menuOpen = $state(false);
   let field;
@@ -85,6 +86,10 @@
     <a class="btn primary" href="/new" use:link><Plus aria-hidden="true" />New recipe</a>
   </div>
   <div class="who">
+    <!-- Quiet, not an alarm: reading and cooking carry on from this device. -->
+    <span class="net" role="status" title="You can read and cook from the library; changes need a connection.">
+      {#if isOffline()}<CloudOff size={17} aria-hidden="true" />{net.online ? 'Can’t reach Sous' : 'Offline'}{/if}
+    </span>
     {#if session.outpost}
       <!-- Outpost's login decides who this is, so there is no one to switch
            to; the menu leads back to Outpost for the account and sign-out. -->
@@ -222,6 +227,21 @@
   }
   .who {
     position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+  .net {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    font-size: var(--ui);
+    font-weight: 600;
+    color: var(--ink-2);
+  }
+  .net:empty {
+    display: none;
   }
   .who-btn {
     display: flex;

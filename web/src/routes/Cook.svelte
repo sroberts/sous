@@ -1,7 +1,7 @@
 <script>
   import { X, Timer, Pause, Play, ListChecks, Sun, Check } from '@lucide/svelte';
   import { go } from '../lib/router.svelte.js';
-  import { api } from '../lib/api.js';
+  import { getRecipe } from '../lib/library.js';
   import { amount } from '../lib/format.js';
   import { timers, findDurations, startTimer, remaining, togglePause, dismiss, clock } from '../lib/timers.svelte.js';
 
@@ -28,7 +28,7 @@
     } catch {}
   });
 
-  api.recipe(id).then(
+  getRecipe(id).then(
     (r) => {
       recipe = r;
       step = Math.min(step, r.steps.length - 1);

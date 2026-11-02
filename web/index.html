@@ -3,10 +3,24 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#F4EFE6" />
+    <meta name="theme-color" content="#fafbfc" />
+    <meta name="description" content="The household’s recipes, ready to cook from." />
+    <!-- Stamped at build; the service worker checks it so it never caches a
+         login page or another build's shell as this one (web/build/pwa.js). -->
+    <meta name="sous-build" content="%SOUS_BUILD%" />
+    <!-- With credentials, so the Outpost gateway lets the manifest through. -->
+    <link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials" />
+    <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/icons/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Sous" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>Sous</title>
   </head>
   <body>
+    <noscript>Sous needs JavaScript to show the library.</noscript>
     <div id="app"></div>
     <script type="module" src="/src/main.js"></script>
   </body>

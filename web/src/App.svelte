@@ -1,6 +1,8 @@
 <script>
   import { route } from './lib/router.svelte.js';
   import { session, boot } from './lib/session.svelte.js';
+  import { offlineMessage } from './lib/net.svelte.js';
+  import { registerWorker } from './lib/pwa.js';
   import Masthead from './components/Masthead.svelte';
   import WhoIsCooking from './components/WhoIsCooking.svelte';
   import Toast from './components/Toast.svelte';
@@ -11,6 +13,7 @@
   import Import from './routes/Import.svelte';
 
   boot();
+  registerWorker();
 
   const titles = { library: 'Sous', new: 'New recipe · Sous', import: 'Import a recipe · Sous' };
   $effect(() => {
@@ -24,8 +27,14 @@
 
 {#if session.error && !session.loaded}
   <main class="down">
-    <h1>Sous isn’t answering.</h1>
-    <p>{session.error.message}</p>
+    {#if session.error.code === 'offline'}
+      <!-- Nothing stored yet: the library is kept once it has loaded online. -->
+      <h1>{offlineMessage()}</h1>
+      <p>Sous saves the library to this device the first time it opens with a connection.</p>
+    {:else}
+      <h1>Sous isn’t answering.</h1>
+      <p>{session.error.message}</p>
+    {/if}
     <button class="btn" onclick={boot}>Try again</button>
   </main>
 {:else if route.name === 'library'}

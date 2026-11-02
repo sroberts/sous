@@ -1,0 +1,73 @@
+// The library kept on this device, so Sous opens and reads without a
+// connection. Records are stored once for the household; each person's
+// favorites and want-to-cook flags are stored under their username.
+
+import { tx, get, getAll, put, done } from './idb.js';
+import { splitFlags, withFlags, withFlag } from './offline-core.js';
+
+const meta = async (key) => (await get('meta', key))?.value ?? null;
+const setMeta = (key, value) => put('meta', { key, value });
+
+/** Store the library index, and the flags of the person it was read for. */
+export function saveIndex(username, summaries) {
+  const { items, flags } = splitFlags(summaries);
+  return tx(['summaries', 'mine'], 'readwrite', (s) => {
+    s.summaries.clear();
+    for (const r of items) s.summaries.put(r);
+    if (username) s.mine.put({ username, flags, at: Date.now() });
+  });
+}
+
+/** The stored index with username's flags, or null when nothing is stored. */
+export async function loadIndex(username) {
+  const [items, mine] = await Promise.all([getAll('summaries'), username ? get('mine', username) : null]);
+  return items.length ? withFlags(items, mine?.flags) : null;
+}
+
+/** Store a full recipe, and keep the person's flags for it in step. */
+export function saveRecipe(r, username) {
+  const { items, flags } = splitFlags([r]);
+  return tx(['recipes', 'mine'], 'readwrite', async (s) => {
+    s.recipes.put(items[0]);
+    if (!username || !flags[r.id]) return;
+    const row = (await done(s.mine.get(username))) ?? { username, flags: {} };
+    row.flags[r.id] = flags[r.id];
+    row.at = Date.now();
+    s.mine.put(row);
+  });
+}
+
+/** A stored recipe with username's flags, or null. */
+export async function getRecipe(id, username) {
+  const [r, mine] = await Promise.all([get('recipes', id), username ? get('mine', username) : null]);
+  return r ? withFlag(r, mine?.flags) : null;
+}
+
+/** The version of every stored recipe, by id. */
+export async function versions() {
+  const all = await tx(['recipes'], 'readonly', (s) => done(s.recipes.getAll()), []);
+  return new Map(all.map((r) => [r.id, r.version]));
+}
+
+/** Drop stored recipes, by id. */
+export const prune = (ids) => tx(['recipes'], 'readwrite', (s) => ids.forEach((id) => s.recipes.delete(id)));
+
+export const clearRecipes = () => tx(['recipes'], 'readwrite', (s) => void s.recipes.clear());
+
+/** Forget every other person's flags: behind the gateway, the device belongs
+ *  to whoever is signed in now. */
+export const forgetOthers = (username) =>
+  tx(['mine'], 'readwrite', async (s) => {
+    for (const key of await done(s.mine.getAllKeys())) if (key !== username) s.mine.delete(key);
+  });
+
+export const saveMe = (me) => setMeta('me', me);
+export const loadMe = () => meta('me');
+export const savePeople = (people) => setMeta('people', people);
+export const loadPeople = async () => (await meta('people')) ?? [];
+export const loadServerVersion = () => meta('serverVersion');
+export const saveServerVersion = (v) => setMeta('serverVersion', v);
+export const loadSyncedAt = async () => (await meta('syncedAt')) ?? 0;
+export const saveSyncedAt = (t) => setMeta('syncedAt', t);
+export const loadAskedPersist = () => meta('askedPersist');
+export const saveAskedPersist = () => setMeta('askedPersist', true);
