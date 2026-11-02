@@ -313,8 +313,17 @@ A thermal-white strip under a 3px black rule, above the editor. The headline rea
 ### Paste box
 A panel (3px black rule under its label header) titled "Paste the recipe", with a Title field and a ten-row text area in the editor-field style (borderless, `perf` underline turning red on focus), an intro line saying why the link failed, and a "Read the recipe" button. It is primary on the error view, where it is the next step, and default on the blank form. Errors are the standard red message beneath the field.
 
+### Offline indicator
+A quiet "Offline" (or "Can’t reach Sous") in the masthead before the cook's name: a cloud-off line icon and UI text at 600 in `ink-2`, a polite status region. It never turns red, and stays in the top row on phones. Offline reading and cooking are normal, so nothing else on the page changes.
+
+### Offline notices
+Writes that need a connection are disabled, not hidden: Save, Move to trash, photo upload, Favorite, Want to cook, Fetch and Read, Add a person. Beside the main one sits one plain line, "You’re offline. Saving needs a connection.", in `ink-2`. The form stays editable. A recipe that was never saved to the device says so, with a Back to the library button.
+
+### App icon
+A chef's toque in solid ink `#141516` on ticket white `#fafbfc`: three overlapping circles for the puff with three pleats cut up into it, a gap, then a plain band. Home-screen icons are full-bleed squares with the toque inside the maskable safe zone; the browser-tab icon fills a rounded tile and drops the pleats. `scripts/icons/icons.py` draws every size from the same shapes. The masthead keeps the "Sous" wordmark; the icon is for the home screen and browser tab.
+
 ### Toast
-Black slip with white text and a white-stroked button, 3px corners, rising 12px into place over 320ms.
+Black slip with white text and a white-stroked button, 3px corners, rising 12px into place over 320ms. "Sous has been updated." with Reload waits until cook mode is closed.
 
 ## Do's and Don'ts
 

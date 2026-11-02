@@ -42,6 +42,34 @@ picks who's cooking.
 - **Updating.** Replace the binary and restart. Sous upgrades its database
   on start.
 
+## On your phone or tablet
+
+Sous is an installable app. Once installed, it opens from your home screen
+like any other app, and the library, recipes and Cook mode keep working
+without a connection.
+
+- **Android (Chrome).** Open Sous, then menu, then Install app.
+- **iPhone and iPad (Safari).** Open Sous, tap Share, then Add to Home Screen.
+
+Installing needs HTTPS. Under Outpost, `tailscale serve` gives you that. A
+plain `http://` tailnet address opens Sous fine but gets no offline support,
+because browsers only allow it on HTTPS and on `127.0.0.1`.
+
+**What works offline.** The first time Sous opens with a connection, it saves
+the whole library's text to the device, and tops it up in the background
+whenever you're online. Photos are saved as you look at them, up to about
+200 MB. Offline you can search, read recipes, and cook with timers and
+check-offs. You can't save, favorite, import or add a person until you're
+back online; Sous says so where it matters.
+
+**Under the Outpost gateway.** If your sign-in lapses while you're away, Sous
+still opens the saved library, read-only, with a "Sign in again" banner.
+Anything you change needs you to sign in first.
+
+**Clearing it.** Clear the site's data in the browser (or remove the app) and
+the saved library goes with it. Sous saves it again next time it opens with a
+connection.
+
 ## The starter recipes
 
 A new Sous comes with twelve recipes, credited to "Sous", with Outpost or on

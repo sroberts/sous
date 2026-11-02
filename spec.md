@@ -177,6 +177,7 @@ All on the one port, following the personal-utils shape (Outpost §9):
 | `/v1/…` | REST API, JSON (§8) |
 | `GET /v1/openapi.json` | OpenAPI 3.1 description of `/v1` |
 | `/mcp` | MCP, streamable HTTP transport (§9) |
+| `GET /sw.js`, `GET /manifest.webmanifest` | The service worker and web app manifest, served `no-cache` so a new build is seen at once |
 | everything else | The web UI: static assets embedded with `go:embed`, with unknown paths falling back to `index.html` for client-side routing |
 
 The UI is a client of `/v1` like any other. It gets no private endpoints, so
@@ -608,8 +609,8 @@ hand under real Outpost before the first release (`outpost apply`, `restart`,
 
 Each builds on the model and API above without changing what this spec defines.
 
-- **Web UI and offline:** the warm editorial design, the installable PWA, the
-  offline cache for opened recipes, and the offline shopping list with sync.
+- **Web UI and offline:** the installable PWA and offline reading of the whole
+  library are built; the offline shopping list with sync remains for later.
 - **Cook mode:** step view, wake lock, ingredient check-offs, step timers.
 - **Scaling and units:** servings-based scaling, US ↔ metric conversion.
 - **Meal plan and shopping list:** a weekly plan, and a combined, de-duplicated

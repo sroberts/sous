@@ -49,7 +49,8 @@ the person or agent who made it.
 
 - Accessed in a browser over Tailscale, or through the Outpost login gateway.
   Installable to the home screen as a PWA.
-- Works offline for recipes already opened and for the shopping list.
+- Works offline: the whole library and cook mode, with photos as viewed.
+  Changes need a connection.
 - Two distinct modes of use: **managing** (dense, keyboard-friendly, desk) and
   **cooking** (glanceable from a distance, large touch targets, screen kept
   awake, one step at a time).
@@ -72,6 +73,10 @@ Basics (`spec.md`):
 - Edit conflicts are detected: a save based on a stale version is rejected
   with the current recipe.
 
+Offline: it installs as an app, and the whole library's text is saved to the
+device, with photos saved as they are viewed. Reading and cooking work without
+a connection; changes need one.
+
 Planned features (later specs): cook mode (step view, wake lock, ingredient
 check-offs, step timers); scaling and US/metric conversion; a weekly meal plan
 and a combined shopping list grouped by aisle; import from URL; collections;
@@ -87,7 +92,7 @@ per-person ratings, notes, and cook history.
   mostly from NYT Cooking and similar sources, with photos. Use it as the
   reference for realistic content: long titles, multi-section ingredient
   lists, vague times ("about 3 hours"), yields written as prose.
-- No logo, testimonials, or other brand assets exist. None should be invented.
+- The only brand asset is the app icon, a chef's toque. The masthead keeps the "Sous" wordmark. No testimonials or other brand assets exist; none should be invented.
 
 ## Product Principles
 
