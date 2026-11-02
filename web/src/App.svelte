@@ -1,7 +1,6 @@
 <script>
   import { route } from './lib/router.svelte.js';
   import { session, boot } from './lib/session.svelte.js';
-  import { offlineMessage } from './lib/net.svelte.js';
   import { registerWorker } from './lib/pwa.js';
   import Masthead from './components/Masthead.svelte';
   import WhoIsCooking from './components/WhoIsCooking.svelte';
@@ -29,7 +28,7 @@
   <main class="down">
     {#if session.error.code === 'offline'}
       <!-- Nothing stored yet: the library is kept once it has loaded online. -->
-      <h1>{offlineMessage()}</h1>
+      <h1>{session.error.deviceOffline ? 'You’re offline.' : 'Sous isn’t answering.'}</h1>
       <p>Sous saves the library to this device the first time it opens with a connection.</p>
     {:else}
       <h1>Sous isn’t answering.</h1>

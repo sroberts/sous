@@ -3,7 +3,7 @@
 // favorites and want-to-cook flags are stored under their username.
 
 import { tx, get, getAll, put, done } from './idb.js';
-import { splitFlags, withFlags, withFlag } from './offline-core.js';
+import { splitFlags, withFlags, withFlag, stampOf } from './offline-core.js';
 
 const meta = async (key) => (await get('meta', key))?.value ?? null;
 const setMeta = (key, value) => put('meta', { key, value });
@@ -24,11 +24,13 @@ export async function loadIndex(username) {
   return items.length ? withFlags(items, mine?.flags) : null;
 }
 
-/** Store a full recipe, and keep the person's flags for it in step. */
+/** Store a full recipe, replacing any older copy, and keep the person's
+ *  flags for it in step. */
 export function saveRecipe(r, username) {
   const { items, flags } = splitFlags([r]);
-  return tx(['recipes', 'mine'], 'readwrite', async (s) => {
+  return tx(['recipes', 'stamps', 'mine'], 'readwrite', async (s) => {
     s.recipes.put(items[0]);
+    s.stamps.put({ id: r.id, stamp: stampOf(r) });
     if (!username || !flags[r.id]) return;
     const row = (await done(s.mine.get(username))) ?? { username, flags: {} };
     row.flags[r.id] = flags[r.id];
@@ -43,16 +45,23 @@ export async function getRecipe(id, username) {
   return r ? withFlag(r, mine?.flags) : null;
 }
 
-/** The version of every stored recipe, by id. */
-export async function versions() {
-  const all = await tx(['recipes'], 'readonly', (s) => done(s.recipes.getAll()), []);
-  return new Map(all.map((r) => [r.id, r.version]));
+/** The stamp of every stored recipe, by id. */
+export async function stamps() {
+  const all = await getAll('stamps');
+  return new Map(all.map((r) => [r.id, r.stamp]));
 }
 
-/** Drop stored recipes, by id. */
-export const prune = (ids) => tx(['recipes'], 'readwrite', (s) => ids.forEach((id) => s.recipes.delete(id)));
+/** The ids of every stored recipe. */
+export const storedIds = () => tx(['recipes'], 'readonly', (s) => done(s.recipes.getAllKeys()), []);
 
-export const clearRecipes = () => tx(['recipes'], 'readwrite', (s) => void s.recipes.clear());
+/** Drop stored recipes, by id. */
+export const prune = (ids) =>
+  tx(['recipes', 'stamps'], 'readwrite', (s) => {
+    for (const id of ids) {
+      s.recipes.delete(id);
+      s.stamps.delete(id);
+    }
+  });
 
 /** Forget every other person's flags: behind the gateway, the device belongs
  *  to whoever is signed in now. */

@@ -5,6 +5,7 @@
 const STORES = {
   summaries: 'id',
   recipes: 'id',
+  stamps: 'id', // { id, stamp }: which version of each stored recipe (offline-core.js)
   mine: 'username', // { username, flags: { [id]: { favorite, want_to_cook } }, at }
   meta: 'key', // { key, value }: me, people, person, serverVersion, syncedAt
 };
@@ -14,7 +15,8 @@ let opening = null;
 function open() {
   opening ??= new Promise((resolve) => {
     try {
-      const req = indexedDB.open('sous', 1);
+      // Version 2 added stamps; recipes stored before it are fetched once more.
+      const req = indexedDB.open('sous', 2);
       req.onupgradeneeded = () => {
         for (const [name, keyPath] of Object.entries(STORES)) {
           if (!req.result.objectStoreNames.contains(name)) req.result.createObjectStore(name, { keyPath });

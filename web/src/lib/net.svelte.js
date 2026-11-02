@@ -10,9 +10,6 @@ export const net = $state({
 
 export const isOffline = () => !net.online || !net.reachable;
 
-/** The notice for a view that needs a connection right now. */
-export const offlineMessage = () => (net.online ? 'Sous isn’t answering.' : 'You’re offline.');
-
 export const OFFLINE_SAVE = 'You’re offline, so this can’t be saved yet.';
 export const NOT_ON_DEVICE = 'This recipe isn’t on this device yet. It will be once you’re back online.';
 
@@ -34,9 +31,10 @@ export function reached() {
 async function check() {
   if (!navigator.onLine) return;
   try {
-    // Any answer will do: even the gateway's redirect means the server is there.
-    await fetch('/up', { cache: 'no-store', redirect: 'manual' });
-    reached();
+    // Up, or the gateway sending us to log in (Sous is behind it). A proxy's
+    // 502 or /up's own 503 while starting is still no answer from Sous.
+    const res = await fetch('/up', { cache: 'no-store', redirect: 'manual' });
+    if (res.ok || res.type === 'opaqueredirect') reached();
   } catch {}
 }
 

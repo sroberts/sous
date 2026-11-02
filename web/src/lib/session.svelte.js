@@ -103,7 +103,7 @@ async function bootFromCache() {
 
 /** Bring the stored library up to date, in the background. */
 function sync() {
-  syncLibrary(session.person?.username ?? null, $state.snapshot(session.recipes), () => session.signedOut);
+  syncLibrary(session.person?.username ?? null, () => $state.snapshot(session.recipes), () => session.signedOut);
 }
 
 // Back online: a page opened from the stored library boots again, quietly;
@@ -112,7 +112,8 @@ $effect.root(() => {
   $effect(() => {
     if (isOffline()) return;
     untrack(() => {
-      if (session.fromCache) boot();
+      // Also a first visit that found no connection and nothing stored.
+      if (session.fromCache || (!session.loaded && session.error?.code === 'offline')) boot();
       else if (session.loaded) sync();
     });
   });

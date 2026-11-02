@@ -16,32 +16,48 @@ const BYPASS = /^\/(v1|mcp|up)(\/|$)/;
 const IMAGE = /^\/v1\/images\/[^/]+$/;
 
 // Every file must come from this build: a redirect or a page from the Outpost
-// gateway (its login, say) fails the install, and the old worker stays.
+// gateway (its login, say) fails the install, and the old worker stays. A
+// failed install leaves no half-filled shell behind.
 self.addEventListener('install', (e) => {
   e.waitUntil(
     (async () => {
       const cache = await caches.open(SHELL);
-      for (const url of PRECACHE) {
-        const res = await fetch(new Request(url, { cache: 'reload', redirect: 'manual' }));
-        if (!res.ok || res.type !== 'basic') throw new Error(`precache ${url}: ${res.status || res.type}`);
-        if (url === '/') {
-          const body = await res.clone().text();
-          if (!body.includes(`name="sous-build" content="${BUILD}"`)) throw new Error('precache /: not this build');
-        }
-        await cache.put(url, res);
+      try {
+        await Promise.all(PRECACHE.map((url) => precache(cache, url)));
+      } catch (err) {
+        await caches.delete(SHELL);
+        throw err;
       }
       await self.skipWaiting();
     })(),
   );
 });
 
-// The shell just before this one stays, so a page still open on the last
-// build can load the chunks it has yet to ask for.
+// A hashed asset never changes, so one an older shell already holds is
+// copied rather than downloaded again. The page, icons and manifest keep
+// their names across builds, so they always come from the network.
+async function precache(cache, url) {
+  const held = url.startsWith('/assets/') && (await caches.match(url));
+  if (held) return cache.put(url, held);
+  const res = await fetch(new Request(url, { cache: 'reload', redirect: 'manual' }));
+  if (!res.ok || res.type !== 'basic') throw new Error(`precache ${url}: ${res.status || res.type}`);
+  if (url === '/') {
+    const body = await res.clone().text();
+    if (!body.includes(`name="sous-build" content="${BUILD}"`)) throw new Error('precache /: not this build');
+  }
+  await cache.put(url, res);
+}
+
+// The last complete shell before this one stays, so a page still open on
+// that build can load the chunks it has yet to ask for. A shell is complete
+// once it holds the page, which an install that got that far stored.
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     (async () => {
       const shells = (await caches.keys()).filter((k) => k.startsWith('sous-shell-'));
-      const keep = keptShells(shells, SHELL);
+      const complete = [];
+      for (const k of shells) if (k !== SHELL && (await (await caches.open(k)).match('/'))) complete.push(k);
+      const keep = keptShells(shells, SHELL, complete);
       await Promise.all(shells.filter((k) => !keep.includes(k)).map((k) => caches.delete(k)));
       await self.clients.claim();
       for (const client of await self.clients.matchAll({ type: 'window' })) {
@@ -121,6 +137,10 @@ async function keep(cache, key, res) {
     const headers = new Headers(res.headers);
     headers.set('x-sous-bytes', String(blob.size));
     await cache.put(key, new Response(blob, { status: res.status, statusText: res.statusText, headers }));
+    if (sizes) {
+      sizes.delete(key); // a photo stored again counts as new
+      sizes.set(key, blob.size);
+    }
     await trimSoon();
   } catch {
     // A full disk or a dropped body: the photo is fetched again next time.
@@ -134,14 +154,23 @@ function trimSoon() {
   return trimming;
 }
 
+// The size of each stored photo by path, oldest first: read from the store
+// once per worker, then kept in step as photos are added and dropped.
+let sizes = null;
+
 async function trim() {
   const cache = await caches.open(IMAGES);
-  const entries = [];
-  for (const req of await cache.keys()) {
-    const res = await cache.match(req, { ignoreVary: true });
-    entries.push({ key: req, bytes: Number(res?.headers.get('x-sous-bytes')) || 0 });
+  if (!sizes) {
+    const read = new Map();
+    for (const req of await cache.keys()) {
+      const res = await cache.match(req, { ignoreVary: true });
+      read.set(new URL(req.url).pathname, Number(res?.headers.get('x-sous-bytes')) || 0);
+    }
+    sizes ??= read;
   }
-  await Promise.all(evictions(entries, IMAGE_BUDGET).map((k) => cache.delete(k, { ignoreVary: true })));
+  const drop = evictions([...sizes].map(([key, bytes]) => ({ key, bytes })), IMAGE_BUDGET);
+  for (const key of drop) sizes.delete(key);
+  await Promise.all(drop.map((key) => cache.delete(key, { ignoreVary: true })));
 }
 
 /** The keys to delete, oldest first, to bring entries (oldest first) within budget bytes. */
@@ -156,9 +185,10 @@ function evictions(entries, budget) {
   return out;
 }
 
-/** The shell caches to keep: this one and the one made just before it.
- *  Cache names list in the order they were made. */
-function keptShells(shells, current) {
-  const i = shells.indexOf(current);
-  return i > 0 ? [shells[i - 1], current] : [current];
+/** The shell caches to keep: this one and the last complete one made before
+ *  it. Cache names list in the order they were made; complete lists the ones
+ *  that hold the page. */
+function keptShells(shells, current, complete = shells) {
+  const before = shells.slice(0, Math.max(0, shells.indexOf(current))).filter((k) => complete.includes(k));
+  return before.length ? [before.at(-1), current] : [current];
 }

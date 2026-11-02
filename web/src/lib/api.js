@@ -14,7 +14,9 @@ export class ApiError extends Error {
 /** A request that needs a connection Sous doesn't have. */
 function offline(message) {
   message ??= net.online ? 'Sous isn’t answering. Check the connection and try again.' : 'You’re offline.';
-  return new ApiError(0, { error: { code: 'offline', message } });
+  const err = new ApiError(0, { error: { code: 'offline', message } });
+  err.deviceOffline = !net.online; // as it was when the request failed
+  return err;
 }
 
 let person = null;

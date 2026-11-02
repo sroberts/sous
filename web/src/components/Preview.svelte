@@ -1,4 +1,5 @@
 <script>
+  import { untrack } from 'svelte';
   import { link } from '../lib/router.svelte.js';
   import { getRecipe } from '../lib/library.js';
   import { amount } from '../lib/format.js';
@@ -8,12 +9,16 @@
 
   let { summary, using = [] } = $props();
 
-  // Full records are fetched as rows are selected, and remembered.
+  // Full records are fetched as rows are selected, and remembered. The
+  // library keys this on the id, so it fetches again only when the summary's
+  // version moves; what comes back may be older (a copy on this device, or a
+  // stale index) and is shown as it is.
   const cache = (globalThis.__sousPreview ??= new Map());
   let recipe = $state(cache.get(summary.id) ?? null);
   let missing = $state(false); // offline, and not stored on this device yet
   $effect(() => {
-    if (recipe && recipe.version === summary.version) return;
+    const version = summary.version;
+    if (untrack(() => recipe)?.version === version) return;
     let live = true;
     getRecipe(summary.id).then(
       (r) => {

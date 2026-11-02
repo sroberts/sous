@@ -20,10 +20,15 @@ export const withFlags = (items, flags = {}) => items.map((r) => ({ ...r, mine: 
 
 export const withFlag = (r, flags = {}) => ({ ...r, mine: flags[r.id] ?? NO_FLAGS });
 
-/** The ids of summaries whose full recipe is missing here or older than the
- *  server's. versions maps id to the stored recipe's version. */
-export function staleIds(summaries, versions) {
-  return summaries.filter((s) => versions.get(s.id) !== s.version).map((s) => s.id);
+/** What says which copy of a recipe this is. The version alone can repeat:
+ *  restoring an Outpost backup takes versions back, and they count up again. */
+export const stampOf = (r) => `${r.version}:${r.updated_at}`;
+
+/** The ids of summaries whose full recipe is missing here or differs from
+ *  the server's. stored maps id to what stamp() gave for the stored recipe;
+ *  sync.js uses stampOf. */
+export function staleIds(summaries, stored, stamp = (s) => s.version) {
+  return summaries.filter((s) => stored.get(s.id) !== stamp(s)).map((s) => s.id);
 }
 
 /** The stored ids no longer in the library (trashed or gone). */

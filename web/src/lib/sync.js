@@ -5,7 +5,7 @@
 import { api } from './api.js';
 import { isOffline } from './net.svelte.js';
 import * as offline from './offline.js';
-import { staleIds, removedIds, backoff } from './offline-core.js';
+import { staleIds, removedIds, backoff, stampOf } from './offline-core.js';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -13,8 +13,10 @@ let generation = 0;
 let running = null;
 
 /** Sync the library read for username. One runs at a time: a new call stops
- *  the one running and starts over once it has. stopped() is asked between
- *  requests, and ends the sync early when true (signed out, say). */
+ *  the one running and starts over once it has. summaries() is read as the
+ *  sync starts, so it stores the index as it is then, never an older one.
+ *  stopped() is asked between requests, and ends the sync early when true
+ *  (signed out, say). */
 export function syncLibrary(username, summaries, stopped = () => false) {
   const gen = ++generation;
   const live = () => gen === generation && !isOffline() && !stopped();
@@ -30,21 +32,20 @@ export function cancelSync() {
   generation++;
 }
 
-async function run(username, summaries, live) {
+async function run(username, read, live) {
   if (!live()) return;
+  const summaries = read();
   await offline.saveIndex(username, summaries);
   askToPersist();
 
-  // A new version of Sous may store recipes differently: start them afresh.
+  // A new version of Sous may shape recipes differently: fetch every one
+  // again. Each replaces its old copy as it arrives, so an interrupted pass
+  // leaves the rest readable, and the next pass carries on.
   const { version } = await api.status();
-  if (version !== (await offline.loadServerVersion())) {
-    await offline.clearRecipes();
-    await offline.saveServerVersion(version);
-  }
-  const have = await offline.versions();
-  await offline.prune(removedIds([...have.keys()], summaries));
+  const upgraded = version !== (await offline.loadServerVersion());
+  await offline.prune(removedIds(await offline.storedIds(), summaries));
 
-  const queue = staleIds(summaries, have);
+  const queue = staleIds(summaries, upgraded ? new Map() : await offline.stamps(), stampOf);
   let attempt = 0;
   let failed = false;
   const worker = async () => {
@@ -67,7 +68,10 @@ async function run(username, summaries, live) {
     }
   };
   await Promise.all([worker(), worker(), worker()]);
-  if (live() && !queue.length && !failed) await offline.saveSyncedAt(Date.now());
+  if (live() && !queue.length && !failed) {
+    if (upgraded) await offline.saveServerVersion(version);
+    await offline.saveSyncedAt(Date.now());
+  }
 }
 
 // Asked once per device: without it the browser may clear the stored
