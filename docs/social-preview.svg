@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640">
+  <!-- Sous social preview — the Ticket Rail (per DESIGN.md)
+       Created 2026-11-04. Edit this source, then regenerate
+       docs/social-preview.png from it. -->
+  <defs>
+    <linearGradient id="rail" x1="0" y1="0" x2="1280" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#d2d6d9"/>
+      <stop offset="0.5" stop-color="#959ba0"/>
+      <stop offset="1" stop-color="#5d6368"/>
+    </linearGradient>
+    <linearGradient id="clip" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#959ba0"/>
+      <stop offset="1" stop-color="#5d6368"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Pass (the cool grey counter) -->
+  <rect width="1280" height="640" fill="#dfe3e6"/>
+
+  <!-- Steel rail (three-stop gradient, the only ornament with depth) -->
+  <rect x="0" y="88" width="1280" height="64" fill="url(#rail)"/>
+  <rect x="0" y="150" width="1280" height="6" fill="#5d6368" opacity="0.55"/>
+
+  <!-- Clip holding the ticket (steel to steel-lo — the only modelled depth) -->
+  <rect x="596" y="128" width="88" height="34" rx="2" fill="url(#clip)"/>
+  <rect x="596" y="128" width="88" height="6" rx="2" fill="#d2d6d9" opacity="0.35"/>
+
+  <!-- Ticket: thermal white, square corners, hangs 4px over the rail bottom -->
+  <g>
+    <!-- Red live top edge (the selected ticket's top edge prints red) -->
+    <rect x="360" y="152" width="560" height="14" fill="#bb1c14"/>
+    <rect x="360" y="152" width="560" height="360" fill="#fafbfc"/>
+    <!-- Dashed perforation between head and body -->
+    <line x1="384" y1="318" x2="896" y2="318" stroke="#adb4ba" stroke-width="2.5" stroke-dasharray="10 9"/>
+    <!-- Torn bottom edge (7px tear depth, pass grey under) -->
+    <polygon points="360,512 360,489 388,512 416,489 444,512 472,489 500,512 528,489 556,512 584,489 612,512 640,489 668,512 696,489 724,512 752,489 780,512 808,489 836,512 864,489 892,512 920,489 920,512"
+             fill="#fafbfc"/>
+  </g>
+
+  <!-- Ticket header: tracked label + wordmark -->
+  <text x="384" y="210" fill="#5f6367" font-family="Archivo Variable, Archivo, system-ui, sans-serif" font-size="19" font-weight="700" letter-spacing="4.5">THE PASS &#183; RECIPES</text>
+  <text x="380" y="290" fill="#141516" font-family="Archivo Variable, Archivo, system-ui, sans-serif" font-size="112" font-weight="850" letter-spacing="-1">Sous</text>
+
+  <!-- Ticket body: time first (red = live/actionable), then the line -->
+  <text x="384" y="392" fill="#bb1c14" font-family="Archivo Variable, Archivo, system-ui, sans-serif" font-size="58" font-weight="800" font-stretch="62%" letter-spacing="-1">35</text>
+  <text x="462" y="392" fill="#141516" font-family="Archivo Variable, Archivo, system-ui, sans-serif" font-size="30" font-weight="700" letter-spacing="1">MIN</text>
+  <text x="566" y="384" fill="#404447" font-family="Archivo Variable, Archivo, system-ui, sans-serif" font-size="26" font-weight="600">Shakshuka</text>
+
+  <text x="384" y="462" fill="#404447" font-family="Archivo Variable, Archivo, system-ui, sans-serif" font-size="26" font-weight="500">The household&#8217;s recipes as tickets on a</text>
+  <text x="384" y="496" fill="#404447" font-family="Archivo Variable, Archivo, system-ui, sans-serif" font-size="26" font-weight="500">kitchen pass, clipped to a steel rail.</text>
+</svg>
