@@ -119,7 +119,7 @@
           </p>
         {/if}
         <div class="facts"><Facts {recipe} size="l" /></div>
-        {#if recipe.description}<p class="desc">{recipe.description}</p>{/if}
+        {#if recipe.description}<p class="desc"><Markdown text={recipe.description} /></p>{/if}
         <div class="acts">
           <a class="btn primary cook" href="/r/{id}/cook" use:link>Begin cooking</a>
           <button class="btn" aria-pressed={recipe.mine.favorite} disabled={isOffline()} onclick={() => toggle('favorite')}>
@@ -173,7 +173,7 @@
           {#if g.section}<h3 class="sect">{g.section}</h3>{/if}
           <ol start={recipe.steps.indexOf(g.rows[0]) + 1}>
             {#each g.rows as s}
-              <li><span class="n fig" aria-hidden="true">{recipe.steps.indexOf(s) + 1}</span><p>{s.text}</p></li>
+              <li><span class="n fig" aria-hidden="true">{recipe.steps.indexOf(s) + 1}</span><p><Markdown text={s.text} /></p></li>
             {/each}
           </ol>
         {/each}
