@@ -40,7 +40,7 @@
     try {
       saved = await asPerson(() => api.setMine(id, { [flag]: next[flag] }));
     } catch (err) {
-      toast(err.message);
+      toast(`Couldn’t save ${flag === 'favorite' ? 'Favorite' : 'Want to cook'}. ${err.message}`);
       return;
     }
     if (!saved) return;
@@ -49,6 +49,20 @@
   }
 
   const person = (u) => personName(u, session.people);
+
+  // A long description is held to three lines so the recipe itself starts in
+  // the first screen; More opens the rest.
+  let descEl = $state();
+  let descOpen = $state(false);
+  let descLong = $state(false);
+  $effect(() => {
+    if (!descEl) return;
+    const measure = () => (descLong = descOpen || descEl.scrollHeight > descEl.clientHeight + 1);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(descEl);
+    return () => ro.disconnect();
+  });
 
   // Below 900px the columns stack, which puts the whole ingredient list
   // between you and the method. There they become two tabs that stick under
@@ -119,7 +133,6 @@
           </p>
         {/if}
         <div class="facts"><Facts {recipe} size="l" /></div>
-        {#if recipe.description}<p class="desc"><Markdown text={recipe.description} /></p>{/if}
         <div class="acts">
           <a class="btn primary cook" href="/r/{id}/cook" use:link>Begin cooking</a>
           <button class="btn" aria-pressed={recipe.mine.favorite} disabled={isOffline()} onclick={() => toggle('favorite')}>
@@ -129,6 +142,12 @@
             <Bookmark aria-hidden="true" fill={recipe.mine.want_to_cook ? 'currentColor' : 'none'} />Want to cook
           </button>
         </div>
+        {#if recipe.description}
+          <div class="desc-wrap">
+            <p class="desc" class:open={descOpen} id="desc" bind:this={descEl}><Markdown text={recipe.description} /></p>
+            {#if descLong}<button class="more" aria-expanded={descOpen} aria-controls="desc" onclick={() => (descOpen = !descOpen)}>{descOpen ? 'Less' : 'More'}</button>{/if}
+          </div>
+        {/if}
       </div>
       <div class="photo" class:none={!recipe.images[0]}><Plate hash={recipe.images[0]} title={recipe.title} /></div>
     </header>
@@ -138,7 +157,7 @@
         <div bind:this={tabsAt}></div>
         <div class="tabs" role="tablist" aria-label="Recipe" bind:this={tabs}>
           <button role="tab" id="tab-ingredients" aria-selected={tab === 'ingredients'} aria-controls="panel-ingredients" tabindex={tab === 'ingredients' ? 0 : -1} onkeydown={tabKey} onclick={() => show('ingredients')}>
-            Ingredients<span class="count fig">{recipe.ingredients.length}</span>
+            Ingredients<span class="count fig">{recipe.ingredients.filter((i) => i.item).length}</span>
           </button>
           <button role="tab" id="tab-method" aria-selected={tab === 'method'} aria-controls="panel-method" tabindex={tab === 'method' ? 0 : -1} onkeydown={tabKey} onclick={() => show('method')}>
             Method<span class="count fig">{recipe.steps.length}</span>
@@ -148,11 +167,11 @@
       <section id="panel-ingredients" class="ingredients sheet" role={narrow ? 'tabpanel' : undefined} aria-labelledby={narrow ? 'tab-ingredients' : 'ing-h'} hidden={narrow && tab !== 'ingredients'} use:stickIfFits={32}>
         <div class="col-head">
           <h2 id="ing-h" class="label" class:visually-hidden={narrow}>Ingredients</h2>
-          <button class="as-written" aria-pressed={asWritten} onclick={() => (asWritten = !asWritten)}>Show as written</button>
+          <button class="as-written" onclick={() => (asWritten = !asWritten)}>{asWritten ? 'Show parsed' : 'Show as written'}</button>
         </div>
         {#each groups(recipe.ingredients) as g}
           {#if g.section}<h3 class="sect">{g.section}</h3>{/if}
-          <ul>
+          <ul role="list">
             {#each g.rows as i}
               {#if asWritten}
                 <li class="raw">{i.raw}</li>
@@ -165,23 +184,24 @@
             {/each}
           </ul>
         {/each}
+
+        {#if recipe.notes}
+          <h2 class="label aside-h">Notes</h2>
+          {#each recipe.notes.split(/\n\s*\n/) as para}<p class="notes"><Markdown text={para.trim()} /></p>{/each}
+        {/if}
       </section>
 
       <section id="panel-method" class="method sheet" role={narrow ? 'tabpanel' : undefined} aria-labelledby={narrow ? 'tab-method' : 'method-h'} hidden={narrow && tab !== 'method'}>
         <div class="col-head"><h2 id="method-h" class="label" class:visually-hidden={narrow}>Method</h2><span class="label steps">{recipe.steps.length} {recipe.steps.length === 1 ? 'step' : 'steps'}</span></div>
         {#each groups(recipe.steps) as g}
           {#if g.section}<h3 class="sect">{g.section}</h3>{/if}
-          <ol start={recipe.steps.indexOf(g.rows[0]) + 1}>
+          <ol role="list">
             {#each g.rows as s}
-              <li><span class="n fig" aria-hidden="true">{recipe.steps.indexOf(s) + 1}</span><p><Markdown text={s.text} /></p></li>
+              <li><span class="n fig"><span class="visually-hidden">{'Step '}</span>{recipe.steps.indexOf(s) + 1}</span><p><Markdown text={s.text} /></p></li>
             {/each}
           </ol>
         {/each}
 
-        {#if recipe.notes}
-          <h2 class="label aside-h">Notes</h2>
-          <p class="notes"><Markdown text={recipe.notes} /></p>
-        {/if}
         {#if recipe.nutrition_text}
           <h2 class="label aside-h">Nutrition</h2>
           <p class="notes"><Markdown text={recipe.nutrition_text} /></p>
@@ -243,7 +263,7 @@
     display: grid;
     grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
     gap: var(--space-6);
-    padding: var(--space-7) var(--space-6) calc(var(--space-6) + var(--tear));
+    padding: var(--space-6) var(--space-6) calc(var(--space-5) + var(--tear));
   }
   h1 {
     font-size: var(--title-xl);
@@ -272,10 +292,37 @@
   .facts {
     margin-top: var(--space-5);
   }
-  .desc {
+  .desc-wrap {
     margin-top: var(--space-4);
     max-width: 65ch;
+  }
+  .desc {
     color: var(--ink-2);
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    overflow: hidden;
+  }
+  .desc.open {
+    display: block;
+  }
+  .more {
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    background: none;
+    font-size: var(--ui);
+    font-weight: 600;
+    color: var(--ink);
+    text-decoration: underline;
+    text-decoration-color: var(--ink-3);
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 0.2em;
+  }
+  .more:hover {
+    color: var(--red);
+    text-decoration-color: var(--red);
   }
   .acts {
     display: flex;
@@ -293,6 +340,11 @@
   }
   .photo {
     align-self: start;
+  }
+  /* Held short so the recipe starts in the first screen on a laptop or an
+     iPad in landscape. */
+  .photo :global(.plate) {
+    max-height: min(22rem, 46vh);
   }
 
   .body {
@@ -355,28 +407,36 @@
     color: var(--ink-3);
   }
   .as-written {
+    min-height: 44px;
+    margin: calc(var(--space-2) * -1) 0;
     border: 0;
     background: none;
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     font-weight: 600;
     color: var(--ink-2);
     text-decoration: underline;
-    text-decoration-color: var(--perf);
+    text-decoration-color: var(--ink-3);
+    text-decoration-thickness: 1.5px;
     text-underline-offset: 0.2em;
-    padding: var(--space-1) 0;
+    padding: 0;
   }
-  .as-written:hover,
-  .as-written[aria-pressed='true'] {
+  .as-written:hover {
     color: var(--red);
-  }
-  .as-written[aria-pressed='true'] {
     text-decoration-color: var(--red);
   }
+  /* A section opens on the heavy rule, at reading size. The first one sits
+     straight under the panel's own rule, so it doesn't draw a second. */
   .sect {
-    font-size: var(--ui);
+    font-size: 1.0625rem;
     font-weight: 800;
-    margin: var(--space-5) 0 0;
-    padding-bottom: var(--space-1);
+    margin: var(--space-6) 0 0;
+    padding: var(--space-2) 0 var(--space-1);
+    border-top: 3px solid var(--ink);
+  }
+  .col-head + .sect {
+    margin-top: var(--space-4);
+    padding-top: 0;
+    border-top: 0;
   }
   .ingredients li {
     display: grid;
@@ -411,7 +471,9 @@
     margin-top: var(--space-7);
     padding-bottom: var(--space-2);
     border-bottom: 3px solid var(--ink);
-    max-width: calc(65ch + 3rem + var(--space-3));
+  }
+  .ingredients .aside-h {
+    margin-top: var(--space-6);
   }
   .notes {
     margin-top: var(--space-3);
@@ -441,16 +503,8 @@
       margin: -4px var(--space-2) 0;
       padding: var(--space-5) var(--space-4) calc(var(--space-5) + var(--tear));
     }
-    /* Title, facts and Begin cooking come first; the description and the
-       photo follow, the photo as a short band, and a photo-less recipe shows
-       no initial here. */
-    .head {
-      display: flex;
-      flex-direction: column;
-    }
-    .desc {
-      order: 1;
-    }
+    /* The photo follows the header text as a short band, and a photo-less
+       recipe shows no initial here. */
     .photo :global(.plate) {
       max-height: 40vh;
     }
