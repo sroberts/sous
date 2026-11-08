@@ -5,6 +5,7 @@
   import { amount } from '../lib/format.js';
   import { timers, findDurations, startTimer, remaining, togglePause, dismiss, clock } from '../lib/timers.svelte.js';
   import Markdown from '../components/Markdown.svelte';
+  import { plainText } from '../lib/markdown.js';
 
   let { id } = $props();
   let recipe = $state(null);
@@ -161,7 +162,7 @@
                 {#if current?.section}<span class="section">{current.section}</span>{/if}
               </header>
               <hr class="perf" />
-              <p class="step-text" class:long={(current?.text.length ?? 0) > 280}>{#if current}<Markdown text={current.text} />{/if}</p>
+              <p class="step-text" class:long={plainText(current?.text ?? '').length > 280}>{#if current}<Markdown text={current.text} links={false} />{/if}</p>
               {#if durations.length}
                 <div class="timer-btns">
                   {#each durations as d}

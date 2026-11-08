@@ -32,3 +32,8 @@ test('plain text with stray symbols is left alone', () => {
   const s = '2 * 3 = 6, snake_case_name, <b>not html</b>';
   assert.deepEqual(inlineMarkdown(s), [{ kind: 'text', text: s }]);
 });
+
+test('plainText drops markers and link targets', async () => {
+  const { plainText } = await import('../src/lib/markdown.js');
+  assert.equal(plainText('**Stir** in [the paste](https://example.com/a/very/long/url).'), 'Stir in the paste.');
+});

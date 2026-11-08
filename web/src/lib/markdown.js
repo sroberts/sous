@@ -31,3 +31,8 @@ export function inlineMarkdown(source) {
   if (last < source.length) out.push({ kind: 'text', text: source.slice(last) });
   return out;
 }
+
+/** The text as it reads once rendered: markers and link targets dropped. */
+export function plainText(source) {
+  return inlineMarkdown(source).map((p) => p.text).join('');
+}
