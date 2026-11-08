@@ -372,7 +372,7 @@
               tabindex={r.id === tabId ? 0 : -1}
               onclick={(e) => choose(r, e)}
               onfocus={() => (selectedId = r.id)}
-              ondblclick={() => open(r.id)}
+              ondblclick={(e) => !(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) && open(r.id)}
               aria-current={sel ? 'true' : undefined}
             >
               <Plate hash={r.cover} title={r.title} size="s" />
