@@ -25,6 +25,15 @@ include breaking changes, and they're called out here.
   tickets a page at a time as you scroll, rather than every recipe at once,
   and search waits for a pause in typing instead of re-sorting the whole
   library on every keystroke.
+- Back from a recipe, or between library views, returns to the same place
+  in the library, with the ticket you left on still selected and focused.
+- The library works properly from the keyboard. Enter on a course or a
+  masthead link follows that link instead of opening a recipe. The grid is
+  one stop in the tab order, so Tab reaches the preview pane. Arrows move
+  focus with the selection, Home and End jump through the grid, and a
+  ticket's focus ring is no longer hidden by its torn edge. On a wide
+  screen a click selects a ticket for the preview, as designed; a double
+  click or Enter opens it.
 - A recipe's description, steps, notes and nutrition render their Markdown
   (bold, italics and links), as Mela writes them, instead of showing the raw
   asterisks. Steps render it in Cook mode too.
