@@ -68,13 +68,12 @@
   const words = $derived(q.split(/\s+/).filter(Boolean));
 
   // Each recipe's searchable text, lowercased once per library load rather
-  // than once per recipe per keystroke.
+  // than once per recipe per keystroke. Ingredient items come lower-cased.
   const index = $derived.by(() => {
     const m = new Map();
     for (const r of session.recipes) {
       const title = r.title.toLowerCase();
-      const items = r.ingredient_items.map((i) => i.toLowerCase());
-      m.set(r.id, { title, items, hay: `${title} ${r.tags.join(' ')} ${r.source_host ?? ''} ${items.join(' ')}`.toLowerCase() });
+      m.set(r.id, { title, hay: `${title} ${r.tags.join(' ')} ${r.source_host ?? ''} ${r.ingredient_items.join(' ')}`.toLowerCase() });
     }
     return m;
   });
@@ -88,9 +87,9 @@
     if (!words.length && !using.length) return null;
     const out = [];
     for (const r of pool) {
-      const { title, items, hay } = index.get(r.id);
+      const { title, hay } = index.get(r.id);
       if (!words.every((w) => hay.includes(w))) continue;
-      const matched = using.filter((t) => items.some((i) => i.includes(t)) || title.includes(t)).length;
+      const matched = using.filter((t) => r.ingredient_items.some((i) => i.includes(t)) || title.includes(t)).length;
       if (using.length && !matched) continue;
       const titleHit = words.length && words.every((w) => title.includes(w));
       out.push({ r, matched, score: matched * 10 + (titleHit ? 5 : 0) });
