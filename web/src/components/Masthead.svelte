@@ -10,11 +10,21 @@
   const q = $derived(route.name === 'library' ? route.search.get('q') ?? '' : '');
   const show = $derived(route.name === 'library' ? route.search.get('show') : null);
 
-  function search(e) {
+  // Typing refines the library in place; from elsewhere it opens the library.
+  // In the library the search waits for a pause in typing, so a fast typist
+  // isn't made to wait on a search (and a history entry) per keystroke. It
+  // reads the field when it runs, so nothing typed meanwhile is lost.
+  let pending;
+  function search() {
+    clearTimeout(pending);
+    if (route.name !== 'library') return apply();
+    pending = setTimeout(() => route.name === 'library' && apply(), field.value ? 150 : 0);
+  }
+
+  function apply() {
     const params = new URLSearchParams(route.name === 'library' ? route.search : '');
-    const value = e.currentTarget.value;
+    const value = field.value;
     value ? params.set('q', value) : params.delete('q');
-    // Typing refines the library in place; from elsewhere it opens the library.
     go(`/${params.size ? `?${params}` : ''}`, { replace: route.name === 'library' });
   }
 

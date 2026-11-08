@@ -1,4 +1,5 @@
 <script>
+  import { tick } from 'svelte';
   import { flip } from 'svelte/animate';
   import { X, Heart, Bookmark } from '@lucide/svelte';
   import { route, go, link } from '../lib/router.svelte.js';
@@ -66,9 +67,20 @@
 
   const words = $derived(q.split(/\s+/).filter(Boolean));
 
-  function haystack(r) {
-    return `${r.title} ${r.tags.join(' ')} ${r.source_host ?? ''} ${r.ingredient_items.join(' ')}`.toLowerCase();
-  }
+  // Each recipe's searchable text, lowercased once per library load rather
+  // than once per recipe per keystroke.
+  const index = $derived.by(() => {
+    const m = new Map();
+    for (const r of session.recipes) {
+      const title = r.title.toLowerCase();
+      const items = r.ingredient_items.map((i) => i.toLowerCase());
+      m.set(r.id, { title, items, hay: `${title} ${r.tags.join(' ')} ${r.source_host ?? ''} ${items.join(' ')}`.toLowerCase() });
+    }
+    return m;
+  });
+
+  // localeCompare's ordering, without building a collator per comparison.
+  const collator = new Intl.Collator();
 
   // Search words must all appear; ingredients on hand rank recipes by how
   // many of them they use. Tickets keep their identity as they rerank.
@@ -76,18 +88,36 @@
     if (!words.length && !using.length) return null;
     const out = [];
     for (const r of pool) {
-      const hay = haystack(r);
+      const { title, items, hay } = index.get(r.id);
       if (!words.every((w) => hay.includes(w))) continue;
-      const matched = using.filter((t) => r.ingredient_items.some((i) => i.includes(t)) || r.title.toLowerCase().includes(t)).length;
+      const matched = using.filter((t) => items.some((i) => i.includes(t)) || title.includes(t)).length;
       if (using.length && !matched) continue;
-      const titleHit = words.length && words.every((w) => r.title.toLowerCase().includes(w));
+      const titleHit = words.length && words.every((w) => title.includes(w));
       out.push({ r, matched, score: matched * 10 + (titleHit ? 5 : 0) });
     }
-    return out.sort((a, b) => b.score - a.score || a.r.title.localeCompare(b.r.title));
+    return out.sort((a, b) => b.score - a.score || collator.compare(a.r.title, b.r.title));
   });
 
-  const rows = $derived(ranked ?? [...pool].sort((a, b) => a.title.localeCompare(b.title)).map((r) => ({ r, matched: null })));
+  // The plain library, sorted once per change to the pool, not per keystroke.
+  const sorted = $derived([...pool].sort((a, b) => collator.compare(a.title, b.title)).map((r) => ({ r, matched: null })));
+  const rows = $derived(ranked ?? sorted);
   const visible = $derived(rows.map((x) => x.r));
+
+  // The grid draws a page of tickets and adds more as the end scrolls into
+  // view. Drawing every ticket at once (and animating each as a search
+  // reranks them) is what froze phones on large libraries.
+  const PAGE = 60;
+  let more = $state();
+  // A new search or filter starts from the first page again.
+  let shown = $derived.by(() => (q, using.join(), show, course, PAGE));
+  // Observed afresh after each page, so a sentinel still in view adds another.
+  $effect(() => {
+    if (!more || shown >= rows.length) return;
+    const io = new IntersectionObserver((es) => es[0].isIntersecting && (shown += PAGE), { rootMargin: '800px 0px' });
+    io.observe(more);
+    return () => io.disconnect();
+  });
+  const drawn = $derived(rows.length > shown ? rows.slice(0, shown) : rows);
 
   // The rail holds what this person means to cook, on the plain library view.
   const rail = $derived(!show && !course && !ranked ? session.recipes.filter((r) => r.mine.want_to_cook) : []);
@@ -125,9 +155,11 @@
     const step = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: cols, ArrowUp: -cols }[e.key];
     if (step && !(tag === 'INPUT' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight'))) {
       e.preventDefault();
-      const next = visible[Math.max(0, Math.min(visible.length - 1, i + step))];
+      const j = Math.max(0, Math.min(visible.length - 1, i + step));
+      const next = visible[j];
       selectedId = next.id;
-      document.getElementById(`t-${next.id}`)?.scrollIntoView({ block: 'nearest' });
+      if (j >= shown) shown = j + PAGE;
+      tick().then(() => document.getElementById(`t-${next.id}`)?.scrollIntoView({ block: 'nearest' }));
     } else if (e.key === 'Enter' && selectedId && tag !== 'BUTTON') {
       e.preventDefault();
       go(`/r/${selectedId}`);
@@ -223,7 +255,7 @@
       </div>
     {:else}
       <ol class="grid" bind:this={grid}>
-        {#each rows as { r, matched } (r.id)}
+        {#each drawn as { r, matched } (r.id)}
           {@const t = ticketTime(r.total_minutes, r.time_text)}
           {@const sel = wide && r.id === selectedId}
           <li id="t-{r.id}" animate:flip={{ duration: ranked ? 360 : 0, easing: ease }}>
@@ -253,6 +285,7 @@
           </li>
         {/each}
       </ol>
+      {#if drawn.length < rows.length}<div class="more" bind:this={more} aria-hidden="true"></div>{/if}
     {/if}
   </main>
 
@@ -573,6 +606,10 @@
   .match.all {
     border-color: var(--red);
     color: var(--red);
+  }
+
+  .more {
+    height: 1px;
   }
 
   .ghost {

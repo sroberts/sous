@@ -8,6 +8,10 @@ include breaking changes, and they're called out here.
 ## [Unreleased]
 
 ### Fixed
+- Searching the library no longer freezes on a phone. The library draws its
+  tickets a page at a time as you scroll, rather than every recipe at once,
+  and search waits for a pause in typing instead of re-sorting the whole
+  library on every keystroke.
 - A recipe's description, steps, notes and nutrition render their Markdown
   (bold, italics and links), as Mela writes them, instead of showing the raw
   asterisks. Steps render it in Cook mode too.
