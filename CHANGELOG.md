@@ -7,6 +7,19 @@ include breaking changes, and they're called out here.
 
 ## [Unreleased]
 
+### Changed
+- The recipe page starts the recipe sooner: on a laptop or an iPad in
+  landscape the ingredients and method now show in the first screen. The
+  description sits under Begin cooking, held to three lines with More, and the
+  photo is shorter.
+- A recipe's notes sit under its ingredients, so make-ahead and substitution
+  advice is read before you shop and start, not after the last step.
+- Section headings ("For the sauce") are set at reading size on a heavy rule.
+- "Show as written" says "Show parsed" while the original lines are showing.
+- Links in recipe text are easier to see, carry an external-link mark, and
+  tell screen readers they open a new tab. Screen readers now hear each step's
+  number ("Step 7").
+
 ### Fixed
 - A recipe's description, steps, notes and nutrition render their Markdown
   (bold, italics and links), as Mela writes them, instead of showing the raw
