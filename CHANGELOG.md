@@ -7,6 +7,10 @@ include breaking changes, and they're called out here.
 
 ## [Unreleased]
 
+### Fixed
+- A recipe's notes and nutrition render their Markdown (bold, italics and
+  links), as Mela writes them, instead of showing the raw asterisks.
+
 ## [0.3.0] - 2026-11-02
 
 ### Added

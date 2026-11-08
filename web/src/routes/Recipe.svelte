@@ -9,6 +9,7 @@
   import { amount, ago, personName, webLink } from '../lib/format.js';
   import Plate from '../components/Plate.svelte';
   import Facts from '../components/Facts.svelte';
+  import Markdown from '../components/Markdown.svelte';
   import { stickIfFits } from '../lib/stick.js';
 
   let { id } = $props();
@@ -179,11 +180,11 @@
 
         {#if recipe.notes}
           <h2 class="label aside-h">Notes</h2>
-          <p class="notes">{recipe.notes}</p>
+          <p class="notes"><Markdown text={recipe.notes} /></p>
         {/if}
         {#if recipe.nutrition_text}
           <h2 class="label aside-h">Nutrition</h2>
-          <p class="notes">{recipe.nutrition_text}</p>
+          <p class="notes"><Markdown text={recipe.nutrition_text} /></p>
         {/if}
 
         <p class="colophon">
