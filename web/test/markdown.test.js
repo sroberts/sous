@@ -37,3 +37,13 @@ test('plainText drops markers and link targets', async () => {
   const { plainText } = await import('../src/lib/markdown.js');
   assert.equal(plainText('**Stir** in [the paste](https://example.com/a/very/long/url).'), 'Stir in the paste.');
 });
+
+test('labelledFigures reads Mela nutrition, and refuses anything else', async () => {
+  const { labelledFigures } = await import('../src/lib/markdown.js');
+  assert.deepEqual(labelledFigures('**Calories** 1063.75\n**Fat** 55.2 grams\n'), [
+    { label: 'Calories', fig: '1063.75', unit: '' },
+    { label: 'Fat', fig: '55.2', unit: 'grams' },
+  ]);
+  assert.equal(labelledFigures('**Calories** 1063\nAbout 4 servings'), null);
+  assert.equal(labelledFigures('Per serving: 400 calories'), null);
+});

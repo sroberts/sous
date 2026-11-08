@@ -3,7 +3,7 @@
   // ingredient count, read across the top of a ticket.
   import { ticketTime } from '../lib/format.js';
 
-  let { recipe, size = 'm' } = $props();
+  let { recipe, size = 'm', count = true } = $props();
 
   const cells = $derived.by(() => {
     const r = recipe;
@@ -17,7 +17,7 @@
     const yieldText = r.yield_text?.replace(/^(yield|serves|makes):?\s*/i, '');
     if (r.servings && yieldText && /^\d+\s*(servings?|people)?$/i.test(yieldText)) out.push({ label: 'Serves', fig: String(r.servings) });
     else if (yieldText) out.push({ label: 'Yield', text: yieldText });
-    if (r.ingredients?.length) out.push({ label: 'Ingredients', fig: String(r.ingredients.filter((i) => i.item).length) });
+    if (count && r.ingredients?.length) out.push({ label: 'Ingredients', fig: String(r.ingredients.filter((i) => i.item).length) });
     return out;
   });
 </script>
@@ -78,6 +78,16 @@
     }
     .l > div {
       padding-right: var(--space-4);
+    }
+  }
+  /* A phone: one row for times and servings. */
+  @media (max-width: 760px) {
+    .l .fig {
+      font-size: 1.875rem;
+    }
+    .l > div {
+      min-width: 0;
+      padding-right: var(--space-3);
     }
   }
   .unit {
