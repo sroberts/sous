@@ -7,6 +7,9 @@ include breaking changes, and they're called out here.
 
 ## [Unreleased]
 
+### Removed
+- The footer with the version and GitHub links.
+
 ## [0.3.0] - 2026-11-02
 
 ### Added
