@@ -4,6 +4,8 @@
   import { getRecipe } from '../lib/library.js';
   import { amount } from '../lib/format.js';
   import { timers, findDurations, startTimer, remaining, togglePause, dismiss, clock } from '../lib/timers.svelte.js';
+  import Markdown from '../components/Markdown.svelte';
+  import { plainText } from '../lib/markdown.js';
 
   let { id } = $props();
   let recipe = $state(null);
@@ -160,7 +162,7 @@
                 {#if current?.section}<span class="section">{current.section}</span>{/if}
               </header>
               <hr class="perf" />
-              <p class="step-text" class:long={(current?.text.length ?? 0) > 280}>{current?.text}</p>
+              <p class="step-text" class:long={plainText(current?.text ?? '').length > 280}>{#if current}<Markdown text={current.text} links={false} />{/if}</p>
               {#if durations.length}
                 <div class="timer-btns">
                   {#each durations as d}
@@ -181,7 +183,7 @@
             <button class="next ticket" onclick={() => move(q.n - 1 - step)} aria-label="Go to step {q.n}">
               <span class="clip" aria-hidden="true"></span>
               <span class="next-head"><span class="fig">{q.n}</span><span class="label">Up next</span></span>
-              <span class="next-text">{q.text}</span>
+              <span class="next-text"><Markdown text={q.text} links={false} /></span>
             </button>
           {/each}
           {#if timers.list.length}
