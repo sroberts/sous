@@ -71,6 +71,15 @@
   .l .fig {
     font-size: 3rem;
   }
+  /* Narrower header column: smaller figures keep the facts on one row. */
+  @media (max-width: 1180px) {
+    .l .fig {
+      font-size: 2.25rem;
+    }
+    .l > div {
+      padding-right: var(--space-4);
+    }
+  }
   .unit {
     margin-left: 3px;
     font-size: 0.8125rem;
