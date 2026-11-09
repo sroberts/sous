@@ -13,26 +13,36 @@ include breaking changes, and they're called out here.
   description sits under Begin cooking, held to three lines with More, and the
   photo is shorter.
 - A recipe's notes come before its method, so make-ahead and timing advice is
-  read before you start, not found after the ingredients or the last step.
+  read before you start. The first lines show, with More for the rest, so the
+  steps aren't pushed down.
+- On a laptop or an iPad in landscape, the ingredients stay beside the method
+  all the way down, scrolling on their own when the list is long.
+- A recipe without a photo gives its header the full width instead of a grey
+  placeholder.
 - Section headings ("For the sauce") are set at reading size on a heavy rule.
 - "Show as written" says "Show parsed" while the original lines are showing.
 - Links in recipe text are easier to see, carry an external-link mark, and
   tell screen readers they open a new tab. Screen readers now hear each step's
   number ("Step 7").
-- On a phone the recipe comes up sooner: the photo is a thumbnail beside the
-  title, Edit recipe sits under it, and the times fit on one row. A short
+- On a phone the recipe comes up sooner, with the first ingredients in the
+  first screen: the photo is a thumbnail beside the title, Edit sits at the
+  end of the source line, Favorite and Want to cook are icon buttons beside
+  Begin cooking, and the times fit on one row. A short
   recipe shows its ingredients and method in one scroll; a long one splits
   them into Ingredients and Method tabs. Switching tabs no longer hides the
   first step under the bar at the top, and once you scroll into the recipe a
   Cook button rides along with the tabs.
-- In the Method tab on a phone, an Ingredients bar at the foot of the screen
-  pulls the ingredient list up over the step you're reading.
-- On a phone, the Cook button with the tabs hides while Begin cooking at the
-  end of the method is in view, so there's one red button at a time. Tap
+- In the Method tab on a phone or tablet, an Ingredients bar at the foot of
+  the screen pulls the ingredient list up over the step you're reading. Pull
+  the sheet down by its handle, or tap Back to the method, to close it.
+- One red button at a time: the Begin cooking after the last step turns red
+  only once the one at the top has scrolled away, and on a phone the Cook
+  button with the tabs hides while it's in view. Tap
   targets on the recipe page are at least 44px.
 - Begin cooking also closes the method, so you can start from where you read.
 - Nutrition written as "**Calories** 1063" lines shows as figures, like the
-  times, rounded the way a label is (1064, 55.3 g) with short units. The ingredient column is wider on large screens.
+  times, rounded the way a label is (1064 kcal, 55.3 g) with short units. A
+  sample recipe says it came with Sous instead of "Added by Sous". The ingredient column is wider on large screens.
 - The source link tells screen readers it opens a new tab, and a recipe that
   fails to load says so plainly instead of showing a raw error.
 - On a phone or an iPad in portrait, an Add button in the masthead opens New
