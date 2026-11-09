@@ -28,8 +28,26 @@ include breaking changes, and they're called out here.
   times. The ingredient column is wider on large screens.
 - The source link tells screen readers it opens a new tab, and a recipe that
   fails to load says so plainly instead of showing a raw error.
+- On a phone or an iPad in portrait, an Add button in the masthead opens New
+  recipe and Import from a link, which were hidden below desktop width.
+- Leaving Cook mode while a timer is running asks first, and a cancelled
+  timer can be brought back with Undo. Timer clocks are larger on phones,
+  with more room between Pause and Cancel.
+- Red is kept for the next step forward: New recipe, the favorite and
+  want-to-cook marks, and the Using label are now black or grey.
+- In the library on a wide screen, a click selects a recipe for the preview
+  and a second click opens it.
+- The editor says that a recipe's first tag is its course in the library.
 
 ### Fixed
+- Pressing Enter on a link in the library (the menu, a course, another
+  recipe) followed that link instead of opening the selected recipe.
+- On a wide screen, clicking a recipe in the library opened it instead of
+  showing it in the preview.
+- Keyboard and screen-reader access: a "Skip to recipes" link, arrow keys
+  that move focus through the library, headings in order, each Cook mode step
+  announced as it changes, and form fields with edges that meet WCAG contrast.
+- Cook mode's error page has a heading and a way back to the library.
 - A recipe's description, steps, notes and nutrition render their Markdown
   (bold, italics and links), as Mela writes them, instead of showing the raw
   asterisks. Steps render it in Cook mode too.

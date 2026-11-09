@@ -1,9 +1,11 @@
 <script>
-  import { X, Timer, Pause, Play, ListChecks, Sun, Check } from '@lucide/svelte';
+  import { X, Timer, Pause, Play, ListChecks, Sun, Check, ArrowLeft } from '@lucide/svelte';
+  import { tick } from 'svelte';
   import { go } from '../lib/router.svelte.js';
+  import { session, toast } from '../lib/session.svelte.js';
   import { getRecipe } from '../lib/library.js';
   import { amount } from '../lib/format.js';
-  import { timers, findDurations, startTimer, remaining, togglePause, dismiss, clock } from '../lib/timers.svelte.js';
+  import { timers, findDurations, startTimer, remaining, togglePause, dismiss, restore, counting, clearAll, clock } from '../lib/timers.svelte.js';
   import Markdown from '../components/Markdown.svelte';
   import { plainText } from '../lib/markdown.js';
 
@@ -12,6 +14,8 @@
   let error = $state(null);
   let awake = $state(false);
   let sheet = $state(false); // ingredients, on narrow screens
+  let leaving = $state(false); // asking before leaving with timers running
+  let said = $state(''); // the step, for screen readers
 
   const KEY = `sous.cook.${id}`;
   const saved = (() => {
@@ -71,15 +75,55 @@
     if (!recipe) return;
     const next = step + by;
     if (next < 0) return;
-    if (next >= total) return finish();
+    if (next >= total) return leave({ done: true });
     step = next;
   }
 
-  function finish() {
-    try {
-      sessionStorage.removeItem(KEY);
-    } catch {}
+  // One live region outside the step ticket, which is rebuilt on each step,
+  // so a screen reader hears every step it moves to.
+  $effect(() => {
+    if (current) said = `Step ${step + 1} of ${total}. ${plainText(current.text)}`;
+  });
+
+  // Timers live only in cook mode, so leaving with one still counting asks
+  // first. Finishing the recipe also forgets where the cook had got to.
+  let done = false;
+  async function leave({ done: finished = false } = {}) {
+    done = finished;
+    if (counting() && !leaving) {
+      leaving = true;
+      await tick();
+      document.getElementById('keep-cooking')?.focus();
+      return;
+    }
+    leaving = false;
+    clearAll();
+    if (session.toast?.action) session.toast = null; // a timer's Undo
+
+    if (done) {
+      try {
+        sessionStorage.removeItem(KEY);
+      } catch {}
+    }
     go(`/r/${id}`);
+  }
+
+  async function stay() {
+    leaving = false;
+    await tick();
+    document.querySelector('.cook .bar .icon-btn')?.focus();
+  }
+
+  // Notes at the foot of the screen sit above the pager, not over it.
+  $effect(() => {
+    document.documentElement.style.setProperty('--toast-lift', '96px');
+    return () => document.documentElement.style.removeProperty('--toast-lift');
+  });
+
+  // A cancelled timer can be put back for a while.
+  function cancel(t) {
+    dismiss(t);
+    if (!t.done) toast(`Timer for ${t.label} cancelled.`, { label: 'Undo', run: () => restore(t) });
   }
 
   function toggleIngredient(i) {
@@ -87,10 +131,11 @@
   }
 
   function onkey(e) {
-    if (e.target.closest?.('button') && (e.key === ' ' || e.key === 'Enter')) return;
+    if (e.key === 'Escape') return leaving ? stay() : sheet ? (sheet = false) : leave();
+    if (leaving) return;
+    if (e.target.closest?.('button, a') && (e.key === ' ' || e.key === 'Enter')) return;
     if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') (e.preventDefault(), move(1));
     else if (e.key === 'ArrowLeft' || e.key === 'PageUp') (e.preventDefault(), move(-1));
-    else if (e.key === 'Escape') sheet ? (sheet = false) : go(`/r/${id}`);
   }
 
   // A sideways swipe anywhere on the step turns the page.
@@ -117,16 +162,31 @@
 
 <div class="cook">
   <header class="bar">
-    <button class="icon-btn" onclick={() => go(`/r/${id}`)} aria-label="Leave cook mode"><X size={26} /></button>
+    <button class="icon-btn" onclick={() => leave()} aria-label="Leave cook mode"><X size={26} /></button>
     <div class="title">
-      <h1 class="name">{recipe?.title ?? ''}</h1>
+      <h1 class="name">{recipe?.title ?? (error ? 'Cook mode' : '')}</h1>
       {#if recipe}<p class="where label">Step {step + 1} of {total}{#if awake}<span class="awake" title="The screen won’t sleep while cooking"><Sun size={13} aria-hidden="true" />Screen stays on</span>{/if}</p>{/if}
     </div>
     <button class="btn ing-toggle" aria-expanded={sheet} onclick={() => (sheet = !sheet)}><ListChecks aria-hidden="true" />Ingredients<span class="fig left">{left}</span></button>
   </header>
 
+  <p class="visually-hidden" aria-live="polite">{said}</p>
+
+  {#if leaving}
+    {@const n = counting()}
+    <div class="leaving" role="alertdialog" aria-labelledby="leaving-q">
+      <p id="leaving-q">{n === 1 ? 'A timer is' : `${n} timers are`} still running. Leaving stops {n === 1 ? 'it' : 'them'}.</p>
+      <button class="btn" onclick={() => leave({ done })}>Stop {n === 1 ? 'the timer' : 'timers'} and leave</button>
+      <button class="btn" id="keep-cooking" onclick={stay}>Keep cooking</button>
+    </div>
+  {/if}
+
   {#if error}
-    <main class="stage"><p class="step-text">{error.message}</p></main>
+    <main class="stage failed">
+      <h2>This recipe didn’t open.</h2>
+      <p>{error.message || 'Sous couldn’t load it.'}</p>
+      <a class="btn" href="/" onclick={(e) => (e.preventDefault(), go('/'))}><ArrowLeft aria-hidden="true" />Back to the library</a>
+    </main>
   {:else if recipe}
     <div class="body">
       <aside class="ingredients sheet" class:open={sheet} aria-label="Ingredients">
@@ -154,7 +214,7 @@
         <div class="rail" aria-hidden="true"></div>
         <div class="hung" class:timed={timers.list.length > 0}>
           {#key step}
-            <article class="step ticket" aria-live="polite">
+            <article class="step ticket">
               <span class="clip" aria-hidden="true"></span>
               <header class="step-head">
                 <span class="num fig">{step + 1}</span>
@@ -199,7 +259,7 @@
                         {#if t.paused}<Play size={20} />{:else}<Pause size={20} />{/if}
                       </button>
                     {/if}
-                    <button class="icon-btn small" onclick={() => dismiss(t)} aria-label={t.done ? 'Clear timer' : 'Cancel timer'}><X size={20} /></button>
+                    <button class="icon-btn small" onclick={() => cancel(t)} aria-label={t.done ? 'Clear timer' : 'Cancel timer'}><X size={20} /></button>
                   </span>
                 </li>
               {/each}
@@ -395,7 +455,7 @@
     font-size: 1.875rem;
   }
   .timers {
-    flex: 0 0 12.5rem;
+    flex: 0 0 13.5rem;
     display: grid;
     gap: var(--space-3);
     margin-left: auto;
@@ -413,7 +473,10 @@
   .t-row {
     display: flex;
     align-items: center;
-    gap: var(--space-1);
+    gap: var(--space-3);
+  }
+  .t-row .icon-btn + .icon-btn {
+    margin-left: auto;
   }
   .t-clock {
     font-size: 2.25rem;
@@ -534,15 +597,18 @@
     padding: var(--space-5) var(--space-4) calc(var(--space-4) + var(--tear));
     border: 0;
     text-align: left;
-    opacity: 0.72;
-    transition: opacity 160ms;
+    color: var(--ink-2);
+    transition: background-color 160ms;
   }
   .next:hover {
-    opacity: 1;
+    background: var(--ticket-press);
   }
   .next + .next {
     flex-basis: 12rem;
-    opacity: 0.5;
+  }
+  .next + .next .next-head,
+  .next + .next .next-text {
+    color: var(--ink-3);
   }
   .next-head {
     display: flex;
@@ -561,6 +627,37 @@
     display: -webkit-box;
     -webkit-line-clamp: 5;
     -webkit-box-orient: vertical;
+  }
+
+  .leaving {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    background: var(--ticket);
+    border-bottom: 3px solid var(--ink);
+  }
+  .leaving p {
+    flex: 1 1 16rem;
+    font-weight: 700;
+  }
+  .leaving .btn {
+    min-height: 52px;
+  }
+  .failed {
+    display: grid;
+    gap: var(--space-4);
+    justify-items: start;
+    align-content: start;
+    padding: var(--space-7) var(--gutter);
+  }
+  .failed h2 {
+    font-size: var(--title-l);
+    font-weight: 800;
+  }
+  .failed p {
+    color: var(--ink-2);
   }
 
   .pager {
@@ -632,13 +729,20 @@
       top: 0;
       right: var(--space-4);
       z-index: 1;
-      width: 10.5rem;
+      width: 13rem;
     }
     .timed .step-head {
-      padding-right: 10.5rem;
+      padding-right: 13rem;
+    }
+    /* The timer covers the right of the head; the section is in the sheet. */
+    .timed .section {
+      display: none;
+    }
+    .of {
+      white-space: nowrap;
     }
     .tick .t-clock {
-      font-size: 1.75rem;
+      font-size: 2.25rem;
     }
     .tick {
       background: var(--ticket-press);
