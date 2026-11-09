@@ -9,7 +9,8 @@
   --ink: #141516;
   --ink-2: #404447; /* secondary text: 7.6:1 on pass */
   --ink-3: #5f6367; /* tertiary text: 5.9:1 on ticket, 4.7:1 on pass */
-  --perf: #adb4ba; /* perforations and hairlines; never text */
+  --perf: #adb4ba; /* perforations and hairlines; never text or a field's edge */
+  --field: #787e84; /* a field's edge: 4.0:1 on ticket, 3.2:1 on pass */
   --steel-hi: #d2d6d9;
   --steel: #959ba0;
   --steel-lo: #5d6368;

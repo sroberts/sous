@@ -20,11 +20,13 @@ function match(pathname) {
   return { name: 'library', id: null };
 }
 
-export const route = $state({ ...match(location.pathname), search: new URLSearchParams(location.search) });
+// `back` is true when the page was reached by Back or Forward, so a page can
+// put back where the reader was (the library's scroll, its selection).
+export const route = $state({ ...match(location.pathname), search: new URLSearchParams(location.search), back: false });
 
-function sync() {
+function sync(back = false) {
   const was = route.name + route.id;
-  Object.assign(route, match(location.pathname), { search: new URLSearchParams(location.search) });
+  Object.assign(route, match(location.pathname), { search: new URLSearchParams(location.search), back });
   if (route.name + route.id !== was) land();
 }
 
@@ -132,7 +134,7 @@ addEventListener('popstate', (e) => {
     }
   }
   if (to !== null) pos = to;
-  sync();
+  sync(true);
 });
 
 /** Use on <a href> so links work as links and navigate in place. */

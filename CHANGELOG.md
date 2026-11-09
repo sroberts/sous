@@ -27,19 +27,49 @@ include breaking changes, and they're called out here.
   Cook button rides along with the tabs.
 - In the Method tab on a phone, an Ingredients bar at the foot of the screen
   pulls the ingredient list up over the step you're reading.
-- On a recipe, New recipe in the top bar is a plain button, so Begin cooking
-  is the one red button in view. Tap targets on the recipe page are at least
-  44px.
+- On a phone, the Cook button with the tabs hides while Begin cooking at the
+  end of the method is in view, so there's one red button at a time. Tap
+  targets on the recipe page are at least 44px.
 - Begin cooking also closes the method, so you can start from where you read.
 - Nutrition written as "**Calories** 1063" lines shows as figures, like the
   times, rounded the way a label is (1064, 55.3 g) with short units. The ingredient column is wider on large screens.
 - The source link tells screen readers it opens a new tab, and a recipe that
   fails to load says so plainly instead of showing a raw error.
+- On a phone or an iPad in portrait, an Add button in the masthead opens New
+  recipe and Import from a link, which were hidden below desktop width.
+- Leaving Cook mode while a timer is running asks first, and a cancelled
+  timer can be brought back with Undo. Timer clocks are larger on phones,
+  with more room between Pause and Cancel.
+- Red is kept for the next step forward: New recipe, the favorite and
+  want-to-cook marks, and the Using label are now black or grey.
+- In the library on a wide screen, a click selects a recipe for the preview
+  and a second click opens it.
+- The editor says that a recipe's first tag is its course in the library.
 
 ### Fixed
+- Searching the library no longer freezes on a phone. The library draws its
+  tickets a page at a time as you scroll, rather than every recipe at once,
+  and search waits for a pause in typing instead of re-sorting the whole
+  library on every keystroke.
+- Back from a recipe, or between library views, returns to the same place
+  in the library, with the ticket you left on still selected and focused.
+- Pressing Enter on a link in the library (the menu, a course, another
+  recipe) followed that link instead of opening the selected recipe.
+- On a wide screen, clicking a recipe in the library opened it instead of
+  showing it in the preview.
+- Keyboard and screen-reader access: a "Skip to recipes" link, arrow keys
+  that move focus through the library, headings in order, each Cook mode step
+  announced as it changes, and form fields with edges that meet WCAG contrast.
+  The library grid is one stop in the tab order, so Tab reaches the preview
+  pane; Home and End jump through the grid; and a ticket's focus ring is no
+  longer hidden by its torn edge.
+- Cook mode's error page has a heading and a way back to the library.
 - A recipe's description, steps, notes and nutrition render their Markdown
   (bold, italics and links), as Mela writes them, instead of showing the raw
   asterisks. Steps render it in Cook mode too.
+
+### Removed
+- The footer with the version and GitHub links.
 
 ## [0.3.0] - 2026-11-02
 

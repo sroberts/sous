@@ -48,7 +48,7 @@ the UI built: `cd web && npm run build && cd .. && go run ./cmd/sous --port
 ## 5. Edit a sample recipe
 
 1. On the gazpacho, choose Edit (`/r/<id>/edit`).
-   - The editor shows "Sous" as the author, not `_sous`.
+   - `_sous` appears nowhere in the editor (it shows no author line).
    - Ingredient lines show the live parse preview.
 2. Change the title, then Cancel: "Discard your changes?" appears with
    focus on Keep editing (a double click on Cancel doesn't discard).

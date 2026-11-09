@@ -13,6 +13,7 @@ colors:
   ink-2: "#404447"
   ink-3: "#5f6367"
   perf: "#adb4ba"
+  field: "#787e84"
   steel-hi: "#d2d6d9"
   steel: "#959ba0"
   steel-lo: "#5d6368"
@@ -193,7 +194,7 @@ The world refuses the cookbook page and the rounded photo-card grid. There are n
 A cool, near-monochrome kitchen palette (grey counter, white paper, black print) with a single red second ink.
 
 ### Primary
-- **Expo Red** (`red`): the second ink. Primary actions (New recipe, Begin cooking, Next step, Save), the selected ticket's top edge and figures, the active course count, the fired step number, running timer clocks, ingredients the cook has on hand, focus rings, caret, field-focus underlines, hover on text links, field errors. Contrast 6.2:1 on ticket, 5.0:1 on pass.
+- **Expo Red** (`red`): the second ink. Primary actions (Begin cooking, Next step, Save), the selected ticket's top edge and figures, the active course count, the fired step number, running timer clocks, ingredients the cook has on hand, focus rings, caret, field-focus underlines, hover on text links, field errors. Contrast 6.2:1 on ticket, 5.0:1 on pass.
 - **Pressed Red** (`red-press`): hover and pressed state of red buttons, and hover inside a done timer.
 - **Red Wash** (`red-wash`): text selection highlight only.
 
@@ -205,11 +206,12 @@ A cool, near-monochrome kitchen palette (grey counter, white paper, black print)
 - **Print Black** (`ink`): all primary text, button strokes, the heavy 3px rules that head a section or a facts block, the avatar, the toast.
 - **Second Grey** (`ink-2`): secondary text and inactive navigation. 7.6:1 on pass.
 - **Third Grey** (`ink-3`): tertiary text, labels inside facts and timers, units, counts. 5.9:1 on ticket, 4.7:1 on pass.
-- **Perforation** (`perf`): perforations, hairline dividers and quiet strokes. Never text (2.0:1 on ticket).
+- **Perforation** (`perf`): perforations, hairline dividers and quiet strokes. Never text, and never the edge of a field (2.0:1 on ticket).
+- **Field Edge** (`field`): the edge of anything you type into (editor and import underlines, the Using box), so a field can be found without guessing. 4.0:1 on ticket, 3.2:1 on pass, above WCAG's 3:1 for controls.
 - **Steel** (`steel-hi`, `steel`, `steel-lo`): the rail's three-stop gradient and the clips (`steel` to `steel-lo`). Used nowhere else except the scrollbar thumb.
 
 ### Named Rules
-**The Second Ink Rule.** Red marks only what is live, selected or actionable. If the cook could not act on it, has not selected it, and it is not running, it prints in black or grey.
+**The Second Ink Rule.** Red marks only what is live, selected or actionable. If the cook could not act on it, has not selected it, and it is not running, it prints in black or grey. Status marks (a card's favorite heart and want-to-cook bookmark), field labels and menu icons are grey; New recipe and Import are default buttons, so the one red button on a page is the step forward (Begin cooking, Next step, Save).
 
 **The Thermal Paper Rule.** Every reading surface is `ticket` white on the `pass` grey. There are no tinted cards, gradients or overlays on paper; only the rail and its clips carry a gradient.
 
@@ -241,9 +243,9 @@ A cool, near-monochrome kitchen palette (grey counter, white paper, black print)
 
 A sticky 56px masthead over full-bleed grids on the pass. Below 760px it slides up out of view while the page scrolls down and back on any scroll up, at the top of the page, or when focus is in it; `--bar-shown` carries how much of it is showing, for anything sticky beneath. Gutter is clamp(16px, 2.5vw, 32px); spacing follows a 4px base (4, 8, 12, 16, 24, 32, 48, 64).
 
-- **Library:** a 200px course list with figure counts, then the pass. When there are want-to-cook recipes, the rail runs across the top with 15rem tickets hanging from it; below, the library is an auto-fill grid of tickets (min 176px; 16px row and 12px column gaps). From the wide breakpoint a third column, minmax(360px, 26vw), holds the selected ticket's preview as a sticky panel. Below 860px the course list becomes a horizontal strip of ticket chips.
-- **Recipe:** a rail across the content width with the recipe's header ticket clipped beneath it (7fr text, 5fr photo, the photo no taller than min(22rem, 46vh)). The header reads title, source, facts, then the actions, then the description held to three lines (two from 901 to 1180px) with a More link, so the recipe body starts in the first screen on a laptop or an iPad in landscape. Below, two straight-edged panels: the ingredients panel (17 to 23rem, up to 27rem from 1280px) and the method panel, which opens with the Notes in `ink-2` (make-ahead and timing advice is read before the steps) and closes with Begin cooking and then Nutrition. Method steps are held to 58ch, about 78 characters of Archivo. Nutrition written as labelled values ("**Calories** 1063") is set like the facts, label over figure with a small lowercase unit (g, mg, kcal), rounded as a label would be. The ingredients panel is sticky only while the whole list fits under the masthead; a longer list scrolls with the page rather than inside the panel. Collapses to one column at 900px in the same order, with the photo as a band no taller than 40vh (omitted when the recipe has no photo); the facts drop the ingredient count. On a phone (760px and below) the photo is an 88px square beside the title, the crumb row goes (the masthead leads back to the library) and Edit recipe sits under the title. A recipe whose two panels fit in about a screen and a half stays stacked. A longer one turns Ingredients and Method into two tabs on a `pass` strip that sticks under the masthead (700, `ink-2` with an `ink-3` figure count; the selected tab `ink` with a 3px `ink` underline); each tab keeps its own scroll position, and switching tabs never brings the hidden masthead back. Once the strip sticks, a red Cook button (44px) appears at its end, since Begin cooking has scrolled away, and hides again while the Begin cooking after the last step is in view: one red button at a time. On a phone the Method tab also gets an Ingredients bar fixed to the foot of the screen (ticket white, `perf` hairline above), which opens the ingredient list as a bottom sheet with a 3px `ink` top rule over a dimmed page; Done at its top and Back to the method at its foot close it, as does Escape. On the recipe page the masthead's New recipe is a default button, not red.
-- **Cook:** full-height. A ticket-white bar, then a 18 to 24rem ingredients panel beside the stage. The stage is a sticky rail with the fired step (up to 50rem), then up to two queued steps and a lane of timers, all hanging from it. Queued tickets drop away at 1439px and 1180px; at 900px ingredients become a sheet and the timer hangs over the step's top-right corner. A pager of Previous (1fr) and Next step (2fr), 72px tall, closes the screen.
+- **Library:** a 200px course list with figure counts, then the pass. When there are want-to-cook recipes, the rail runs across the top with 15rem tickets hanging from it; below, the library is an auto-fill grid of tickets (min 176px; 16px row and 12px column gaps). From the wide breakpoint a third column, minmax(360px, 26vw), holds the selected ticket's preview as a sticky panel: a click selects a ticket and a second click on the selected one opens it. Arrow keys move through the grid (moving focus when a ticket has it, the selection from the search field), and Enter opens the selected ticket only from the search field; on any other link it follows that link. A "Skip to recipes" link, first in the tab order, jumps past the masthead and course list to the first ticket. The rail is shown above the library heading but follows it in the page, so headings read in order. A recipe's course is its first tag, which the editor says beside the tags. Below 860px the course list becomes a horizontal strip of ticket chips.
+- **Recipe:** a rail across the content width with the recipe's header ticket clipped beneath it (7fr text, 5fr photo, the photo no taller than min(22rem, 46vh)). The header reads title, source, facts, then the actions, then the description held to three lines (two from 901 to 1180px) with a More link, so the recipe body starts in the first screen on a laptop or an iPad in landscape. Below, two straight-edged panels: the ingredients panel (17 to 23rem, up to 27rem from 1280px) and the method panel, which opens with the Notes in `ink-2` (make-ahead and timing advice is read before the steps) and closes with Begin cooking and then Nutrition. Method steps are held to 58ch, about 78 characters of Archivo. Nutrition written as labelled values ("**Calories** 1063") is set like the facts, label over figure with a small lowercase unit (g, mg, kcal), rounded as a label would be. The ingredients panel is sticky only while the whole list fits under the masthead; a longer list scrolls with the page rather than inside the panel. Collapses to one column at 900px in the same order, with the photo as a band no taller than 40vh (omitted when the recipe has no photo); the facts drop the ingredient count. On a phone (760px and below) the photo is an 88px square beside the title, the crumb row goes (the masthead leads back to the library) and Edit recipe sits under the title. A recipe whose two panels fit in about a screen and a half stays stacked. A longer one turns Ingredients and Method into two tabs on a `pass` strip that sticks under the masthead (700, `ink-2` with an `ink-3` figure count; the selected tab `ink` with a 3px `ink` underline); each tab keeps its own scroll position, and switching tabs never brings the hidden masthead back. Once the strip sticks, a red Cook button (44px) appears at its end, since Begin cooking has scrolled away, and hides again while the Begin cooking after the last step is in view: one red button at a time. On a phone the Method tab also gets an Ingredients bar fixed to the foot of the screen (ticket white, `perf` hairline above), which opens the ingredient list as a bottom sheet with a 3px `ink` top rule over a dimmed page; Done at its top and Back to the method at its foot close it, as does Escape.
+- **Cook:** full-height. A ticket-white bar, then a 18 to 24rem ingredients panel beside the stage. The stage is a sticky rail with the fired step (up to 50rem), then up to two queued steps and a lane of timers, all hanging from it. Queued tickets drop away at 1439px and 1180px; at 900px ingredients become a sheet and the timer hangs over the step's top-right corner. A pager of Previous (1fr) and Next step (2fr), 72px tall, closes the screen. Leaving (the X, Esc or Finish) while a timer is still counting asks first in a strip under the bar: "A timer is still running. Leaving stops it." with Stop the timer and leave, and Keep cooking, focused; Esc keeps cooking. Cancelling a running timer offers Undo in a toast, which sits above the pager in cook mode. Each new step is announced to screen readers from one quiet live region.
 - **Editor:** a sticky toolbar (back, unsaved state, Cancel, Save) over a main panel and a 20rem side panel, sticky only while all of it fits, so Move to trash at its foot is always in reach. Single column at 960px, the main panel first and the side panel (ending in Move to trash) after it. Below 760px Cancel and Save move to a ticket-white bar fixed along the bottom with a `perf` top hairline. Leaving with unsaved changes asks in place of those actions: "Discard your changes?" with Keep editing, focused, in Save's place and a quiet Discard to its left; Esc keeps editing.
 
 ### Named Rules
@@ -280,7 +282,7 @@ Ticket-printed and square-shouldered.
 - **Disabled:** `perf` stroke, `ink-3` text, transparent.
 
 ### Chips
-- **Style:** thermal white, 2px black stroke, 3px corners, 0.875rem bold text, a 26 to 30px remove button that turns red on hover. Used for "Using" ingredients and editor tags.
+- **Style:** thermal white, 2px black stroke, 3px corners, 0.875rem bold text, a 26 to 30px remove button that turns red on hover. Used for "Using" ingredients and editor tags. The Using box around them has a 2px `field` edge that turns red on focus, and its label is `ink-3`.
 - **Match badge:** a 2px-corner outlined figure (matched/asked); red stroke and figure when every asked ingredient is in the recipe.
 
 ### Cards / Containers
@@ -291,18 +293,18 @@ Ticket-printed and square-shouldered.
 
 ### Inputs / Fields
 - **Search:** 40px, 2px black stroke, 3px corners, white; stroke turns red on focus. Shows a ⌘K hint key on desktop.
-- **Editor fields:** borderless with a 1.5px `perf` underline that turns red on focus; the title field is a display-size line over a 2px black underline. The caret is red. Ingredient and step lines grow to fit their text rather than cut it off. Placeholders are instructions or start "e.g." in general words, never a plausible value.
+- **Editor fields:** borderless with a 1.5px `field` underline that turns red on focus; the title field is a display-size line over a 2px black underline. The caret is red. Ingredient and step lines grow to fit their text rather than cut it off. Placeholders are instructions or start "e.g." in general words, never a plausible value.
 - **Error:** red underline and red 0.875rem/600 message beneath.
 
 ### Navigation
-- **Masthead:** 56px ticket-white bar with a `perf` bottom hairline: wordmark, text nav (600, `ink-2`; hover `ticket-press`; current item on a `pass` fill), search, New recipe in red, and the cook's name with a black initial avatar. Below 760px it wraps to three rows and hides on scroll down (see Layout).
+- **Masthead:** 56px ticket-white bar with a `perf` bottom hairline: wordmark, text nav (600, `ink-2`; hover `ticket-press`; current item on a `pass` fill), search, Import and New recipe as default buttons, and the cook's name with a black initial avatar. At 1080px and below, Import and New recipe fold into one default Add button with a two-item menu (New recipe, Import from a link); on a phone it sits in the top row beside the cook's name. Menus close on Esc or a click elsewhere, and their icons are `ink-2`. Below 760px the bar wraps to three rows and hides on scroll down (see Layout).
 - **Course list:** UI text with figure counts in `ink-3`; hover on `pass-deep`; the active course sits on thermal white in bold with its count in red.
 
 ### Facts
 The recipe's figures read across the top of a ticket in fixed cells: label over figure with a small unit, between a 3px black top rule and a dashed perforation below. Wordy values (a yield like "4 to 6 servings") set in body weight.
 
 ### The Rail (signature)
-A 10px steel bar (`steel-hi` to `steel` to `steel-lo`) with tickets overlapping it by 4px, each held by a centred steel clip. Rail tickets show a big time figure and ingredient count, a perforation, then the title and source; on hover a ticket swings 1deg from its clip (240ms). In cook mode a new step fires onto the rail with a short slide and settle (420ms); queued steps hang beside it at reduced opacity (0.72, then 0.5); timers hang in their own lane with a red clock, grey when paused, and turn solid red and swing when done.
+A 10px steel bar (`steel-hi` to `steel` to `steel-lo`) with tickets overlapping it by 4px, each held by a centred steel clip. Rail tickets show a big time figure and ingredient count, a perforation, then the title and source; on hover a ticket swings 1deg from its clip (240ms). In cook mode a new step fires onto the rail with a short slide and settle (420ms); queued steps hang beside it with their text in `ink-2`, then `ink-3`, so they recede without dropping below 4.5:1; timers hang in their own lane with a red clock (2.25rem, on a phone too), grey when paused, and turn solid red and swing when done. A timer's Pause and Cancel sit 12px apart, Cancel at the far edge.
 
 ### Import page
 `/import` is a plain page on paper, not a panel. With no link it holds one field and a primary Fetch button, with the "Send recipes from anywhere" panel below (bookmarklet link, iOS Shortcut steps, and a full-width Siri card that saves without opening Sous). While a link is read it says "Reading <host>…" in a polite live region, and adds a slow-site note after 5 seconds. On success the banner sits above the ordinary editor; on failure it shows a ticket-voiced message for the error code, then the paste box.
@@ -324,9 +326,6 @@ A chef's toque in solid ink `#141516` on ticket white `#fafbfc`: three overlappi
 
 ### Toast
 Black slip with white text and a white-stroked button, 3px corners, rising 12px into place over 320ms. "Sous has been updated." with Reload waits until cook mode is closed.
-
-### Footer
-One quiet line on the pass under every screen but cook mode, in the tracked label style in `--ink-3`: "Sous v0.3.0 · Source on GitHub". A release's version links its release notes; a dev build shows the version without a link. Offline, before the server has answered, only the GitHub link shows.
 
 ## Do's and Don'ts
 

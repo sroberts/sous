@@ -5,7 +5,6 @@
   import Masthead from './components/Masthead.svelte';
   import WhoIsCooking from './components/WhoIsCooking.svelte';
   import Toast from './components/Toast.svelte';
-  import Footer from './components/Footer.svelte';
   import Library from './routes/Library.svelte';
   import Recipe from './routes/Recipe.svelte';
   import Cook from './routes/Cook.svelte';
@@ -15,6 +14,16 @@
   boot();
   registerWorker();
 
+  // Past the masthead (and the course list) to the first recipe on the
+  // library, or to the page's heading elsewhere.
+  function skip(e) {
+    e.preventDefault();
+    const to = document.querySelector('.grid .card[tabindex="0"]') ?? document.querySelector('main h1, h1');
+    if (!to) return;
+    if (!to.matches('a, button, input') && !to.hasAttribute('tabindex')) to.setAttribute('tabindex', '-1');
+    to.focus();
+  }
+
   const titles = { library: 'Sous', new: 'New recipe · Sous', import: 'Import a recipe · Sous' };
   $effect(() => {
     if (titles[route.name]) document.title = titles[route.name];
@@ -22,6 +31,7 @@
 </script>
 
 {#if route.name !== 'cook'}
+  <a class="skip btn" href="#main" onclick={skip}>{route.name === 'library' ? 'Skip to recipes' : 'Skip to content'}</a>
   <Masthead />
 {/if}
 
@@ -50,10 +60,6 @@
 {:else if route.name === 'import'}
   <!-- A new ?url= is a new import, so the page starts over. -->
   {#key route.search.toString()}<Import />{/key}
-{/if}
-
-{#if route.name !== 'cook'}
-  <Footer />
 {/if}
 
 {#if session.asking}
@@ -85,7 +91,6 @@
     background: var(--ink);
     color: var(--ticket);
     border-top: 4px solid var(--red);
-    border-radius: 3px;
   }
   .signed-out p {
     flex: 1;
@@ -100,6 +105,16 @@
   }
   .signed-out .btn:hover {
     background: var(--red-press);
+  }
+  .skip {
+    position: fixed;
+    top: var(--space-2);
+    left: var(--space-2);
+    z-index: 40;
+    transform: translateY(-200%);
+  }
+  .skip:focus {
+    transform: none;
   }
   .down {
     max-width: 36rem;

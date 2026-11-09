@@ -1,22 +1,63 @@
 <script>
+  import { flushSync } from 'svelte';
   import { Search, Plus, Link2, ChevronDown, Check, ExternalLink, CloudOff } from '@lucide/svelte';
   import { route, go, link } from '../lib/router.svelte.js';
   import { session, choosePerson } from '../lib/session.svelte.js';
   import { net, isOffline } from '../lib/net.svelte.js';
 
   let menuOpen = $state(false);
+  let addOpen = $state(false); // New recipe and Import, on narrower screens
   let field;
+  let addWrap = $state();
+  let whoWrap = $state();
+
+  // A click anywhere else closes an open menu.
+  function onpointerdown(e) {
+    if (addOpen && !addWrap?.contains(e.target)) addOpen = false;
+    if (menuOpen && !whoWrap?.contains(e.target)) menuOpen = false;
+  }
 
   const q = $derived(route.name === 'library' ? route.search.get('q') ?? '' : '');
   const show = $derived(route.name === 'library' ? route.search.get('show') : null);
 
-  function search(e) {
+  // Typing refines the library in place; from elsewhere it opens the library.
+  // In the library the search waits for a pause in typing, so a fast typist
+  // isn't made to wait on a search (and a history entry) per keystroke. It
+  // reads the field when it runs, so nothing typed meanwhile is lost.
+  let pending = null;
+  function search() {
+    clearTimeout(pending);
+    if (route.name !== 'library') return apply();
+    pending = setTimeout(apply, field.value ? 150 : 0);
+  }
+
+  function apply() {
+    clearTimeout(pending);
+    pending = null;
     const params = new URLSearchParams(route.name === 'library' ? route.search : '');
-    const value = e.currentTarget.value;
+    const value = field.value;
     value ? params.set('q', value) : params.delete('q');
-    // Typing refines the library in place; from elsewhere it opens the library.
     go(`/${params.size ? `?${params}` : ''}`, { replace: route.name === 'library' });
   }
+
+  // Enter and the up and down arrows act on the results, so a search still
+  // waiting runs first (and the library settles its selection) rather than
+  // acting on the results from before the last few keystrokes.
+  function flush(e) {
+    if (pending !== null && (e.key === 'Enter' || e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+      apply();
+      flushSync();
+    }
+  }
+
+  // A search still waiting belongs to the page it was typed on: going
+  // anywhere else (a link, Back, Clear search) drops it and the field shows
+  // that page's search. Nor does a timer outlive the masthead.
+  $effect(() => {
+    route.search;
+    if (field) field.value = q;
+    return () => clearTimeout(pending);
+  });
 
   // On a phone the masthead takes a fifth of the screen, so it slides away
   // while you scroll down and comes back as soon as you scroll up, at the
@@ -35,7 +76,7 @@
         last = y;
         return;
       }
-      if (!phone.matches || y < height || menuOpen || bar.contains(document.activeElement)) {
+      if (!phone.matches || y < height || menuOpen || addOpen || bar.contains(document.activeElement)) {
         hidden = false;
         last = y;
       } else if (Math.abs(y - last) > 8) {
@@ -54,7 +95,12 @@
     };
   });
   $effect(() => {
-    if (menuOpen) hidden = false;
+    if (menuOpen || addOpen) hidden = false;
+  });
+  // Moving to another page closes the add menu.
+  $effect(() => {
+    route.name;
+    addOpen = false;
   });
   $effect(() => {
     document.documentElement.style.setProperty('--bar-shown', `${hidden ? 0 : height}px`);
@@ -65,13 +111,15 @@
       e.preventDefault();
       field?.focus();
       field?.select();
-    } else if (e.key === 'Escape') {
-      menuOpen = false;
+    } else if (e.key === 'Escape' && (menuOpen || addOpen)) {
+      const back = addOpen ? addWrap?.querySelector('button') : whoWrap?.querySelector('button');
+      menuOpen = addOpen = false;
+      back?.focus();
     }
   }
 </script>
 
-<svelte:window onkeydown={onkey} />
+<svelte:window onkeydown={onkey} {onpointerdown} />
 
 <header class="bar" class:hidden bind:this={bar} onfocusin={() => (hidden = false)}>
   <a class="mark" href="/" use:link aria-label="Sous, the library">Sous</a>
@@ -83,15 +131,23 @@
   <label class="search">
     <Search size={17} aria-hidden="true" />
     <span class="visually-hidden">Search recipes</span>
-    <input bind:this={field} type="search" placeholder="Search recipes, tags, ingredients" value={q} oninput={search} autocomplete="off" />
+    <input bind:this={field} type="search" placeholder="Search recipes, tags, ingredients" value={q} oninput={search} onkeydown={flush} autocomplete="off" />
     <kbd>⌘K</kbd>
   </label>
   <div class="add">
     <a class="btn" href="/import" use:link aria-current={route.name === 'import' ? 'page' : undefined}><Link2 aria-hidden="true" />Import</a>
-    <!-- On a recipe, Begin cooking is the one red button in view. -->
-    <a class="btn" class:primary={route.name !== 'recipe'} href="/new" use:link><Plus aria-hidden="true" />New recipe</a>
+    <a class="btn" href="/new" use:link aria-current={route.name === 'new' ? 'page' : undefined}><Plus aria-hidden="true" />New recipe</a>
   </div>
-  <div class="who">
+  <div class="add-menu" bind:this={addWrap}>
+    <button class="btn add-btn" aria-haspopup="menu" aria-expanded={addOpen} onclick={() => (addOpen = !addOpen)}><Plus aria-hidden="true" />Add</button>
+    {#if addOpen}
+      <ul class="menu" role="menu">
+        <li role="none"><a role="menuitem" href="/new" use:link>New recipe<Plus size={16} aria-hidden="true" /></a></li>
+        <li role="none"><a role="menuitem" href="/import" use:link>Import from a link<Link2 size={16} aria-hidden="true" /></a></li>
+      </ul>
+    {/if}
+  </div>
+  <div class="who" bind:this={whoWrap}>
     <!-- Quiet, not an alarm: reading and cooking carry on from this device. -->
     <span class="net" role="status" title="You can read and cook from the library; changes need a connection.">
       {#if isOffline()}<CloudOff size={17} aria-hidden="true" />{net.online ? 'Can’t reach Sous' : 'Offline'}{/if}
@@ -310,12 +366,27 @@
     background: var(--ticket-press);
   }
   .menu :global(svg) {
-    color: var(--red);
+    color: var(--ink-2);
+  }
+  .add-menu {
+    position: relative;
+    display: none;
+  }
+  .add-menu .menu {
+    left: 0;
+    right: auto;
+  }
+  .add-btn {
+    min-height: 40px;
+    padding: 0 var(--space-3);
   }
 
   @media (max-width: 1080px) {
     .add {
       display: none;
+    }
+    .add-menu {
+      display: block;
     }
   }
   @media (max-width: 760px) {
@@ -330,7 +401,7 @@
     .bar.hidden {
       transform: translateY(-100%);
     }
-    .who {
+    .add-menu {
       margin-left: auto;
     }
     nav {
