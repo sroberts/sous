@@ -212,7 +212,19 @@
 
   const count = (k) => k.toLocaleString();
   const of = (k) => `${count(k)} ${k === 1 ? 'recipe' : 'recipes'}`;
-  const subhead = $derived(ranked && using.length ? `${of(visible.length)} use ${list(using)}` : of(visible.length));
+  const subhead = $derived(
+    (ranked && using.length ? `${of(visible.length)} use ${list(using)}` : of(visible.length)) + (ranked && course ? ` in ${course}` : ''),
+  );
+
+  // A search that finds nothing in a course may still find recipes in the
+  // rest of the library: say how many, rather than a dead end.
+  const elsewhere = $derived(
+    course && words.length && !visible.length
+      ? session.recipes.filter(
+          (r) => (show === 'fav' ? r.mine.favorite : show === 'want' ? r.mine.want_to_cook : true) && words.every((w) => index.get(r.id).hay.includes(w)),
+        ).length
+      : 0,
+  );
 
   function list(xs) {
     return xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} or ${xs.at(-1)}`;
@@ -376,8 +388,11 @@
         {:else if using.length}
           <p>Nothing here uses {list(using)}.</p>
           <button class="btn" onclick={() => setParam('using', '')}>Clear ingredients</button>
+        {:else if q && elsewhere}
+          <p>Nothing in {course} matches “{params.get('q')}”, but {of(elsewhere)} {elsewhere === 1 ? 'does' : 'do'} elsewhere.</p>
+          <button class="btn" onclick={() => setParam('course', '')}>Search all recipes</button>
         {:else if q}
-          <p>Nothing matches “{params.get('q')}”.</p>
+          <p>Nothing{course ? ` in ${course}` : ''} matches “{params.get('q')}”.</p>
           <button class="btn" onclick={() => setParam('q', '')}>Clear search</button>
         {:else if show === 'fav'}
           <p>No favorites yet. Use the heart on a recipe to keep it here.</p>
@@ -445,6 +460,7 @@
     display: grid;
     grid-template-columns: 200px minmax(0, 1fr);
     min-height: calc(100dvh - var(--bar));
+    align-content: start; /* a short result list mustn't stretch its rows */
   }
   .library.wide {
     grid-template-columns: 200px minmax(0, 1fr) minmax(360px, 26vw);

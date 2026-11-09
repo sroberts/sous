@@ -14,6 +14,22 @@
   let error = $state(null);
   let awake = $state(false);
   let sheet = $state(false); // ingredients, on narrow screens
+  let narrow = $state(matchMedia('(max-width: 900px)').matches);
+  $effect(() => {
+    const mq = matchMedia('(max-width: 900px)');
+    const on = () => (narrow = mq.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  });
+  // While the sheet covers the step on a narrow screen, what's under it is
+  // out of reach for keys and screen readers too, and focus moves with it.
+  const covered = $derived(sheet && narrow);
+  async function setSheet(open) {
+    sheet = open;
+    if (!narrow) return;
+    await tick();
+    document.querySelector(open ? '.sheet-done' : '.ing-toggle')?.focus();
+  }
   let leaving = $state(false); // asking before leaving with timers running
   let said = $state(''); // the step, for screen readers
 
@@ -67,7 +83,10 @@
 
   const current = $derived(recipe?.steps[step]);
   const total = $derived(recipe?.steps.length ?? 0);
-  const durations = $derived(current ? findDurations(current.text) : []);
+  const durations = $derived(current ? findDurations(plainText(current.text)) : []);
+  // A duration said twice in a step ("1 minute… 1 minute more") names its
+  // own clause on the button, so the two can be told apart.
+  const twice = $derived(new Set(durations.map((d) => d.label).filter((l, i, all) => all.indexOf(l) !== i)));
   const last = $derived(step === total - 1);
   const end = $derived(!!recipe && step >= total);
   const queued = $derived(recipe ? recipe.steps.slice(step + 1, step + 3).map((s, k) => ({ ...s, n: step + 2 + k })) : []);
@@ -130,24 +149,31 @@
     if (!t.done) toast(`Timer for step ${t.step + 1} cancelled.`, { label: 'Undo', run: () => restore(t) });
   }
 
-  // What a timer is for, in the step's own first words ("Brown the beef"),
-  // so a finished one says what to go and check.
-  function action(t) {
-    const text = plainText(recipe?.steps[t.step]?.text ?? '');
-    let first = text.split(/[,.;:(]|\s(?:and|then|until|while|for|over)\s/i)[0].trim();
-    if (!first || /^\d/.test(first)) return t.label;
-    // "Cook the bacon in a large pot" → "Cook the bacon", but "Pour in the
-    // wine" keeps its "in": a cut needs two words before it.
-    const short = first.split(/\s(?:in|into|on|onto|with|to|at|under|from)\s/i)[0];
-    if (short.split(/\s+/).length >= 2) first = short;
-    return first.length > 28 ? `${first.slice(0, 28).replace(/\s+\S*$/, '')}…` : first;
-  }
+  // What a timer is for, in the words of the clause it ends ("Brown the
+  // beef"), so a finished one says what to go and check.
+  const action = (t) => t.what ?? t.label;
 
   // Starting a timer swaps its button for Pause; keep focus on it.
-  async function time(d) {
-    startTimer(d.label, d.seconds, step);
+  async function time(d, key) {
+    startTimer(d.label, d.seconds, step, key, d.what);
     await tick();
-    document.querySelector(`.timer-btn[data-label="${CSS.escape(d.label)}"]`)?.focus({ preventScroll: true });
+    document.querySelector(`.timer-btn[data-key="${key}"]`)?.focus({ preventScroll: true });
+  }
+
+  // Finished timers lead the lane, and when one finishes the strip scrolls
+  // back to its start, so a ringing timer is never out of sight.
+  const lane = $derived([...timers.list].sort((a, b) => b.done - a.done));
+  const finished = $derived(timers.list.filter((t) => t.done).length);
+  $effect(() => {
+    if (finished) tick().then(() => document.querySelector('.timers')?.scrollTo({ left: 0 }));
+  });
+
+  // The ingredients come first in the page; a skip link takes the keyboard
+  // straight to the step and its timers.
+  function toStep(e) {
+    e.preventDefault();
+    const el = document.querySelector('.stage .step');
+    el?.focus();
   }
 
   // From the first step to the end card, for the last ticket.
@@ -158,7 +184,7 @@
   }
 
   function onkey(e) {
-    if (e.key === 'Escape') return leaving ? stay() : sheet ? (sheet = false) : leave();
+    if (e.key === 'Escape') return leaving ? stay() : sheet ? setSheet(false) : leave();
     if (leaving) return;
     if (e.target.closest?.('button, a') && (e.key === ' ' || e.key === 'Enter')) return;
     if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') (e.preventDefault(), move(1));
@@ -194,7 +220,7 @@
       <h1 class="name">{recipe?.title ?? (error ? 'Cook mode' : '')}</h1>
       {#if recipe}<p class="where label">{end ? 'All steps done' : `Step ${step + 1} of ${total}`}{#if awake}<span class="awake" title="The screen won’t sleep while cooking"><Sun size={13} aria-hidden="true" />Screen stays on</span>{/if}</p>{/if}
     </div>
-    <button class="btn ing-toggle" aria-expanded={sheet} onclick={() => (sheet = !sheet)}><ListChecks aria-hidden="true" />Ingredients<span class="fig left">{left}</span></button>
+    <button class="btn ing-toggle" aria-expanded={sheet} aria-controls="cook-ingredients" onclick={() => setSheet(!sheet)}><ListChecks aria-hidden="true" />Ingredients{#if recipe}<span class="fig left">{left}<span class="visually-hidden"> left to gather</span></span>{/if}</button>
   </header>
 
   <p class="visually-hidden" aria-live="polite">{said}</p>
@@ -216,8 +242,9 @@
     </main>
   {:else if recipe}
     <div class="body">
-      <aside class="ingredients sheet" class:open={sheet} aria-label="Ingredients">
-        <div class="ing-head"><h2 class="label">Ingredients</h2><span class="label">{checked.length} of {checked.length + left} gathered</span><button class="btn sheet-done" onclick={() => (sheet = false)}>Done</button></div>
+      <a class="skip-step" href="#step" onclick={toStep}>Skip to the step</a>
+      <aside class="ingredients sheet" id="cook-ingredients" class:open={sheet} aria-label="Ingredients">
+        <div class="ing-head"><h2 class="label">Ingredients</h2><span class="label">{checked.length} of {checked.length + left} gathered</span><button class="btn sheet-done" onclick={() => setSheet(false)}>Done</button></div>
         {#each groups as g}
           {#if g.section}<h3>{g.section}</h3>{/if}
           <ul>
@@ -234,15 +261,15 @@
             {/each}
           </ul>
         {/each}
-        <button class="btn sheet-close" onclick={() => (sheet = false)}>Back to the step</button>
+        <button class="btn sheet-close" onclick={() => setSheet(false)}>Back to the step</button>
       </aside>
 
-      <main class="stage" onpointerdown={down} onpointerup={up}>
+      <main class="stage" inert={covered} onpointerdown={down} onpointerup={up}>
         <div class="rail" aria-hidden="true"></div>
         <div class="hung" class:timed={timers.list.length > 0}>
           {#key step}
             {#if end}
-              <article class="step ticket end">
+              <article class="step ticket end" id="step" tabindex="-1">
                 <span class="clip" aria-hidden="true"></span>
                 <header class="step-head">
                   <span class="num fig" aria-hidden="true"><Check strokeWidth={3} /></span>
@@ -251,10 +278,10 @@
                 <hr class="perf" />
                 <h2 class="end-title">That’s {recipe.title}.</h2>
                 {#if took > 0}<p class="end-took"><span class="fig">{duration(took)}</span> from the first step to the last</p>{/if}
-                <p class="end-note">Finish to leave cook mode. Previous goes back to the last step.</p>
+                <p class="end-note">Time to eat.</p>
               </article>
             {:else}
-            <article class="step ticket">
+            <article class="step ticket" id="step" tabindex="-1">
               <span class="clip" aria-hidden="true"></span>
               <header class="step-head">
                 <span class="num fig">{step + 1}</span>
@@ -265,14 +292,16 @@
               <p class="step-text" class:long={plainText(current?.text ?? '').length > 280}>{#if current}<Markdown text={current.text} links={false} />{/if}</p>
               {#if durations.length}
                 <div class="timer-btns">
-                  {#each durations as d}
-                    {@const t = timers.list.find((x) => x.step === step && x.label === d.label && !x.done)}
+                  {#each durations as d, i}
+                    {@const key = `${step}:${i}`}
+                    {@const t = timers.list.find((x) => x.key === key && !x.done)}
+                    {@const name = twice.has(d.label) ? `${d.label} · ${d.what}` : d.label}
                     {#if t}
-                      <button class="btn timer-btn" data-label={d.label} aria-pressed="true" onclick={() => togglePause(t)}>
-                        {#if t.paused}<Play aria-hidden="true" />Resume {d.label}{:else}<Pause aria-hidden="true" />Pause {d.label}{/if}
+                      <button class="btn timer-btn" data-key={key} aria-pressed="true" onclick={() => togglePause(t)}>
+                        {#if t.paused}<Play aria-hidden="true" />Resume {name}{:else}<Pause aria-hidden="true" />Pause {name}{/if}
                       </button>
                     {:else}
-                      <button class="btn timer-btn" data-label={d.label} onclick={() => time(d)}><Timer aria-hidden="true" />Time {d.label}</button>
+                      <button class="btn timer-btn" data-key={key} onclick={() => time(d, key)}><Timer aria-hidden="true" />Time {name}</button>
                     {/if}
                   {/each}
                 </div>
@@ -289,18 +318,18 @@
           {/each}
           {#if timers.list.length}
             <ul class="timers" aria-label="Timers">
-              {#each timers.list as t (t.id)}
+              {#each lane as t (t.id)}
                 <li class="tick ticket" class:done={t.done} class:paused={t.paused}>
                   <span class="clip" aria-hidden="true"></span>
                   <span class="t-label label">Step {t.step + 1} · {action(t)}</span>
                   <span class="t-row">
                     <span class="t-clock fig" role="timer" aria-live={t.done ? 'assertive' : 'off'}>{#if t.done}<span class="visually-hidden">Step {t.step + 1}, {action(t)}: </span>Done{:else}{clock(remaining(t))}{/if}</span>
                     {#if !t.done}
-                      <button class="icon-btn small" onclick={() => togglePause(t)} aria-label={t.paused ? 'Resume timer' : 'Pause timer'}>
+                      <button class="icon-btn small" onclick={() => togglePause(t)} aria-label="{t.paused ? 'Resume' : 'Pause'} the timer for step {t.step + 1}, {action(t)}">
                         {#if t.paused}<Play size={20} />{:else}<Pause size={20} />{/if}
                       </button>
                     {/if}
-                    <button class="icon-btn small" onclick={() => cancel(t)} aria-label={t.done ? 'Clear timer' : 'Cancel timer'}><X size={20} /></button>
+                    <button class="icon-btn small" onclick={() => cancel(t)} aria-label="{t.done ? 'Clear' : 'Cancel'} the timer for step {t.step + 1}, {action(t)}"><X size={20} /></button>
                   </span>
                 </li>
               {/each}
@@ -310,7 +339,7 @@
       </main>
     </div>
 
-    <nav class="pager" aria-label="Steps">
+    <nav class="pager" aria-label="Steps" inert={covered}>
       <button class="btn big" onclick={() => move(-1)} disabled={step === 0}>Previous</button>
       {#if end}
         <button class="btn primary big" onclick={() => leave({ done: true })}>Finish</button>
@@ -384,7 +413,7 @@
   }
   .left {
     font-size: 1.125rem;
-    color: var(--red);
+    color: var(--ink-2); /* a count, not a live thing: no red */
   }
 
   .body {
@@ -394,6 +423,7 @@
     gap: var(--space-4);
     padding: var(--space-4) var(--space-4) 0;
     min-height: 0;
+    position: relative;
   }
   .ingredients {
     overflow-y: auto;
@@ -411,6 +441,26 @@
   }
   .sheet-done {
     display: none;
+  }
+  /* Out of sight until the keyboard reaches it. */
+  .skip-step {
+    position: absolute;
+    left: var(--space-4);
+    top: var(--space-2);
+    z-index: 5;
+    padding: var(--space-2) var(--space-3);
+    background: var(--ink);
+    color: var(--ticket);
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .skip-step:not(:focus) {
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
   .ing-head span {
     color: var(--ink-3);
@@ -435,8 +485,10 @@
     font-size: 1.125rem;
     line-height: 1.35;
   }
-  .ing:hover {
-    background: var(--ticket-press);
+  @media (hover: hover) {
+    .ing:hover {
+      background: var(--ticket-press);
+    }
   }
   .box {
     display: grid;
@@ -505,11 +557,16 @@
   .timed .t-clock {
     font-size: 1.875rem;
   }
+  /* The lane is held under the rail while a long step scrolls, so a running
+     clock never leaves the screen. */
   .timers {
     flex: 0 0 13.5rem;
     display: grid;
     gap: var(--space-3);
     margin-left: auto;
+    position: sticky;
+    top: 6px;
+    z-index: 1;
   }
   .tick {
     position: relative;
@@ -631,10 +688,25 @@
     gap: var(--space-3);
     margin-top: var(--space-6);
   }
+  /* A long label ("Time 1 minute · Sprinkle in the flour") wraps inside the
+     ticket rather than running past it. */
   .timer-btn {
     min-height: 60px;
+    max-width: 100%;
     font-size: 1.0625rem;
-    padding: 0 var(--space-5);
+    line-height: 1.25;
+    white-space: normal;
+    text-align: left;
+    padding: var(--space-2) var(--space-5);
+  }
+  /* A running timer is already red on the rail; its button here stays ink,
+     with only the icon in red, so the live thing is red once. */
+  .timer-btn[aria-pressed='true'] {
+    border-color: var(--ink);
+    color: var(--ink);
+  }
+  .timer-btn[aria-pressed='true'] :global(svg) {
+    color: var(--red);
   }
   .timer-btn :global(svg) {
     width: 22px;
@@ -896,9 +968,9 @@
       font-size: 2.25rem;
     }
   }
-  /* A short screen (an iPad in landscape) sets the step a little smaller, so
+  /* A short screen (an iPad in landscape, a laptop) sets the step a little smaller, so
      the step and its timer buttons fit above the pager. */
-  @media (min-width: 901px) and (max-height: 820px) {
+  @media (min-width: 901px) and (max-height: 920px) {
     .step {
       padding-top: var(--space-4);
       padding-bottom: calc(var(--space-5) + var(--tear));
