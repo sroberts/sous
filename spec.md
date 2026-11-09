@@ -405,6 +405,7 @@ JSON in and out. Errors are always
 | `GET /v1/recipes` | List and search: `q` (full text), `tag` (repeatable), `ingredient` (repeatable, all must match), `favorite`, `want_to_cook`, `sort` (`title`, `updated`, `created`), `cursor`, `limit` (default 50, max 200) |
 | `POST /v1/recipes` | Create. Body: recipe fields, `ingredients` as raw lines, `steps` as text, `tags` as names, `images` as hashes |
 | `GET /v1/recipes/{id}` | Full recipe with parsed ingredients, steps, tags, images, and the caller's `person_recipe` flags |
+| `POST /v1/recipes/batch` | Up to 100 full recipes by `{ids}`, as `GET /v1/recipes/{id}` gives them, in the order asked; unknown and deleted ids are left out. The web UI keeps the library on the device with it (a few requests for a whole library, not one per recipe). Not a write, so it needs no person |
 | `PATCH /v1/recipes/{id}` | Partial update. Sending `ingredients` or `steps` replaces that whole list |
 | `DELETE /v1/recipes/{id}` | Soft delete: sets `deleted_at` and hides it from lists |
 | `POST /v1/recipes/{id}/restore` | Undo a delete |

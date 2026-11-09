@@ -23,6 +23,42 @@ func (s *Service) Get(ctx context.Context, c identity.Caller, id string) (Recipe
 	return r, err
 }
 
+// MaxBatch is how many recipes one Batch call returns.
+const MaxBatch = 100
+
+// Batch returns the full live recipes among ids, with the caller's Mine
+// flags, in the order asked. An unknown or deleted id is left out rather
+// than failing the rest: the device syncing its stored library asks for ids
+// from an index that may be a moment old. More than MaxBatch ids is
+// CodeInvalid; a repeated id is returned once.
+func (s *Service) Batch(ctx context.Context, c identity.Caller, ids []string) ([]Recipe, error) {
+	if len(ids) > MaxBatch {
+		return nil, Errorf(CodeInvalid, "ids: at most %d at a time", MaxBatch)
+	}
+	out := make([]Recipe, 0, len(ids))
+	err := s.st.Read(ctx, func(tx *sql.Tx) error {
+		seen := make(map[string]bool, len(ids))
+		for _, id := range ids {
+			if seen[id] {
+				continue
+			}
+			seen[id] = true
+			r, err := loadRecipe(ctx, tx, id, c.Username())
+			var e *Error
+			if errors.As(err, &e) && e.Code == CodeNotFound {
+				continue
+			} else if err != nil {
+				return err
+			}
+			if r.DeletedAt == nil {
+				out = append(out, r)
+			}
+		}
+		return nil
+	})
+	return out, err
+}
+
 // Create stores a new recipe at version 1 with a UUIDv7 id, parsing
 // ingredients and steps, deriving servings, creating unknown tags and
 // checking image hashes exist. A blank title is CodeInvalid.

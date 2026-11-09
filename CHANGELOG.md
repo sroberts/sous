@@ -45,6 +45,11 @@ include breaking changes, and they're called out here.
 - In the library on a wide screen, a click selects a recipe for the preview
   and a second click opens it.
 - The editor says that a recipe's first tag is its course in the library.
+- Saving the library to a phone for offline use takes a few requests
+  instead of one per recipe: a library of 1,500 recipes is stored in about
+  16, so the first visit, and the first after each Sous update, finishes in
+  seconds and uses less data. `POST /v1/recipes/batch` returns up to 100
+  full recipes at once.
 
 ### Fixed
 - Searching the library no longer freezes on a phone. The library draws its

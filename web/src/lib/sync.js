@@ -1,13 +1,14 @@
 // Keeps the whole library's text on this device, in the background, while
 // Sous can be reached: the index, then every recipe that is new or changed
-// since it was stored. Photos are kept by the service worker as they are seen.
+// since it was stored, fetched a hundred at a time. Photos are kept by the service worker as they are seen.
 
 import { api } from './api.js';
 import { isOffline } from './net.svelte.js';
 import * as offline from './offline.js';
-import { staleIds, removedIds, backoff, stampOf } from './offline-core.js';
+import { staleIds, removedIds, backoff, stampOf, chunks } from './offline-core.js';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const BATCH = 100; // MaxBatch in internal/recipes
 
 let generation = 0;
 let running = null;
@@ -45,29 +46,33 @@ async function run(username, read, live) {
   const upgraded = version !== (await offline.loadServerVersion());
   await offline.prune(removedIds(await offline.storedIds(), summaries));
 
-  const queue = staleIds(summaries, upgraded ? new Map() : await offline.stamps(), stampOf);
+  // A hundred recipes a request (the most Sous gives at once), two requests
+  // at a time: a whole library in a few requests rather than one per recipe.
+  const queue = chunks(staleIds(summaries, upgraded ? new Map() : await offline.stamps(), stampOf), BATCH);
   let attempt = 0;
   let failed = false;
   const worker = async () => {
     while (queue.length && live() && !failed) {
-      const id = queue.shift();
+      const ids = queue.shift();
       try {
-        await offline.saveRecipe(await api.recipe(id), username);
+        await offline.saveRecipes(await api.recipes(ids), username);
         attempt = 0;
       } catch (err) {
         if (err.status === 429 || err.status === 503) {
-          // Busy: wait as asked and try the same recipe again, a few times.
+          // Busy: wait as asked and try the same batch again, a few times.
           if (attempt > 6) return void (failed = true);
-          queue.unshift(id);
+          queue.unshift(ids);
           await sleep(backoff(err.retryAfter, attempt++));
-        } else if (err.code === 'offline' || err.code === 'signed_out') {
+        } else {
+          // Offline, signed out, or anything unexpected: stop, and the next
+          // sync carries on from what was stored. (A recipe trashed since the
+          // index was read is simply left out of the answer.)
           failed = true;
         }
-        // Anything else (trashed since the index was read): skip it.
       }
     }
   };
-  await Promise.all([worker(), worker(), worker()]);
+  await Promise.all([worker(), worker()]);
   if (live() && !queue.length && !failed) {
     if (upgraded) await offline.saveServerVersion(version);
     await offline.saveSyncedAt(Date.now());
