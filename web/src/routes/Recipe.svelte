@@ -29,6 +29,9 @@
     );
   load();
 
+  // A server's own message reads as a sentence; a failed request has none.
+  const why = (err) => (err.status ? err.message : 'Sous couldn’t be reached. Try again in a moment.');
+
   // A recipe in the trash still opens (from a link, or the change log), so
   // the page says so and brings it back from here.
   let restoring = $state(false);
@@ -41,7 +44,7 @@
       await refreshIndex();
       toast(`Restored ${r.title} from the trash.`);
     } catch (err) {
-      toast(`Couldn’t restore it. ${err.message}`);
+      toast(`Couldn’t restore it. ${why(err)}`);
     } finally {
       restoring = false;
     }
@@ -62,14 +65,17 @@
     try {
       saved = await asPerson(() => api.setMine(id, { [flag]: next[flag] }));
     } catch (err) {
-      toast(`Couldn’t save ${flag === 'favorite' ? 'Favorite' : 'Want to cook'}. ${err.message}`);
+      toast(`Couldn’t save ${flag === 'favorite' ? 'Favorite' : 'Want to cook'}. ${why(err)}`);
       return;
     }
     if (!saved) return;
     recipe.mine = saved;
     patchSummary(id, { mine: saved });
     // From a key there's no button under the pointer to show it changed.
-    if (say) toast(flag === 'favorite' ? (saved.favorite ? 'Added to your favorites.' : 'Taken out of your favorites.') : saved.want_to_cook ? 'Added to Want to cook.' : 'Taken off Want to cook.');
+    if (say) {
+      const said = flag === 'favorite' ? (saved.favorite ? 'Added to your favorites.' : 'Taken out of your favorites.') : saved.want_to_cook ? 'Added to Want to cook.' : 'Taken off Want to cook.';
+      toast(said, { label: 'Undo', run: () => toggle(flag) });
+    }
   }
 
   const person = (u) => personName(u, session.people);
@@ -102,6 +108,9 @@
   const CREDIT = /^(inspired by|adapted from|based on|recipe (from|by)|source:|from the book)\b/i;
   const notesParas = $derived(recipe?.notes ? recipe.notes.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean) : []);
   const notesLead = $derived(notesParas.find((p) => !CREDIT.test(p)) ?? notesParas[0] ?? '');
+  // Open, the advice still leads and the credit comes last, quietly, like a
+  // source line, so the paragraph you were reading doesn't move.
+  const notesInOrder = $derived([...notesParas.filter((p) => !CREDIT.test(p)), ...notesParas.filter((p) => CREDIT.test(p))]);
   $effect(() => {
     if (!notesEl) return;
     const measure = () => {
@@ -183,6 +192,27 @@
     io.observe(endCook);
     return () => io.disconnect();
   });
+  // The Ingredients bar steps aside for the Begin cooking after the last step
+  // only once that button reaches the bar's strip at the foot of the screen,
+  // so it's there for the last steps. On an iPad held upright it's a corner
+  // button that never meets it, and never steps aside.
+  let endAtBar = $state(false);
+  let corner = $state(false);
+  $effect(() => {
+    const mq = matchMedia('(min-width: 761px)');
+    const set = () => (corner = mq.matches);
+    set();
+    mq.addEventListener('change', set);
+    return () => mq.removeEventListener('change', set);
+  });
+  $effect(() => {
+    if (!endCook) return;
+    const io = new IntersectionObserver(([e]) => (endAtBar = e.isIntersecting), { rootMargin: '0px 0px -84px 0px' });
+    io.observe(endCook);
+    return () => io.disconnect();
+  });
+  const peekShown = $derived(tabsStuck && (corner || !endAtBar));
+
   // The Begin cooking after the last step is red only once the header's has
   // scrolled away; on a short recipe both can be on screen at once.
   $effect(() => {
@@ -195,17 +225,29 @@
   });
 
   // In the Method tab the quantities are a tab away, so a bar at the foot of
-  // the screen, in thumb reach, pulls them up over the step you're on.
+  // the screen, in thumb reach, pulls them up over the step you're on. The
+  // sheet opens no taller than its list or 58% of the screen, so the step
+  // stays in view above it; pulling the handle up opens it to 85%.
   let sheet = $state();
-  let drag = $state(0); // px the sheet is pulled down by its handle
+  let sheetTall = $state(false);
+  let drag = $state(0); // px the sheet is pulled down (positive) or up by its handle
   let dragFrom = null;
   function openSheet() {
     if (!sheet) return;
+    sheetTall = false;
     sheet.showModal();
-    // Open at the ingredients for the part of the method you're reading.
-    const g = sheet.querySelector(`.sheet-in [data-sect="${sectionNow()}"]`);
+    // Open at the ingredients for the part of the method you're reading,
+    // with room below for that group to reach the top.
     const list = sheet.querySelector('.sheet-in');
-    if (list) list.scrollTop = g ? g.offsetTop - 12 : 0;
+    if (!list) return;
+    list.style.paddingBottom = '';
+    const g = list.querySelector(`[data-sect="${sectionNow()}"]`);
+    if (!g || g === list.querySelector('[data-sect]')) return void (list.scrollTop = 0);
+    // The group's own heavy rule tucks under the sheet's, so only one shows.
+    const top = g.offsetTop + 3;
+    const short = list.clientHeight - (list.scrollHeight - top);
+    if (short > 0) list.style.paddingBottom = `${short + 16}px`;
+    list.scrollTop = top;
   }
   const closeSheet = () => sheet?.close();
   function dragStart(e) {
@@ -215,11 +257,13 @@
     } catch {}
   }
   function dragMove(e) {
-    if (dragFrom !== null) drag = Math.max(0, e.clientY - dragFrom);
+    if (dragFrom !== null) drag = e.clientY - dragFrom;
   }
   function dragEnd() {
     if (dragFrom === null) return;
-    if (drag > 80) closeSheet();
+    if (drag < -40) sheetTall = true;
+    else if (drag > 80 && sheetTall) sheetTall = false;
+    else if (drag > 80) closeSheet();
     dragFrom = null;
     drag = 0;
   }
@@ -229,12 +273,12 @@
   // ingredients of its own ("To finish") keeps the last group that had some.
   const sectKey = (name) => (name ?? '').toLowerCase().replace(/[:.]/g, '').replace(/^(for|to make|to)\s+/, '').replace(/^the\s+/, '').trim();
   const ingKeys = $derived(new Set((recipe?.ingredients ?? []).map((i) => sectKey(i.section)).filter(Boolean)));
-  // The ingredient group for the part of the method at the reading line, a
-  // third of the way down the screen.
+  // The ingredient group for the part of the method at the reading line,
+  // a little under halfway down the screen, where the eye is.
   function sectionNow() {
     let key = '';
     for (const h of methodPanel?.querySelectorAll('h3.sect[data-sect]') ?? []) {
-      if (h.getBoundingClientRect().top > innerHeight / 3) break;
+      if (h.getBoundingClientRect().top > innerHeight * 0.45) break;
       if (ingKeys.has(h.dataset.sect)) key = h.dataset.sect;
     }
     return key;
@@ -297,17 +341,28 @@
     };
   });
 
-  // Keys, as in the library and cook mode: C to cook, E to edit, F and W
-  // for the marks, ? to list them.
+  // Keys, as in the library and cook mode. ? lists them.
+  let keysDialog = $state();
+  const KEYS = $derived([
+    ['C', 'Begin cooking'],
+    ['E', 'Edit the recipe'],
+    ['F', 'Favorite, or not'],
+    ['W', 'Want to cook, or not'],
+    ['A', 'Show the ingredients as written, or tidied'],
+    ...(tabbed ? [['I', 'The Ingredients tab'], ['M', 'The Method tab']] : []),
+    ['?', 'This list'],
+  ]);
   function onkey(e) {
-    if (!recipe || session.asking || e.altKey || e.ctrlKey || e.metaKey || sheet?.open) return;
+    if (!recipe || session.asking || e.altKey || e.ctrlKey || e.metaKey) return;
     const el = e.target;
     if (el.closest?.('input, textarea, select, [contenteditable], dialog')) return;
     const k = e.key.toLowerCase();
     if (k === 'c') go(`/r/${id}/cook`);
     else if (k === 'e') go(`/r/${id}/edit`);
     else if ((k === 'f' || k === 'w') && !isOffline()) toggle(k === 'f' ? 'favorite' : 'want_to_cook', true);
-    else if (e.key === '?') toast('Keys on a recipe: C begins cooking, E edits, F favorites, W adds to Want to cook.');
+    else if (k === 'a') asWritten = !asWritten;
+    else if (tabbed && (k === 'i' || k === 'm')) show(k === 'i' ? 'ingredients' : 'method', true);
+    else if (e.key === '?') keysDialog?.showModal();
     else return;
     e.preventDefault();
   }
@@ -392,9 +447,9 @@
           </button>
         </div>
         {#if recipe.description}
-          <div class="desc-wrap">
+          <div class="desc-wrap" class:clipped={descClipped && !descOpen}>
             <p class="desc" class:open={descOpen} class:fade-end={descClipped && !descOpen} id="desc" bind:this={descEl}><Markdown text={recipe.description} /></p>
-            {#if descLong}<button class="more" aria-expanded={descOpen} aria-controls="desc" onclick={() => (descOpen = !descOpen)}>{descOpen ? 'Less' : 'More'}</button>{/if}
+            {#if descLong}<button class="more" aria-expanded={descOpen} aria-controls="desc" onclick={() => (descOpen = !descOpen)}>{descOpen ? 'Show less' : 'Show all'}</button>{/if}
           </div>
         {/if}
       </div>
@@ -413,7 +468,7 @@
             Method<span class="count fig" aria-hidden="true">{recipe.steps.length}</span><span class="visually-hidden">{`, ${recipe.steps.length} ${recipe.steps.length === 1 ? 'step' : 'steps'}`}</span>
           </button>
           </div>
-          <a class="btn primary tab-cook" class:shown={!headInView && !endInView} href="/r/{id}/cook" use:link aria-label="Begin cooking">Cook</a>
+          <a class="btn primary tab-cook" class:shown={!headInView && !endInView} href="/r/{id}/cook" use:link aria-keyshortcuts="c" title="Begin cooking (C)">Cook</a>
         </div>
       {/if}
       <!-- A column that scrolls on its own takes focus, so the keyboard can
@@ -421,8 +476,8 @@
       <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
       <section id="panel-ingredients" class="ingredients sheet" role={tabbed ? 'tabpanel' : undefined} aria-labelledby={tabbed ? 'tab-ingredients' : 'ing-h'} hidden={tabbed && tab !== 'ingredients'} tabindex={overflowing ? 0 : undefined} bind:this={ingPanel}>
         <div class="col-head">
-          <h2 id="ing-h" class="label" class:visually-hidden={tabbed}>Ingredients</h2>
-          <button class="as-written" onclick={() => (asWritten = !asWritten)}>{asWritten ? 'Show tidied' : 'Show as written'}</button>
+          <h2 id="ing-h" class="label">Ingredients</h2>
+          <button class="as-written" aria-keyshortcuts="a" title="Show as written or tidied (A)" onclick={() => (asWritten = !asWritten)}>{asWritten ? 'Show tidied' : 'Show as written'}</button>
         </div>
         {@render ingredientList()}
         {#if below}
@@ -440,13 +495,13 @@
           </div>
           <div class="notes-block" id="notes">
             {#if notesOpen}
-              {#each notesParas as para}<p class="notes"><Markdown text={para} /></p>{/each}
+              {#each notesInOrder as para}<p class="notes" class:credit={CREDIT.test(para)}><Markdown text={para} /></p>{/each}
             {:else}
               <p class="notes clamped" class:fade-end={notesClipped} bind:this={notesEl}><Markdown text={notesLead} /></p>
             {/if}
           </div>
         {/if}
-        <div class="col-head" class:after-notes={recipe.notes}><h2 id="method-h" class="label" class:visually-hidden={tabbed && !recipe.notes}>Method</h2>{#if !tabbed}<span class="label steps">{recipe.steps.length} {recipe.steps.length === 1 ? 'step' : 'steps'}</span>{/if}</div>
+        <div class="col-head" class:after-notes={recipe.notes}><h2 id="method-h" class="label">Method</h2>{#if !tabbed}<span class="label steps">{recipe.steps.length} {recipe.steps.length === 1 ? 'step' : 'steps'}</span>{/if}</div>
         {#each groups(recipe.steps) as g}
           {#if g.section}<h3 class="sect" data-sect={sectKey(g.section)}>{g.section}</h3>{/if}
           <ol role="list">
@@ -480,12 +535,12 @@
     </div>
 
     {#if tabbed && tab === 'method'}
-      <div class="peek" class:shown={tabsStuck && !endInView} inert={!tabsStuck || endInView}>
+      <div class="peek" class:shown={peekShown} inert={!peekShown}>
         <button class="btn peek-btn" aria-haspopup="dialog" onclick={openSheet}><ChevronUp size={18} aria-hidden="true" />Ingredients<span class="count fig" aria-hidden="true">{recipe.ingredients.filter((i) => i.item).length}</span></button>
       </div>
     {/if}
     {#if tabbed}
-      <dialog class="ing-sheet" bind:this={sheet} aria-labelledby="sheet-h" style:transform={drag ? `translateY(${drag}px)` : null} onclick={(e) => e.target === sheet && closeSheet()}>
+      <dialog class="ing-sheet" bind:this={sheet} aria-labelledby="sheet-h" class:tall={sheetTall} style:transform={drag > 0 ? `translateY(${drag}px)` : null} onclick={(e) => e.target === sheet && closeSheet()}>
         <!-- Pull the head down to close, as with any sheet. A touch extra:
              Back to the method and Escape close it from the keyboard. -->
         <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -504,6 +559,14 @@
     {/if}
   </main>
 {/if}
+
+<dialog class="keys" bind:this={keysDialog} aria-labelledby="keys-h" onclick={(e) => e.target === keysDialog && keysDialog.close()}>
+  <h2 id="keys-h" class="label">Keys on a recipe</h2>
+  <dl>
+    {#each KEYS as [key, what]}<div><dt><kbd>{key}</kbd></dt><dd>{what}</dd></div>{/each}
+  </dl>
+  <form method="dialog"><button class="btn">Done</button></form>
+</dialog>
 
 {#snippet ingredientList()}
   {#each groups(recipe.ingredients) as g}
@@ -623,6 +686,14 @@
   .facts {
     margin-top: var(--space-5);
   }
+  /* Without a photo the header is the full width, but the facts' rule spans
+     only the figures, not a band of empty paper. */
+  @media (min-width: 761px) {
+    .top:not(.has-photo) .facts {
+      width: fit-content;
+      min-width: min(100%, 32rem);
+    }
+  }
   .desc-wrap {
     margin-top: var(--space-4);
     max-width: 65ch;
@@ -637,6 +708,19 @@
   }
   .desc.open {
     max-height: none;
+  }
+  /* Collapsed, Show all sits at the end of the last line, where the text has
+     faded out, rather than on a line of its own. */
+  .desc-wrap.clipped {
+    position: relative;
+  }
+  .desc-wrap.clipped .more {
+    position: absolute;
+    right: 0;
+    bottom: calc((1lh - 44px) / 2);
+    margin: 0;
+    padding: 0 0 0 var(--space-4);
+    background: var(--ticket);
   }
   .fade-end {
     mask-image: linear-gradient(#000, #000), linear-gradient(to right, #000 55%, transparent 92%);
@@ -768,10 +852,6 @@
     }
     .desc {
       --lines: 2;
-    }
-    /* One line of the notes is enough to say what's in them. */
-    .method .notes.clamped {
-      max-height: 1lh;
     }
     .method .col-head.after-notes {
       margin-top: var(--space-5);
@@ -912,6 +992,10 @@
   .notes-block {
     color: var(--ink-2);
   }
+  .notes.credit {
+    color: var(--ink-3);
+    font-size: 0.9375rem;
+  }
   .notes.clamped {
     max-height: 2lh;
     overflow: hidden;
@@ -976,7 +1060,10 @@
     inset: auto 0 0;
     width: 100%;
     max-width: none;
-    max-height: 85dvh;
+    max-height: min(58dvh, 100dvh - 6rem);
+    transition:
+      transform 160ms var(--ease-out),
+      max-height 200ms var(--ease-out);
     margin: 0;
     padding: 0;
     border: 0;
@@ -984,10 +1071,54 @@
     background: var(--ticket);
     color: var(--ink);
     flex-direction: column;
-    transition: transform 160ms var(--ease-out);
+  }
+  .ing-sheet.tall {
+    max-height: 85dvh;
   }
   .ing-sheet[open] {
     display: flex;
+  }
+  .keys {
+    width: min(26rem, calc(100% - 2 * var(--gutter)));
+    padding: var(--space-5);
+    border: 0;
+    border-top: 3px solid var(--ink);
+    background: var(--ticket);
+    color: var(--ink);
+  }
+  .keys::backdrop {
+    background: rgb(20 24 28 / 0.4);
+  }
+  .keys h2 {
+    padding-bottom: var(--space-2);
+    border-bottom: 3px solid var(--ink);
+  }
+  .keys dl {
+    margin: var(--space-2) 0 var(--space-4);
+  }
+  .keys dl > div {
+    display: grid;
+    grid-template-columns: 2.5rem 1fr;
+    gap: var(--space-3);
+    align-items: baseline;
+    padding: var(--space-2) 0;
+    border-bottom: 1.5px dashed var(--ticket-press);
+  }
+  .keys dd {
+    margin: 0;
+  }
+  kbd {
+    display: inline-block;
+    min-width: 1.75rem;
+    padding: 1px var(--space-1);
+    border: 1.5px solid var(--ink-3);
+    border-radius: 3px;
+    font: 700 0.875rem/1.4 inherit;
+    text-align: center;
+  }
+  .keys form {
+    display: flex;
+    justify-content: flex-end;
   }
   /* The head is the grab: a handle, and the label under it. */
   .sheet-head {
@@ -1141,7 +1272,7 @@
       padding-right: var(--space-4);
     }
     .method li {
-      grid-template-columns: 2.25rem minmax(0, 1fr);
+      grid-template-columns: 2.25rem minmax(0, 58ch);
     }
   }
   @media (max-width: 760px) {
@@ -1177,8 +1308,10 @@
     }
     /* Begin cooking and the two marks share one row: the marks as 52px icon
        buttons, named for screen readers. */
+    /* A thumb's width between Begin cooking and the marks. */
     .acts {
       flex-wrap: nowrap;
+      gap: var(--space-3);
     }
     .acts .cook {
       flex: 1;
@@ -1223,8 +1356,13 @@
     }
   }
   /* An iPad held upright: the Ingredients bar is a button at the corner, not
-     a band across the screen. */
+     a band across the screen, and the steps are set larger for reading at
+     arm's length from the counter. */
   @media (min-width: 761px) and (max-width: 900px) {
+    .method li p {
+      font-size: 1.1875rem;
+      line-height: 1.5;
+    }
     .peek {
       left: auto;
       right: var(--gutter);
