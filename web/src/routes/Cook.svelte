@@ -4,7 +4,7 @@
   import { go } from '../lib/router.svelte.js';
   import { session, toast } from '../lib/session.svelte.js';
   import { getRecipe } from '../lib/library.js';
-  import { amount } from '../lib/format.js';
+  import { amount, duration } from '../lib/format.js';
   import { timers, findDurations, startTimer, remaining, togglePause, dismiss, restore, counting, clearAll, clock } from '../lib/timers.svelte.js';
   import Markdown from '../components/Markdown.svelte';
   import { plainText } from '../lib/markdown.js';
@@ -25,19 +25,20 @@
       return {};
     }
   })();
-  let step = $state(saved.step ?? 0);
+  let step = $state(saved.step ?? 0); // one past the last step is the end card
   let checked = $state(saved.checked ?? []);
+  const started = saved.started ?? Date.now();
 
   $effect(() => {
     try {
-      sessionStorage.setItem(KEY, JSON.stringify({ step, checked }));
+      sessionStorage.setItem(KEY, JSON.stringify({ step, checked, started }));
     } catch {}
   });
 
   getRecipe(id).then(
     (r) => {
       recipe = r;
-      step = Math.min(step, r.steps.length - 1);
+      step = Math.min(step, r.steps.length);
       document.title = `Cooking ${r.title} · Sous`;
     },
     (err) => (error = err),
@@ -68,14 +69,16 @@
   const total = $derived(recipe?.steps.length ?? 0);
   const durations = $derived(current ? findDurations(current.text) : []);
   const last = $derived(step === total - 1);
+  const end = $derived(!!recipe && step >= total);
   const queued = $derived(recipe ? recipe.steps.slice(step + 1, step + 3).map((s, k) => ({ ...s, n: step + 2 + k })) : []);
   const left = $derived(recipe ? recipe.ingredients.filter((r) => r.item).length - checked.length : 0);
 
   function move(by) {
     if (!recipe) return;
     const next = step + by;
-    if (next < 0) return;
-    if (next >= total) return leave({ done: true });
+    // Past the last step comes the end card, and there the pages stop: only
+    // Finish leaves, so a stray swipe or key can't end the cook.
+    if (next < 0 || next > total) return;
     step = next;
   }
 
@@ -83,6 +86,7 @@
   // so a screen reader hears every step it moves to.
   $effect(() => {
     if (current) said = `Step ${step + 1} of ${total}. ${plainText(current.text)}`;
+    else if (end) said = `All ${total} steps done. Finish leaves cook mode.`;
   });
 
   // Timers live only in cook mode, so leaving with one still counting asks
@@ -123,8 +127,31 @@
   // A cancelled timer can be put back for a while.
   function cancel(t) {
     dismiss(t);
-    if (!t.done) toast(`Timer for ${t.label} cancelled.`, { label: 'Undo', run: () => restore(t) });
+    if (!t.done) toast(`Timer for step ${t.step + 1} cancelled.`, { label: 'Undo', run: () => restore(t) });
   }
+
+  // What a timer is for, in the step's own first words ("Brown the beef"),
+  // so a finished one says what to go and check.
+  function action(t) {
+    const text = plainText(recipe?.steps[t.step]?.text ?? '');
+    let first = text.split(/[,.;:(]|\s(?:and|then|until|while|for|over)\s/i)[0].trim();
+    if (!first || /^\d/.test(first)) return t.label;
+    // "Cook the bacon in a large pot" → "Cook the bacon", but "Pour in the
+    // wine" keeps its "in": a cut needs two words before it.
+    const short = first.split(/\s(?:in|into|on|onto|with|to|at|under|from)\s/i)[0];
+    if (short.split(/\s+/).length >= 2) first = short;
+    return first.length > 28 ? `${first.slice(0, 28).replace(/\s+\S*$/, '')}…` : first;
+  }
+
+  // Starting a timer swaps its button for Pause; keep focus on it.
+  async function time(d) {
+    startTimer(d.label, d.seconds, step);
+    await tick();
+    document.querySelector(`.timer-btn[data-label="${CSS.escape(d.label)}"]`)?.focus({ preventScroll: true });
+  }
+
+  // From the first step to the end card, for the last ticket.
+  const took = $derived(end ? Math.round((Date.now() - started) / 60000) : 0);
 
   function toggleIngredient(i) {
     checked = checked.includes(i) ? checked.filter((x) => x !== i) : [...checked, i];
@@ -165,7 +192,7 @@
     <button class="icon-btn" onclick={() => leave()} aria-label="Leave cook mode"><X size={26} /></button>
     <div class="title">
       <h1 class="name">{recipe?.title ?? (error ? 'Cook mode' : '')}</h1>
-      {#if recipe}<p class="where label">Step {step + 1} of {total}{#if awake}<span class="awake" title="The screen won’t sleep while cooking"><Sun size={13} aria-hidden="true" />Screen stays on</span>{/if}</p>{/if}
+      {#if recipe}<p class="where label">{end ? 'All steps done' : `Step ${step + 1} of ${total}`}{#if awake}<span class="awake" title="The screen won’t sleep while cooking"><Sun size={13} aria-hidden="true" />Screen stays on</span>{/if}</p>{/if}
     </div>
     <button class="btn ing-toggle" aria-expanded={sheet} onclick={() => (sheet = !sheet)}><ListChecks aria-hidden="true" />Ingredients<span class="fig left">{left}</span></button>
   </header>
@@ -214,6 +241,19 @@
         <div class="rail" aria-hidden="true"></div>
         <div class="hung" class:timed={timers.list.length > 0}>
           {#key step}
+            {#if end}
+              <article class="step ticket end">
+                <span class="clip" aria-hidden="true"></span>
+                <header class="step-head">
+                  <span class="num fig" aria-hidden="true"><Check strokeWidth={3} /></span>
+                  <span class="of">{total} of {total}</span>
+                </header>
+                <hr class="perf" />
+                <h2 class="end-title">That’s {recipe.title}.</h2>
+                {#if took > 0}<p class="end-took"><span class="fig">{duration(took)}</span> from the first step to the last</p>{/if}
+                <p class="end-note">Finish to leave cook mode. Previous goes back to the last step.</p>
+              </article>
+            {:else}
             <article class="step ticket">
               <span class="clip" aria-hidden="true"></span>
               <header class="step-head">
@@ -228,16 +268,17 @@
                   {#each durations as d}
                     {@const t = timers.list.find((x) => x.step === step && x.label === d.label && !x.done)}
                     {#if t}
-                      <button class="btn timer-btn" aria-pressed="true" onclick={() => togglePause(t)}>
+                      <button class="btn timer-btn" data-label={d.label} aria-pressed="true" onclick={() => togglePause(t)}>
                         {#if t.paused}<Play aria-hidden="true" />Resume {d.label}{:else}<Pause aria-hidden="true" />Pause {d.label}{/if}
                       </button>
                     {:else}
-                      <button class="btn timer-btn" onclick={() => startTimer(d.label, d.seconds, step)}><Timer aria-hidden="true" />Time {d.label}</button>
+                      <button class="btn timer-btn" data-label={d.label} onclick={() => time(d)}><Timer aria-hidden="true" />Time {d.label}</button>
                     {/if}
                   {/each}
                 </div>
               {/if}
             </article>
+            {/if}
           {/key}
           {#each queued as q (q.n)}
             <button class="next ticket" onclick={() => move(q.n - 1 - step)} aria-label="Go to step {q.n}">
@@ -251,9 +292,9 @@
               {#each timers.list as t (t.id)}
                 <li class="tick ticket" class:done={t.done} class:paused={t.paused}>
                   <span class="clip" aria-hidden="true"></span>
-                  <span class="t-label label">Step {t.step + 1} · {t.label}</span>
+                  <span class="t-label label">Step {t.step + 1} · {action(t)}</span>
                   <span class="t-row">
-                    <span class="t-clock fig" role="timer" aria-live={t.done ? 'assertive' : 'off'}>{t.done ? 'Done' : clock(remaining(t))}</span>
+                    <span class="t-clock fig" role="timer" aria-live={t.done ? 'assertive' : 'off'}>{#if t.done}<span class="visually-hidden">Step {t.step + 1}, {action(t)}: </span>Done{:else}{clock(remaining(t))}{/if}</span>
                     {#if !t.done}
                       <button class="icon-btn small" onclick={() => togglePause(t)} aria-label={t.paused ? 'Resume timer' : 'Pause timer'}>
                         {#if t.paused}<Play size={20} />{:else}<Pause size={20} />{/if}
@@ -271,7 +312,11 @@
 
     <nav class="pager" aria-label="Steps">
       <button class="btn big" onclick={() => move(-1)} disabled={step === 0}>Previous</button>
-      <button class="btn primary big" onclick={() => move(1)}>{last ? 'Finish' : 'Next step'}</button>
+      {#if end}
+        <button class="btn primary big" onclick={() => leave({ done: true })}>Finish</button>
+      {:else}
+        <button class="btn primary big" onclick={() => move(1)}>{last ? 'Done' : 'Next step'}</button>
+      {/if}
     </nav>
   {/if}
 </div>
@@ -589,6 +634,51 @@
     width: 22px;
     height: 22px;
   }
+  /* The end card: the last ticket of the cook. The check draws itself in as
+     the ticket fires, the one moment cook mode allows itself. */
+  .end .step-head {
+    align-items: center;
+  }
+  .end .num :global(svg) {
+    width: 0.78em;
+    height: 0.78em;
+    vertical-align: -0.04em;
+  }
+  .end .num :global(path) {
+    stroke-dasharray: 24;
+    stroke-dashoffset: 24;
+    animation: draw 520ms 260ms var(--ease-out) forwards;
+  }
+  @keyframes draw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  .end-title {
+    margin-top: var(--space-4);
+    max-width: 22ch;
+    font-size: clamp(1.75rem, 1rem + 2vw, 2.75rem);
+    font-weight: 800;
+    line-height: 1.12;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+  .end-took {
+    margin-top: var(--space-4);
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--ink-2);
+  }
+  .end-took .fig {
+    font-size: 1.75rem;
+    color: var(--ink);
+    margin-right: var(--space-1);
+  }
+  .end-note {
+    margin-top: var(--space-5);
+    max-width: 40ch;
+    color: var(--ink-3);
+  }
   .next {
     position: relative;
     flex: 0 0 15rem;
@@ -680,9 +770,50 @@
       display: none;
     }
   }
+  /* Without room beside the step, one Up next ticket sits under it, so a
+     portrait iPad still shows what's coming. */
   @media (max-width: 1180px) {
-    .next {
+    .hung {
+      flex-wrap: wrap;
+    }
+    .step {
+      flex: 1 1 0;
+    }
+    /* Timers hang from the rail in a strip of their own above the step,
+       never over its words; more than fit scroll sideways. */
+    .timers {
+      order: -1;
+      flex: 1 1 100%;
+      display: flex;
+      gap: var(--space-3);
+      margin-left: 0;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+    }
+    .tick {
+      flex: 0 0 min(13.5rem, 78%);
+      scroll-snap-align: start;
+    }
+    .timed .step > .clip {
       display: none;
+    }
+    .next,
+    .timed .next {
+      display: grid;
+      order: 2;
+      flex: 1 1 100%;
+      max-width: 50rem;
+      padding-top: var(--space-4);
+    }
+    .next + .next,
+    .timed .next + .next,
+    .next .clip {
+      display: none;
+    }
+    .next-text {
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
     }
   }
   @media (max-width: 900px) {
@@ -723,30 +854,22 @@
       position: relative;
       padding: 0 var(--space-2);
     }
-    /* On a phone the timer hangs over the step's top-right corner. */
-    .timers {
-      position: absolute;
-      top: 0;
-      right: var(--space-4);
-      z-index: 1;
-      width: 13rem;
-    }
-    .timed .step-head {
-      padding-right: 13rem;
-    }
-    /* The timer covers the right of the head; the section is in the sheet. */
-    .timed .section {
-      display: none;
-    }
     .of {
       white-space: nowrap;
     }
     .tick .t-clock {
       font-size: 2.25rem;
     }
-    .tick {
-      background: var(--ticket-press);
-      box-shadow: inset 0 0 0 1.5px var(--perf);
+  }
+  /* A portrait tablet reads the step from across the counter: set it larger. */
+  @media (min-width: 600px) and (max-width: 1180px) and (orientation: portrait) {
+    .step-text {
+      font-size: 2.125rem;
+      max-width: 34ch;
+    }
+    .step-text.long {
+      font-size: 1.625rem;
+      max-width: 42ch;
     }
   }
   @media (max-width: 560px) {
