@@ -73,6 +73,11 @@ include breaking changes, and they're called out here.
   Siri) are folded away until you open one.
 
 ### Fixed
+- In cook mode, a new step opens at its top; it could open scrolled down
+  from the last step, hiding its number.
+- A course in the library lists the recipes its count says it has: those
+  whose first tag is that course. "Vegetarian 1" could list 4 recipes that
+  only had Vegetarian as a later tag.
 - On a phone, long timer button labels in cook mode ran off the side of
   the step; they wrap now. A timer that finishes out of sight in the strip
   of timers moves to the front where you can see it.

@@ -86,7 +86,8 @@
     session.recipes.filter(
       (r) =>
         (show === 'fav' ? r.mine.favorite : show === 'want' ? r.mine.want_to_cook : true) &&
-        (!course || r.tags.some((t) => courseKey(t) === courseKey(course))),
+        // A course is a recipe's first tag, as the course list counts them.
+        (!course || (!!r.tags[0] && courseKey(r.tags[0]) === courseKey(course))),
     ),
   );
 

@@ -108,6 +108,13 @@
     else if (end) said = `All ${total} steps done. Finish leaves cook mode.`;
   });
 
+  // Each step opens at its top, with its number in view, not wherever the
+  // last step had been scrolled to.
+  $effect(() => {
+    step;
+    document.querySelector('.stage')?.scrollTo({ top: 0 });
+  });
+
   // Timers live only in cook mode, so leaving with one still counting asks
   // first. Finishing the recipe also forgets where the cook had got to.
   let done = false;
