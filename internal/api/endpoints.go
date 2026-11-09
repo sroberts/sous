@@ -93,6 +93,11 @@ func (a *api) endpoints() []endpoint {
 				"answers with that copy, restored if it was in the trash. Errors carry a summary to read aloud",
 			Body: jsonOf[recipes.CaptureRequest](), Resp: jsonOf[recipes.CaptureResult](),
 			Errors: []int{422}, Write: true, Spoken: true, Limit: jsonLimit, Handle: a.importRecipe},
+		{Method: "POST", Path: "/v1/recipes/batch", OpID: "batchRecipes",
+			Summary: "Up to 100 full recipes by id, with the caller's flags, in the order asked. Unknown and " +
+				"deleted ids are left out. For keeping a copy of the library on a device; not a write, so it needs no person",
+			Body: jsonOf[recipes.BatchRequest](), Resp: jsonOf[recipes.Items[recipes.Recipe]](),
+			Limit: jsonLimit, Handle: a.batchRecipes},
 		{Method: "GET", Path: "/v1/recipes/{id}", OpID: "getRecipe",
 			Summary: "The full recipe, with the caller's flags. A deleted recipe has deleted_at set",
 			Resp:    jsonOf[recipes.Recipe](), Errors: []int{404}, Handle: a.getRecipe},
@@ -316,6 +321,19 @@ func (a *api) getRecipe(w http.ResponseWriter, r *http.Request, c identity.Calle
 		return err
 	}
 	writeRecipe(w, http.StatusOK, rec)
+	return nil
+}
+
+func (a *api) batchRecipes(w http.ResponseWriter, r *http.Request, c identity.Caller) error {
+	var in recipes.BatchRequest
+	if err := decodeJSON(r, &in); err != nil {
+		return err
+	}
+	items, err := a.svc().Batch(r.Context(), c, in.IDs)
+	if err != nil {
+		return err
+	}
+	writeJSON(w, http.StatusOK, recipes.Items[recipes.Recipe]{Items: items})
 	return nil
 }
 
