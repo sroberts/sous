@@ -3,14 +3,14 @@
   // the dish's initial on the pass, so a missing photo reads as deliberate.
   import { imageUrl } from '../lib/api.js';
 
-  let { hash = null, title = '', ratio = '4 / 3', size = 'l' } = $props();
+  let { hash = null, title = '', ratio = '4 / 3', size = 'l', eager = false } = $props();
   let failed = $state(false);
   const initial = $derived((title.match(/[A-Za-z]/)?.[0] ?? '·').toUpperCase());
 </script>
 
 <figure class="plate {size}" style:aspect-ratio={ratio}>
   {#if hash && !failed}
-    <img src={imageUrl(hash)} alt="" loading="lazy" decoding="async" onerror={() => (failed = true)} />
+    <img src={imageUrl(hash)} alt="" loading={eager ? 'eager' : 'lazy'} fetchpriority={eager ? 'high' : undefined} decoding="async" onerror={() => (failed = true)} />
   {:else}
     <span class="initial fig" aria-hidden="true">{initial}</span>
   {/if}

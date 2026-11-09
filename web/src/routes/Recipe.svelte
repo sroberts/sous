@@ -65,26 +65,44 @@
     return () => ro.disconnect();
   });
 
-  // Below 900px the columns stack, which puts the whole ingredient list
-  // between you and the method. There they become two tabs that stick under
-  // the masthead, each keeping its own place on the page.
+  // Below 900px the columns stack. A short recipe stays that way, both lists
+  // in one scroll. A long one would put the whole ingredient list between
+  // you and the method, so there they become two tabs that stick under the
+  // masthead, each keeping its own place on the page.
   let narrow = $state(false);
+  let fits = $state(null); // both lists in about a screen and a half (null: not measured yet)
+  let tabbed = $derived(narrow && fits === false);
   let tab = $state('ingredients');
   let tabs = $state();
   let tabsAt = $state(); // where the tabs sit before they stick
+  let ingPanel = $state();
+  let methodPanel = $state();
   const placeOf = { ingredients: null, method: null };
   $effect(() => {
     const mq = matchMedia('(max-width: 900px)');
-    const set = () => (narrow = mq.matches);
+    const set = () => {
+      narrow = mq.matches;
+      fits = null;
+    };
     set();
     mq.addEventListener('change', set);
     return () => mq.removeEventListener('change', set);
   });
+  // Measured once, stacked, before the first paint; not again on scroll or
+  // Show as written, so the layout doesn't change under you.
+  $effect(() => {
+    if (!narrow || fits !== null || !ingPanel || !methodPanel) return;
+    fits = ingPanel.offsetHeight + methodPanel.offsetHeight <= innerHeight * 1.5;
+  });
+
+  // Where the tabs stick: the masthead's height when it's showing. Read from
+  // --bar-shown, not the strip's own top, which is mid-transition as the
+  // masthead slides.
+  const stickTop = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bar-shown')) || 0;
 
   async function show(next, focus = false) {
     if (next !== tab) {
-      const stickTop = parseFloat(getComputedStyle(tabs).top) || 0;
-      const home = tabsAt.getBoundingClientRect().top + scrollY - stickTop;
+      const home = tabsAt.getBoundingClientRect().top + scrollY - stickTop();
       const stuck = scrollY > home;
       placeOf[tab] = stuck ? scrollY : null;
       tab = next;
@@ -95,17 +113,41 @@
     if (focus) document.getElementById(`tab-${next}`)?.focus();
   }
   // Once the tabs stick, the header and its Begin cooking are off screen, so
-  // the strip carries a Cook button of its own.
+  // the strip carries a Cook button of its own, except while the Begin
+  // cooking after the last step is in view: one red button at a time.
   let tabsStuck = $state(false);
+  let endCook = $state();
+  let endInView = $state(false);
   $effect(() => {
-    if (!narrow || !tabsAt) return;
-    const check = () => (tabsStuck = tabsAt.getBoundingClientRect().top < (parseFloat(getComputedStyle(tabs).top) || 0) + 1);
+    if (!tabbed || !tabsAt) return;
+    const check = () => (tabsStuck = tabsAt.getBoundingClientRect().top < stickTop() + 1);
     check();
     addEventListener('scroll', check, { passive: true });
     return () => removeEventListener('scroll', check);
   });
+  $effect(() => {
+    if (!endCook) return;
+    const io = new IntersectionObserver(([e]) => (endInView = e.isIntersecting));
+    io.observe(endCook);
+    return () => io.disconnect();
+  });
+
+  // In the Method tab the quantities are a tab away, so a bar at the foot of
+  // the screen, in thumb reach, pulls them up over the step you're on.
+  let sheet = $state();
+  const openSheet = () => sheet?.showModal();
+  const closeSheet = () => sheet?.close();
 
   const nutrition = $derived(recipe?.nutrition_text ? labelledFigures(recipe.nutrition_text) : null);
+  // A label's worth of precision: 1063.75 calories prints as 1064, 55.25 g as
+  // 55.3 g, and units are the short ones a label uses.
+  const UNITS = { gram: 'g', grams: 'g', milligram: 'mg', milligrams: 'mg', microgram: 'µg', micrograms: 'µg', kilocalorie: 'kcal', kilocalories: 'kcal', calories: 'kcal' };
+  function figure(text) {
+    const n = Number(text.replace(/,/g, ''));
+    if (!Number.isFinite(n)) return text;
+    return n >= 100 ? String(Math.round(n)) : String(Math.round(n * 10) / 10);
+  }
+  const unit = (u) => UNITS[u.toLowerCase()] ?? u;
 
   function tabKey(e) {
     const to = { ArrowLeft: 'ingredients', Home: 'ingredients', ArrowRight: 'method', End: 'method' }[e.key];
@@ -141,7 +183,7 @@
     </div>
 
     <div class="rail" aria-hidden="true"></div>
-    <header class="top ticket">
+    <header class="top ticket" class:has-photo={!!recipe.images[0]}>
       <span class="clip" aria-hidden="true"></span>
       <div class="head">
         <h1>{recipe.title}</h1>
@@ -151,6 +193,7 @@
             {#if webLink(recipe.source_url)}<a href={recipe.source_url.trim()} target="_blank" rel="noreferrer">{recipe.source_host ?? recipe.source_url}<ExternalLink size={13} aria-hidden="true" /><span class="visually-hidden">{' (opens in a new tab)'}</span></a>{:else if recipe.source_url}<span>{recipe.source_url}</span>{/if}
           </p>
         {/if}
+        <a class="back edit-here" href="/r/{id}/edit" use:link><Pencil size={16} aria-hidden="true" />Edit recipe</a>
         <div class="facts"><Facts {recipe} size="l" count={!narrow} /></div>
         <div class="acts">
           <a class="btn primary cook" href="/r/{id}/cook" use:link>Begin cooking</a>
@@ -168,53 +211,42 @@
           </div>
         {/if}
       </div>
-      <div class="photo" class:none={!recipe.images[0]}><Plate hash={recipe.images[0]} title={recipe.title} /></div>
+      <div class="photo" class:none={!recipe.images[0]}><Plate hash={recipe.images[0]} title={recipe.title} eager /></div>
     </header>
 
     <div class="body">
-      {#if narrow}
-        <div bind:this={tabsAt}></div>
+      {#if tabbed}
+        <div class="tabs-at" bind:this={tabsAt}></div>
         <div class="tabs" bind:this={tabs}>
           <div class="tablist" role="tablist" aria-label="Recipe">
           <button role="tab" id="tab-ingredients" aria-selected={tab === 'ingredients'} aria-controls="panel-ingredients" tabindex={tab === 'ingredients' ? 0 : -1} onkeydown={tabKey} onclick={() => show('ingredients')}>
-            Ingredients<span class="count fig">{recipe.ingredients.filter((i) => i.item).length}</span>
+            Ingredients<span class="count fig" aria-hidden="true">{recipe.ingredients.filter((i) => i.item).length}</span><span class="visually-hidden">{`, ${recipe.ingredients.filter((i) => i.item).length} items`}</span>
           </button>
           <button role="tab" id="tab-method" aria-selected={tab === 'method'} aria-controls="panel-method" tabindex={tab === 'method' ? 0 : -1} onkeydown={tabKey} onclick={() => show('method')}>
-            Method<span class="count fig">{recipe.steps.length}</span>
+            Method<span class="count fig" aria-hidden="true">{recipe.steps.length}</span><span class="visually-hidden">{`, ${recipe.steps.length} ${recipe.steps.length === 1 ? 'step' : 'steps'}`}</span>
           </button>
           </div>
-          <a class="btn primary tab-cook" class:shown={tabsStuck} href="/r/{id}/cook" use:link>Cook</a>
+          <a class="btn primary tab-cook" class:shown={tabsStuck && !endInView} href="/r/{id}/cook" use:link>Cook</a>
         </div>
       {/if}
-      <section id="panel-ingredients" class="ingredients sheet" role={narrow ? 'tabpanel' : undefined} aria-labelledby={narrow ? 'tab-ingredients' : 'ing-h'} hidden={narrow && tab !== 'ingredients'} use:stickIfFits={32}>
+      <section id="panel-ingredients" class="ingredients sheet" role={tabbed ? 'tabpanel' : undefined} aria-labelledby={tabbed ? 'tab-ingredients' : 'ing-h'} hidden={tabbed && tab !== 'ingredients'} bind:this={ingPanel} use:stickIfFits={32}>
         <div class="col-head">
-          <h2 id="ing-h" class="label" class:visually-hidden={narrow}>Ingredients</h2>
+          <h2 id="ing-h" class="label" class:visually-hidden={tabbed}>Ingredients</h2>
           <button class="as-written" onclick={() => (asWritten = !asWritten)}>{asWritten ? 'Show parsed' : 'Show as written'}</button>
         </div>
-        {#each groups(recipe.ingredients) as g}
-          {#if g.section}<h3 class="sect">{g.section}</h3>{/if}
-          <ul role="list">
-            {#each g.rows as i}
-              {#if asWritten}
-                <li class="raw">{i.raw}</li>
-              {:else}
-                <li>
-                  <span class="amt fig">{amount(i)}</span>
-                  <span class="item">{i.item}{#if i.note}<span class="note">, {i.note}</span>{/if}</span>
-                </li>
-              {/if}
-            {/each}
-          </ul>
-        {/each}
-
-        {#if recipe.notes}
-          <h2 class="label aside-h">Notes</h2>
-          {#each recipe.notes.split(/\n\s*\n/) as para}<p class="notes"><Markdown text={para.trim()} /></p>{/each}
-        {/if}
+        {@render ingredientList()}
       </section>
 
-      <section id="panel-method" class="method sheet" role={narrow ? 'tabpanel' : undefined} aria-labelledby={narrow ? 'tab-method' : 'method-h'} hidden={narrow && tab !== 'method'}>
-        <div class="col-head"><h2 id="method-h" class="label" class:visually-hidden={narrow}>Method</h2><span class="label steps">{recipe.steps.length} {recipe.steps.length === 1 ? 'step' : 'steps'}</span></div>
+      <section id="panel-method" class="method sheet" role={tabbed ? 'tabpanel' : undefined} aria-labelledby={tabbed ? 'tab-method' : 'method-h'} hidden={tabbed && tab !== 'method'} bind:this={methodPanel}>
+        <!-- Notes come before the method: make-ahead and timing advice is
+             read before you start, not found after the ingredients. -->
+        {#if recipe.notes}
+          <div class="col-head"><h2 class="label">Notes</h2></div>
+          <div class="notes-block">
+            {#each recipe.notes.split(/\n\s*\n/) as para}<p class="notes"><Markdown text={para.trim()} /></p>{/each}
+          </div>
+        {/if}
+        <div class="col-head" class:after-notes={recipe.notes}><h2 id="method-h" class="label" class:visually-hidden={tabbed && !recipe.notes}>Method</h2>{#if !tabbed}<span class="label steps">{recipe.steps.length} {recipe.steps.length === 1 ? 'step' : 'steps'}</span>{/if}</div>
         {#each groups(recipe.steps) as g}
           {#if g.section}<h3 class="sect">{g.section}</h3>{/if}
           <ol role="list">
@@ -224,7 +256,7 @@
           </ol>
         {/each}
 
-        <div class="method-end">
+        <div class="method-end" bind:this={endCook}>
           <a class="btn primary cook" href="/r/{id}/cook" use:link>Begin cooking</a>
         </div>
 
@@ -233,7 +265,7 @@
           {#if nutrition}
             <dl class="nutrition">
               {#each nutrition as n}
-                <div><dt class="label">{n.label}</dt><dd><span class="fig">{n.fig}</span>{#if n.unit}<span class="unit">{n.unit}</span>{/if}</dd></div>
+                <div><dt class="label">{n.label}</dt><dd><span class="fig">{figure(n.fig)}</span>{#if n.unit}<span class="unit">{unit(n.unit)}</span>{/if}</dd></div>
               {/each}
             </dl>
           {:else}
@@ -246,8 +278,43 @@
         </p>
       </section>
     </div>
+
+    {#if tabbed && tab === 'method'}
+      <div class="peek" class:shown={tabsStuck}>
+        <button class="btn peek-btn" aria-haspopup="dialog" onclick={openSheet}>Ingredients<span class="count fig" aria-hidden="true">{recipe.ingredients.filter((i) => i.item).length}</span></button>
+      </div>
+    {/if}
+    {#if tabbed}
+      <dialog class="ing-sheet" bind:this={sheet} aria-labelledby="sheet-h" onclick={(e) => e.target === sheet && closeSheet()}>
+        <div class="sheet-in">
+          <!-- Focus opens on Done at the top, so the sheet opens at its first ingredient. -->
+          <!-- svelte-ignore a11y_autofocus -->
+          <div class="col-head"><h2 id="sheet-h" class="label">Ingredients</h2><button class="as-written" autofocus onclick={closeSheet}>Done</button></div>
+          {@render ingredientList()}
+          <button class="btn sheet-close" onclick={closeSheet}>Back to the method</button>
+        </div>
+      </dialog>
+    {/if}
   </main>
 {/if}
+
+{#snippet ingredientList()}
+  {#each groups(recipe.ingredients) as g}
+    {#if g.section}<h3 class="sect">{g.section}</h3>{/if}
+    <ul role="list">
+      {#each g.rows as i}
+        {#if asWritten}
+          <li class="raw">{i.raw}</li>
+        {:else}
+          <li>
+            <span class="amt fig">{amount(i)}</span>
+            <span class="item">{i.item}{#if i.note}<span class="note">, {i.note}</span>{/if}</span>
+          </li>
+        {/if}
+      {/each}
+    </ul>
+  {/each}
+{/snippet}
 
 <style>
   .page {
@@ -341,9 +408,11 @@
   .desc.open {
     display: block;
   }
+  /* A 44px target around a text-sized link: the extra height is taken back
+     from the margins so the line sits where it did. */
   .more {
-    min-height: 24px;
-    margin-top: var(--space-1);
+    min-height: 44px;
+    margin: calc(var(--space-1) - 10px) 0 -10px;
     padding: 0;
     border: 0;
     background: none;
@@ -405,9 +474,14 @@
     grid-template-columns: 1fr 1fr;
     flex: 1;
   }
+  /* Shifted down past the grid gap, so it marks the strip's own top. */
+  .tabs-at {
+    position: relative;
+    top: var(--space-4);
+  }
   .tab-cook {
     align-self: center;
-    min-height: 40px;
+    min-height: 44px;
     margin-left: var(--space-3);
     visibility: hidden;
   }
@@ -502,7 +576,8 @@
     padding-top: 0;
     border-top: 0;
   }
-  .ingredients li {
+  .ingredients li,
+  .ing-sheet li {
     display: grid;
     grid-template-columns: 5.25rem 1fr;
     gap: var(--space-3);
@@ -510,7 +585,8 @@
     border-bottom: 1.5px dashed var(--ticket-press);
     line-height: 1.4;
   }
-  .ingredients li.raw {
+  .ingredients li.raw,
+  .ing-sheet li.raw {
     display: block;
   }
   .amt {
@@ -523,7 +599,9 @@
 
   .method li {
     display: grid;
-    grid-template-columns: 3rem minmax(0, 65ch);
+    /* 58ch of Archivo is about 78 characters: ch is the width of a zero,
+       wider than the average letter. */
+    grid-template-columns: 3rem minmax(0, 58ch);
     gap: var(--space-3);
     padding: var(--space-4) 0;
     border-bottom: 1.5px dashed var(--ticket-press);
@@ -536,13 +614,16 @@
     padding-bottom: var(--space-2);
     border-bottom: 3px solid var(--ink);
   }
-  .ingredients .aside-h {
-    margin-top: var(--space-6);
-  }
   .notes {
     margin-top: var(--space-3);
-    max-width: 65ch;
+    max-width: 58ch;
     white-space: pre-line;
+  }
+  .notes-block {
+    color: var(--ink-2);
+  }
+  .col-head.after-notes {
+    margin-top: var(--space-6);
   }
   .method-end {
     margin-top: var(--space-6);
@@ -568,10 +649,75 @@
   }
   .nutrition .unit {
     margin-left: 3px;
-    font-size: 0.8125rem;
+    font-size: 0.9375rem;
     font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+  }
+
+  /* The ingredients peek: a bar at the foot of the phone screen in the
+     Method tab, and the sheet it opens. */
+  .edit-here,
+  .peek {
+    display: none;
+  }
+  .peek {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 5;
+    padding: var(--space-2) var(--gutter) calc(var(--space-2) + env(safe-area-inset-bottom));
+    background: var(--ticket);
+    border-top: 1px solid var(--perf);
+    transform: translateY(100%);
+    transition: transform 200ms var(--ease-out);
+  }
+  .peek.shown {
+    transform: none;
+  }
+  .peek-btn {
+    width: 100%;
+    min-height: 52px;
+    gap: var(--space-2);
+  }
+  .ing-sheet {
+    position: fixed;
+    inset: auto 0 0;
+    width: 100%;
+    max-width: none;
+    max-height: 80vh;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-top: 3px solid var(--ink);
+    background: var(--ticket);
+    color: var(--ink);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .ing-sheet::backdrop {
+    background: rgb(20 24 28 / 0.4);
+  }
+  .ing-sheet[open] {
+    animation: rise 200ms var(--ease-out);
+  }
+  @keyframes rise {
+    from {
+      transform: translateY(24px);
+      opacity: 0;
+    }
+  }
+  .sheet-in {
+    padding: var(--space-4) var(--gutter) calc(var(--space-4) + env(safe-area-inset-bottom));
+  }
+  .sheet-close {
+    width: 100%;
+    min-height: 52px;
+    margin-top: var(--space-5);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .peek,
+    .ing-sheet[open] {
+      transition: none;
+      animation: none;
+    }
   }
   .colophon {
     margin-top: var(--space-7);
@@ -641,9 +787,59 @@
     .cook {
       width: 100%;
     }
-    /* A short strip, so the tabs and the first ingredients come up sooner. */
+    /* The masthead already leads back to the library, so the crumb row goes
+       and Edit recipe moves into the header, under the title. */
+    .crumbs {
+      display: none;
+    }
+    .page {
+      padding-top: var(--space-4);
+    }
+    .edit-here {
+      display: inline-flex;
+      margin-top: var(--space-1);
+      min-height: 40px;
+    }
+    /* The photo is a thumbnail beside the title, so the first screen reaches
+       the ingredients instead of a band of photo. */
+    .top.has-photo {
+      grid-template-columns: minmax(0, 1fr) 88px;
+      column-gap: var(--space-4);
+      row-gap: 0;
+    }
+    .has-photo .head {
+      display: contents;
+    }
+    .has-photo .head > :global(*) {
+      grid-column: 1 / -1;
+    }
+    .has-photo .head h1 {
+      grid-column: 1;
+      grid-row: 1;
+    }
+    .has-photo .head .src {
+      grid-column: 1;
+      grid-row: 2;
+    }
+    .has-photo .head .edit-here {
+      grid-column: 1;
+      grid-row: 3;
+      justify-self: start;
+    }
+    .has-photo .photo {
+      grid-column: 2;
+      grid-row: 1 / 4;
+    }
     .photo :global(.plate) {
-      max-height: 25vh;
+      aspect-ratio: 1 !important;
+      max-height: none;
+    }
+    .peek {
+      display: block;
+    }
+    /* Clear of the peek bar at the foot of the screen. */
+    .method[role='tabpanel'] {
+      padding-bottom: calc(var(--space-6) + 68px);
     }
   }
 </style>
