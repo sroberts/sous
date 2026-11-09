@@ -10,7 +10,7 @@
   import Plate from '../components/Plate.svelte';
   import Facts from '../components/Facts.svelte';
   import Markdown from '../components/Markdown.svelte';
-  import { stickIfFits, scrollQuietly } from '../lib/stick.js';
+  import { scrollQuietly } from '../lib/stick.js';
   import { labelledFigures } from '../lib/markdown.js';
 
   let { id } = $props();
@@ -62,6 +62,21 @@
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(descEl);
+    return () => ro.disconnect();
+  });
+
+  // Notes open the method, but read once and returned to never: collapsed,
+  // only the first paragraph shows, held to two lines; More opens them all.
+  let notesEl = $state();
+  let notesOpen = $state(false);
+  let notesLong = $state(false);
+  const notesParas = $derived(recipe?.notes ? recipe.notes.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean) : []);
+  $effect(() => {
+    if (!notesEl) return;
+    const measure = () => (notesLong = notesOpen || notesParas.length > 1 || notesEl.scrollHeight > notesEl.clientHeight + 1);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(notesEl);
     return () => ro.disconnect();
   });
 
@@ -118,6 +133,8 @@
   let tabsStuck = $state(false);
   let endCook = $state();
   let endInView = $state(false);
+  let headCook = $state();
+  let headInView = $state(true);
   $effect(() => {
     if (!tabbed || !tabsAt) return;
     const check = () => (tabsStuck = tabsAt.getBoundingClientRect().top < stickTop() + 1);
@@ -131,12 +148,39 @@
     io.observe(endCook);
     return () => io.disconnect();
   });
+  // The Begin cooking after the last step is red only once the header's has
+  // scrolled away; on a short recipe both can be on screen at once.
+  $effect(() => {
+    if (!headCook) return;
+    // Under the masthead counts as scrolled away.
+    const bar = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bar')) || 56;
+    const io = new IntersectionObserver(([e]) => (headInView = e.isIntersecting), { rootMargin: `-${bar}px 0px 0px 0px` });
+    io.observe(headCook);
+    return () => io.disconnect();
+  });
 
   // In the Method tab the quantities are a tab away, so a bar at the foot of
   // the screen, in thumb reach, pulls them up over the step you're on.
   let sheet = $state();
+  let drag = $state(0); // px the sheet is pulled down by its handle
+  let dragFrom = null;
   const openSheet = () => sheet?.showModal();
   const closeSheet = () => sheet?.close();
+  function dragStart(e) {
+    dragFrom = e.clientY;
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
+  }
+  function dragMove(e) {
+    if (dragFrom !== null) drag = Math.max(0, e.clientY - dragFrom);
+  }
+  function dragEnd() {
+    if (dragFrom === null) return;
+    if (drag > 80) closeSheet();
+    dragFrom = null;
+    drag = 0;
+  }
 
   const nutrition = $derived(recipe?.nutrition_text ? labelledFigures(recipe.nutrition_text) : null);
   // A label's worth of precision: 1063.75 calories prints as 1064, 55.25 g as
@@ -148,6 +192,8 @@
     return n >= 100 ? String(Math.round(n)) : String(Math.round(n * 10) / 10);
   }
   const unit = (u) => UNITS[u.toLowerCase()] ?? u;
+  // Calories with no unit given are kilocalories, as on any label.
+  const unitFor = (n) => (n.unit ? unit(n.unit) : /^(calories|energy)$/i.test(n.label) ? 'kcal' : '');
 
   function tabKey(e) {
     const to = { ArrowLeft: 'ingredients', Home: 'ingredients', ArrowRight: 'method', End: 'method' }[e.key];
@@ -187,21 +233,24 @@
       <span class="clip" aria-hidden="true"></span>
       <div class="head">
         <h1>{recipe.title}</h1>
-        {#if recipe.source_url || recipe.tags.length}
-          <p class="src">
-            {#if recipe.tags.length}<span>{recipe.tags.join(', ')}</span>{#if recipe.source_url}<span class="dot" aria-hidden="true">·</span>{/if}{/if}
+        <!-- On a phone, Edit recipe ends the source line (the crumb row is gone). -->
+        <p class="src" class:bare={!recipe.source_url && !recipe.tags.length}>
+          {#if recipe.tags.length}<span>{recipe.tags.join(', ')}</span>{#if recipe.source_url}<span class="dot" aria-hidden="true">·</span>{/if}{/if}
+          <span class="src-line">
             {#if webLink(recipe.source_url)}<a href={recipe.source_url.trim()} target="_blank" rel="noreferrer">{recipe.source_host ?? recipe.source_url}<ExternalLink size={13} aria-hidden="true" /><span class="visually-hidden">{' (opens in a new tab)'}</span></a>{:else if recipe.source_url}<span>{recipe.source_url}</span>{/if}
-          </p>
-        {/if}
-        <a class="back edit-here" href="/r/{id}/edit" use:link><Pencil size={16} aria-hidden="true" />Edit recipe</a>
+            <a class="edit-here" href="/r/{id}/edit" use:link><Pencil size={15} aria-hidden="true" />Edit</a>
+          </span>
+        </p>
         <div class="facts"><Facts {recipe} size="l" count={!narrow} /></div>
         <div class="acts">
-          <a class="btn primary cook" href="/r/{id}/cook" use:link>Begin cooking</a>
-          <button class="btn" aria-pressed={recipe.mine.favorite} disabled={isOffline()} onclick={() => toggle('favorite')}>
-            <Heart aria-hidden="true" fill={recipe.mine.favorite ? 'currentColor' : 'none'} />Favorite
+          <a class="btn primary cook" href="/r/{id}/cook" use:link bind:this={headCook}>Begin cooking</a>
+          <!-- On a phone these are icon buttons beside Begin cooking; the
+               name stays for screen readers and as a tooltip. -->
+          <button class="btn mark" aria-pressed={recipe.mine.favorite} disabled={isOffline()} title="Favorite" onclick={() => toggle('favorite')}>
+            <Heart aria-hidden="true" fill={recipe.mine.favorite ? 'currentColor' : 'none'} /><span class="mark-name">Favorite</span>
           </button>
-          <button class="btn" aria-pressed={recipe.mine.want_to_cook} disabled={isOffline()} onclick={() => toggle('want_to_cook')}>
-            <Bookmark aria-hidden="true" fill={recipe.mine.want_to_cook ? 'currentColor' : 'none'} />Want to cook
+          <button class="btn mark" aria-pressed={recipe.mine.want_to_cook} disabled={isOffline()} title="Want to cook" onclick={() => toggle('want_to_cook')}>
+            <Bookmark aria-hidden="true" fill={recipe.mine.want_to_cook ? 'currentColor' : 'none'} /><span class="mark-name">Want to cook</span>
           </button>
         </div>
         {#if recipe.description}
@@ -226,10 +275,10 @@
             Method<span class="count fig" aria-hidden="true">{recipe.steps.length}</span><span class="visually-hidden">{`, ${recipe.steps.length} ${recipe.steps.length === 1 ? 'step' : 'steps'}`}</span>
           </button>
           </div>
-          <a class="btn primary tab-cook" class:shown={tabsStuck && !endInView} href="/r/{id}/cook" use:link>Cook</a>
+          <a class="btn primary tab-cook" class:shown={tabsStuck && !endInView} href="/r/{id}/cook" use:link aria-label="Begin cooking">Cook</a>
         </div>
       {/if}
-      <section id="panel-ingredients" class="ingredients sheet" role={tabbed ? 'tabpanel' : undefined} aria-labelledby={tabbed ? 'tab-ingredients' : 'ing-h'} hidden={tabbed && tab !== 'ingredients'} bind:this={ingPanel} use:stickIfFits={32}>
+      <section id="panel-ingredients" class="ingredients sheet" role={tabbed ? 'tabpanel' : undefined} aria-labelledby={tabbed ? 'tab-ingredients' : 'ing-h'} hidden={tabbed && tab !== 'ingredients'} bind:this={ingPanel}>
         <div class="col-head">
           <h2 id="ing-h" class="label" class:visually-hidden={tabbed}>Ingredients</h2>
           <button class="as-written" onclick={() => (asWritten = !asWritten)}>{asWritten ? 'Show parsed' : 'Show as written'}</button>
@@ -242,9 +291,14 @@
              read before you start, not found after the ingredients. -->
         {#if recipe.notes}
           <div class="col-head"><h2 class="label">Notes</h2></div>
-          <div class="notes-block">
-            {#each recipe.notes.split(/\n\s*\n/) as para}<p class="notes"><Markdown text={para.trim()} /></p>{/each}
+          <div class="notes-block" id="notes">
+            {#if notesOpen}
+              {#each notesParas as para}<p class="notes"><Markdown text={para} /></p>{/each}
+            {:else}
+              <p class="notes clamped" bind:this={notesEl}><Markdown text={notesParas[0] ?? ''} /></p>
+            {/if}
           </div>
+          {#if notesLong}<button class="more" aria-expanded={notesOpen} aria-controls="notes" onclick={() => (notesOpen = !notesOpen)}>{notesOpen ? 'Less' : 'More'}</button>{/if}
         {/if}
         <div class="col-head" class:after-notes={recipe.notes}><h2 id="method-h" class="label" class:visually-hidden={tabbed && !recipe.notes}>Method</h2>{#if !tabbed}<span class="label steps">{recipe.steps.length} {recipe.steps.length === 1 ? 'step' : 'steps'}</span>{/if}</div>
         {#each groups(recipe.steps) as g}
@@ -257,7 +311,7 @@
         {/each}
 
         <div class="method-end" bind:this={endCook}>
-          <a class="btn primary cook" href="/r/{id}/cook" use:link>Begin cooking</a>
+          <a class="btn cook" class:primary={!headInView} href="/r/{id}/cook" use:link>Begin cooking</a>
         </div>
 
         {#if recipe.nutrition_text}
@@ -265,7 +319,7 @@
           {#if nutrition}
             <dl class="nutrition">
               {#each nutrition as n}
-                <div><dt class="label">{n.label}</dt><dd><span class="fig">{figure(n.fig)}</span>{#if n.unit}<span class="unit">{unit(n.unit)}</span>{/if}</dd></div>
+                <div><dt class="label">{n.label}</dt><dd><span class="fig">{figure(n.fig)}</span>{#if unitFor(n)}<span class="unit">{unitFor(n)}</span>{/if}</dd></div>
               {/each}
             </dl>
           {:else}
@@ -274,25 +328,32 @@
         {/if}
 
         <p class="colophon">
-          Added by {person(recipe.created_by)} {ago(recipe.created_at)}{#if recipe.updated_at !== recipe.created_at}, last edited by {person(recipe.updated_by)} {ago(recipe.updated_at)}{/if}.
+          {#if recipe.created_by === '_sous'}A sample recipe that came with Sous{:else}Added by {person(recipe.created_by)} {ago(recipe.created_at)}{/if}{#if recipe.updated_at !== recipe.created_at}, last edited by {person(recipe.updated_by)} {ago(recipe.updated_at)}{/if}.
         </p>
       </section>
     </div>
 
     {#if tabbed && tab === 'method'}
-      <div class="peek" class:shown={tabsStuck}>
+      <div class="peek" class:shown={tabsStuck} inert={!tabsStuck}>
         <button class="btn peek-btn" aria-haspopup="dialog" onclick={openSheet}>Ingredients<span class="count fig" aria-hidden="true">{recipe.ingredients.filter((i) => i.item).length}</span></button>
       </div>
     {/if}
     {#if tabbed}
-      <dialog class="ing-sheet" bind:this={sheet} aria-labelledby="sheet-h" onclick={(e) => e.target === sheet && closeSheet()}>
-        <div class="sheet-in">
-          <!-- Focus opens on Done at the top, so the sheet opens at its first ingredient. -->
-          <!-- svelte-ignore a11y_autofocus -->
-          <div class="col-head"><h2 id="sheet-h" class="label">Ingredients</h2><button class="as-written" autofocus onclick={closeSheet}>Done</button></div>
-          {@render ingredientList()}
-          <button class="btn sheet-close" onclick={closeSheet}>Back to the method</button>
+      <dialog class="ing-sheet" bind:this={sheet} aria-labelledby="sheet-h" style:transform={drag ? `translateY(${drag}px)` : null} onclick={(e) => e.target === sheet && closeSheet()}>
+        <!-- Pull the head down to close, as with any sheet. A touch extra:
+             Back to the method and Escape close it from the keyboard. -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div class="sheet-head" onpointerdown={dragStart} onpointermove={dragMove} onpointerup={dragEnd} onpointercancel={dragEnd}>
+          <span class="handle" aria-hidden="true"></span>
+          <h2 id="sheet-h" class="label">Ingredients</h2>
         </div>
+        <div class="sheet-in">
+          {@render ingredientList()}
+        </div>
+        <!-- In thumb reach, and always in view, so focus lands here without
+             scrolling the list. -->
+        <!-- svelte-ignore a11y_autofocus -->
+        <div class="sheet-foot"><button class="btn sheet-close" autofocus onclick={closeSheet}>Back to the method</button></div>
       </dialog>
     {/if}
   </main>
@@ -390,6 +451,27 @@
     align-items: center;
     gap: 5px;
   }
+  .src.bare {
+    display: none;
+  }
+  .src-line {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-4);
+  }
+  /* A 44px target on a text line: the extra height is taken back from the
+     margins, so the line keeps its height. */
+  .src .edit-here {
+    display: none;
+    min-height: 44px;
+    margin: -10px 0;
+    font-weight: 600;
+    color: var(--ink-2);
+    text-decoration: none;
+  }
+  .src .edit-here:hover {
+    color: var(--red);
+  }
   .facts {
     margin-top: var(--space-5);
   }
@@ -445,6 +527,13 @@
   .photo {
     align-self: start;
   }
+  /* No photo: the header text takes the width, not a grey slot. */
+  .top:not(.has-photo) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .photo.none {
+    display: none;
+  }
   /* Held short so the recipe starts in the first screen on a laptop or an
      iPad in landscape. */
   .photo :global(.plate) {
@@ -482,6 +571,7 @@
   .tab-cook {
     align-self: center;
     min-height: 44px;
+    margin-block: var(--space-1);
     margin-left: var(--space-3);
     visibility: hidden;
   }
@@ -529,9 +619,17 @@
       grid-template-columns: minmax(17rem, 27rem) minmax(0, 1fr);
     }
   }
-  .ingredients:global(.stuck) {
+  /* Side by side, the ingredients stay on screen the whole way down the
+     method: sticky, and scrolling inside themselves when the list is longer
+     than the window. Show as written, their one control, is at the top. */
+  .ingredients {
     position: sticky;
     top: calc(var(--bar) + var(--space-4));
+    max-height: calc(100dvh - var(--bar) - var(--space-6));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--ink-3) transparent;
   }
   .col-head {
     display: flex;
@@ -622,6 +720,16 @@
   .notes-block {
     color: var(--ink-2);
   }
+  .notes.clamped {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+  }
+  .notes-block + .more {
+    margin-bottom: calc(var(--space-1) * -1);
+  }
   .col-head.after-notes {
     margin-top: var(--space-6);
   }
@@ -682,15 +790,53 @@
     inset: auto 0 0;
     width: 100%;
     max-width: none;
-    max-height: 80vh;
+    max-height: 85dvh;
     margin: 0;
     padding: 0;
     border: 0;
     border-top: 3px solid var(--ink);
     background: var(--ticket);
     color: var(--ink);
+    flex-direction: column;
+    transition: transform 160ms var(--ease-out);
+  }
+  .ing-sheet[open] {
+    display: flex;
+  }
+  /* The head is the grab: a handle, and the label under it. */
+  .sheet-head {
+    flex: none;
+    padding: var(--space-2) var(--gutter) 0;
+    touch-action: none;
+    cursor: grab;
+  }
+  .handle {
+    display: block;
+    width: 40px;
+    height: 4px;
+    margin: 0 auto var(--space-3);
+    border-radius: 2px;
+    background: var(--perf);
+  }
+  .sheet-head h2 {
+    padding-bottom: var(--space-2);
+    border-bottom: 3px solid var(--ink);
+  }
+  .sheet-in {
+    flex: 1;
     overflow-y: auto;
     overscroll-behavior: contain;
+    padding: 0 var(--gutter) var(--space-4);
+  }
+  .sheet-in > .sect:first-child {
+    margin-top: var(--space-4);
+    padding-top: 0;
+    border-top: 0;
+  }
+  .sheet-foot {
+    flex: none;
+    padding: var(--space-3) var(--gutter) calc(var(--space-3) + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--perf);
   }
   .ing-sheet::backdrop {
     background: rgb(20 24 28 / 0.4);
@@ -704,13 +850,9 @@
       opacity: 0;
     }
   }
-  .sheet-in {
-    padding: var(--space-4) var(--gutter) calc(var(--space-4) + env(safe-area-inset-bottom));
-  }
   .sheet-close {
     width: 100%;
     min-height: 52px;
-    margin-top: var(--space-5);
   }
   @media (prefers-reduced-motion: reduce) {
     .peek,
@@ -754,14 +896,20 @@
     .steps {
       margin-left: auto;
     }
-    .photo.none {
-      display: none;
-    }
     .body {
       grid-template-columns: 1fr;
     }
-    .ingredients:global(.stuck) {
+    .ingredients {
       position: static;
+      max-height: none;
+      overflow: visible;
+    }
+    .peek {
+      display: block;
+    }
+    /* Clear of the peek bar at the foot of the screen. */
+    .method[role='tabpanel'] {
+      padding-bottom: calc(var(--space-6) + 68px);
     }
     .ingredients,
     .method {
@@ -782,10 +930,7 @@
     .dot {
       display: none;
     }
-    .acts .btn:not(.cook) {
-      flex: 1;
-    }
-    .cook {
+    .method-end .cook {
       width: 100%;
     }
     /* The masthead already leads back to the library, so the crumb row goes
@@ -796,10 +941,37 @@
     .page {
       padding-top: var(--space-4);
     }
-    .edit-here {
+    .src .edit-here {
       display: inline-flex;
-      margin-top: var(--space-1);
-      min-height: 40px;
+    }
+    .src.bare {
+      display: flex;
+    }
+    .desc {
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+    }
+    /* Begin cooking and the two marks share one row: the marks as 52px icon
+       buttons, named for screen readers. */
+    .acts {
+      flex-wrap: nowrap;
+    }
+    .acts .cook {
+      flex: 1;
+      width: auto;
+    }
+    .acts .mark {
+      flex: none;
+      width: 52px;
+      padding: 0;
+    }
+    .mark-name {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
     }
     /* The photo is a thumbnail beside the title, so the first screen reaches
        the ingredients instead of a band of photo. */
@@ -822,25 +994,13 @@
       grid-column: 1;
       grid-row: 2;
     }
-    .has-photo .head .edit-here {
-      grid-column: 1;
-      grid-row: 3;
-      justify-self: start;
-    }
     .has-photo .photo {
       grid-column: 2;
-      grid-row: 1 / 4;
+      grid-row: 1 / 3;
     }
     .photo :global(.plate) {
       aspect-ratio: 1 !important;
       max-height: none;
-    }
-    .peek {
-      display: block;
-    }
-    /* Clear of the peek bar at the foot of the screen. */
-    .method[role='tabpanel'] {
-      padding-bottom: calc(var(--space-6) + 68px);
     }
   }
 </style>
