@@ -33,6 +33,29 @@ export function duration(min) {
   return m ? `${h} hr ${m}` : `${h} hr`;
 }
 
+/** A time typed into the editor, in minutes: "210", "3:30", "3h30",
+ *  "1 hr 20", "90 min" and "2 hours" all read. Blank is null; anything else
+ *  is NaN. */
+export function readTime(s) {
+  const t = String(s ?? '').trim().toLowerCase();
+  if (!t) return null;
+  let m = /^(\d+)$/.exec(t);
+  if (m) return +m[1];
+  m = /^(\d+):([0-5]\d)$/.exec(t);
+  if (m) return +m[1] * 60 + +m[2];
+  m = /^(?:(\d+)\s*h(?:rs?|ours?)?)?\s*(?:(\d+)\s*(?:m|mins?|minutes?)?)?$/.exec(t);
+  if (m && (m[1] || m[2])) return (+m[1] || 0) * 60 + (+m[2] || 0);
+  return NaN;
+}
+
+/** A time as the editor shows it back: 45 → "45", 210 → "3:30", so a
+ *  field reads like the ticket's figure. */
+export function writeTime(min) {
+  if (min == null || min === '') return '';
+  if (min < 60) return String(min);
+  return `${Math.floor(min / 60)}:${String(min % 60).padStart(2, '0')}`;
+}
+
 /** True for an http or https link, the only kind shown as a link: a stored
  *  source can be anything (a book title from Mela), and a javascript: link
  *  would run when clicked. */
