@@ -61,7 +61,21 @@ include breaking changes, and they're called out here.
   and the next step shows under the current one. The step is larger on an
   iPad in portrait.
 
+- On an iPad in portrait the recipe photo is a shorter band, so the
+  ingredients and method show without scrolling past it.
+- In cook mode, timers stay in view under the rail while the step scrolls,
+  and on an iPad in landscape the step is set a little smaller so its timer
+  buttons sit above Previous and Next.
+- A search result that matched on an ingredient or a tag says so ("Uses
+  chicken stock"). Courses that differ only in a plural or capital letters,
+  like Side and Sides, are listed once.
+- The Import page's set-up guides (bookmarklet, iPhone and iPad Shortcut,
+  Siri) are folded away until you open one.
+
 ### Fixed
+- In cook mode on a phone or an iPad in portrait, the ingredient list
+  couldn't be scrolled, hiding everything past the first ten or so items. It
+  scrolls now, with a Done button at the top.
 - On an iPad in portrait the masthead ran off the side of the screen,
   cutting off "Who's cooking?".
 - Starting a timer in cook mode keeps keyboard focus on its Pause button.
