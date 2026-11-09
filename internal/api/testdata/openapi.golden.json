@@ -899,6 +899,102 @@
         }
       }
     },
+    "/v1/recipes/batch": {
+      "post": {
+        "operationId": "batchRecipes",
+        "summary": "Up to 100 full recipes by id, with the caller's flags, in the order asked. Unknown and deleted ids are left out. For keeping a copy of the library on a device; not a write, so it needs no person",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Person"
+          },
+          {
+            "$ref": "#/components/parameters/Via"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecipeList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid, invalid_cursor or unknown_image; the message says what is wrong",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "who_are_you (a write from nobody), unknown_person, invalid_identity or gateway_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "cross_origin: a browser request from another site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "too_large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "starting, or identity_unavailable: the gateway's keys cannot be fetched",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/recipes/import": {
       "post": {
         "operationId": "importRecipe",
@@ -1874,6 +1970,25 @@
   },
   "components": {
     "schemas": {
+      "BatchRequest": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "recipe ids, at most 100"
+          }
+        },
+        "required": [
+          "ids"
+        ],
+        "additionalProperties": false
+      },
       "CaptureRequest": {
         "type": "object",
         "properties": {
@@ -2917,6 +3032,24 @@
         },
         "required": [
           "title"
+        ],
+        "additionalProperties": false
+      },
+      "RecipeList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/Recipe"
+            }
+          }
+        },
+        "required": [
+          "items"
         ],
         "additionalProperties": false
       },

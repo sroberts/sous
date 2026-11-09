@@ -55,8 +55,26 @@ include breaking changes, and they're called out here.
 - In the library on a wide screen, a click selects a recipe for the preview
   and a second click opens it.
 - The editor says that a recipe's first tag is its course in the library.
+- Saving the library to a phone for offline use takes a few requests
+  instead of one per recipe: a library of 1,500 recipes is stored in about
+  16, so the first visit, and the first after each Sous update, finishes in
+  seconds and uses less data. `POST /v1/recipes/batch` returns up to 100
+  full recipes at once.
+
+- Cook mode ends on a last ticket, "That's Boeuf Bourguignon.", with how long
+  the cook took. Only Finish leaves it, so a stray swipe or key on the last
+  step no longer ends the cook and forgets your place.
+- Timers say which step they're for in its own words ("Step 2 · Cook the
+  bacon"), and a finished timer chimes again every 10 seconds for three
+  minutes until you clear it.
+- On an iPad or a phone, timers hang in a strip of their own above the step,
+  and the next step shows under the current one. The step is larger on an
+  iPad in portrait.
 
 ### Fixed
+- On an iPad in portrait the masthead ran off the side of the screen,
+  cutting off "Who's cooking?".
+- Starting a timer in cook mode keeps keyboard focus on its Pause button.
 - Searching the library no longer freezes on a phone. The library draws its
   tickets a page at a time as you scroll, rather than every recipe at once,
   and search waits for a pause in typing instead of re-sorting the whole

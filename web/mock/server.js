@@ -270,7 +270,7 @@ async function handle(req, res) {
   const via = req.headers['x-sous-via'] || 'api';
   await delay(60 + Math.random() * 120); // feel the network a little
   const write = req.method !== 'GET';
-  if (write && !person && path !== '/v1/people' && path !== '/v1/ingredients/parse') return fail(res, 401, 'who_are_you', 'Choose who is cooking before making changes.');
+  if (write && !person && path !== '/v1/people' && path !== '/v1/ingredients/parse' && path !== '/v1/recipes/batch') return fail(res, 401, 'who_are_you', 'Choose who is cooking before making changes.');
 
   let m;
   if (path === '/v1/status' && req.method === 'GET') {
@@ -305,6 +305,13 @@ async function handle(req, res) {
     db.recipes.set(r.id, r);
     logChange(person, via, r.id, 'create', `Added ${r.title}`);
     return send(res, 201, full(r, person), { etag: `"${r.version}"` });
+  }
+  if (path === '/v1/recipes/batch' && req.method === 'POST') {
+    const { ids } = JSON.parse((await readBody(req)).toString() || '{}');
+    if (ids != null && !Array.isArray(ids)) return fail(res, 400, 'invalid', 'ids must be a list.');
+    if ((ids ?? []).length > 100) return fail(res, 400, 'invalid', 'ids: at most 100 at a time');
+    const items = [...new Set(ids ?? [])].map((id) => db.recipes.get(id)).filter((r) => r && !r.deleted_at);
+    return send(res, 200, { items: items.map((r) => full(r, person)) });
   }
   if (path === '/v1/recipes/import' && req.method === 'POST') return importSave(req, res, person, via);
   if (path === '/v1/recipes/import/preview' && req.method === 'POST') return importPreview(req, res);

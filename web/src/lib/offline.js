@@ -24,20 +24,26 @@ export async function loadIndex(username) {
   return items.length ? withFlags(items, mine?.flags) : null;
 }
 
-/** Store a full recipe, replacing any older copy, and keep the person's
- *  flags for it in step. */
-export function saveRecipe(r, username) {
-  const { items, flags } = splitFlags([r]);
+/** Store full recipes, replacing any older copies, and keep the person's
+ *  flags for them in step. One transaction for the lot. */
+export function saveRecipes(rs, username) {
+  if (!rs.length) return Promise.resolve();
+  const { items, flags } = splitFlags(rs);
   return tx(['recipes', 'stamps', 'mine'], 'readwrite', async (s) => {
-    s.recipes.put(items[0]);
-    s.stamps.put({ id: r.id, stamp: stampOf(r) });
-    if (!username || !flags[r.id]) return;
+    for (const r of items) {
+      s.recipes.put(r);
+      s.stamps.put({ id: r.id, stamp: stampOf(r) });
+    }
+    if (!username || !Object.keys(flags).length) return;
     const row = (await done(s.mine.get(username))) ?? { username, flags: {} };
-    row.flags[r.id] = flags[r.id];
+    Object.assign(row.flags, flags);
     row.at = Date.now();
     s.mine.put(row);
   });
 }
+
+/** Store one full recipe, as saveRecipes does. */
+export const saveRecipe = (r, username) => saveRecipes([r], username);
 
 /** A stored recipe with username's flags, or null. */
 export async function getRecipe(id, username) {

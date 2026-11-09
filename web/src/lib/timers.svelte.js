@@ -58,15 +58,27 @@ function chime() {
   navigator.vibrate?.([200, 100, 200, 100, 400]);
 }
 
+// A finished timer chimes again every 10 seconds until it's cleared, for
+// three minutes: one chime is easy to miss over a fan or a running tap.
+const AGAIN = 10_000;
+const RING_FOR = 180_000;
+const ringing = (t) => t.done && timers.now - t.endsAt < RING_FOR;
+
 function loop() {
   timers.now = Date.now();
+  let ring = false;
   for (const t of timers.list) {
     if (!t.done && !t.paused && t.endsAt <= timers.now) {
       t.done = true;
-      chime();
+      t.rang = timers.now;
+      ring = true;
+    } else if (ringing(t) && timers.now - t.rang >= AGAIN) {
+      t.rang = timers.now;
+      ring = true;
     }
   }
-  if (!timers.list.some((t) => !t.done && !t.paused)) {
+  if (ring) chime();
+  if (!timers.list.some((t) => (!t.done && !t.paused) || ringing(t))) {
     clearInterval(tick);
     tick = null;
   }
@@ -108,7 +120,8 @@ export function dismiss(t) {
 export function restore(t) {
   if (timers.list.some((x) => x.id === t.id)) return;
   timers.list.push(t);
-  if (!t.done && !t.paused) tick ??= setInterval(loop, 250);
+  if (t.done) t.rang = Date.now(); // it rang just now; the next chime comes in its turn
+  if (!t.paused) tick ??= setInterval(loop, 250);
   loop();
 }
 

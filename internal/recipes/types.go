@@ -235,6 +235,11 @@ type ParseRequest struct {
 	Lines []string `json:"lines" jsonschema:"raw ingredient lines"`
 }
 
+// BatchRequest is the body of POST /v1/recipes/batch.
+type BatchRequest struct {
+	IDs []string `json:"ids" jsonschema:"recipe ids, at most 100"`
+}
+
 // ParsedLine is one line of an ingredient parse preview. A heading line
 // (Section non-nil) encodes as {"section","raw"}; any other line encodes as
 // an Ingredient without the section key, matching the mock.
