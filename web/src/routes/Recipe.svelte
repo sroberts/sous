@@ -212,6 +212,10 @@
     return () => io.disconnect();
   });
   const peekShown = $derived(tabsStuck && (corner || !endAtBar));
+  // On a phone the last Begin cooking is under the bar until it reaches the
+  // bar's strip, so the strip's Cook stays until then: a red button in view
+  // the whole way down, never two.
+  const tabCookShown = $derived(!headInView && !(corner ? endInView : endAtBar));
 
   // The Begin cooking after the last step is red only once the header's has
   // scrolled away; on a short recipe both can be on screen at once.
@@ -468,7 +472,7 @@
             Method<span class="count fig" aria-hidden="true">{recipe.steps.length}</span><span class="visually-hidden">{`, ${recipe.steps.length} ${recipe.steps.length === 1 ? 'step' : 'steps'}`}</span>
           </button>
           </div>
-          <a class="btn primary tab-cook" class:shown={!headInView && !endInView} href="/r/{id}/cook" use:link aria-keyshortcuts="c" title="Begin cooking (C)">Cook</a>
+          <a class="btn primary tab-cook" class:shown={tabCookShown} href="/r/{id}/cook" use:link aria-keyshortcuts="c" title="Begin cooking (C)">Cook</a>
         </div>
       {/if}
       <!-- A column that scrolls on its own takes focus, so the keyboard can
@@ -1113,7 +1117,10 @@
     padding: 1px var(--space-1);
     border: 1.5px solid var(--ink-3);
     border-radius: 3px;
-    font: 700 0.875rem/1.4 inherit;
+    font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 1.4;
     text-align: center;
   }
   .keys form {
