@@ -71,7 +71,41 @@ include breaking changes, and they're called out here.
   and the next step shows under the current one. The step is larger on an
   iPad in portrait.
 
+- On an iPad in portrait the recipe photo is a shorter band, so the
+  ingredients and method show without scrolling past it.
+- In cook mode, timers stay in view under the rail while the step scrolls,
+  and on an iPad in landscape the step is set a little smaller so its timer
+  buttons sit above Previous and Next.
+- A search result that matched on an ingredient or a tag says so ("Uses
+  chicken stock"). Courses that differ only in a plural or capital letters,
+  like Side and Sides, are listed once.
+- The Import page's set-up guides (bookmarklet, iPhone and iPad Shortcut,
+  Siri) are folded away until you open one.
+
 ### Fixed
+- In cook mode, a new step opens at its top; it could open scrolled down
+  from the last step, hiding its number.
+- A course in the library lists the recipes its count says it has: those
+  whose first tag is that course. "Vegetarian 1" could list 4 recipes that
+  only had Vegetarian as a later tag.
+- On a phone, long timer button labels in cook mode ran off the side of
+  the step; they wrap now. A timer that finishes out of sight in the strip
+  of timers moves to the front where you can see it.
+- A search that finds nothing in a course says how many recipes match in
+  the rest of the library, with a button to search them all.
+- In cook mode, a step that says the same time twice ("1 minute… then 1
+  minute more") gets two timers, each named for its own part of the step;
+  starting the second no longer paused the first. Timers are named for what
+  they time ("Brown the beef"), not just the step's first words.
+- On a laptop, running timers stay in view while a long step scrolls.
+- Opening the ingredient list on a phone moves focus into it, and closing
+  it puts focus back on the Ingredients button.
+- On touch screens a tapped button no longer stays in its hover colour.
+- On a phone, a search with few or no results no longer pushes the heading
+  down the screen.
+- In cook mode on a phone or an iPad in portrait, the ingredient list
+  couldn't be scrolled, hiding everything past the first ten or so items. It
+  scrolls now, with a Done button at the top.
 - On an iPad in portrait the masthead ran off the side of the screen,
   cutting off "Who's cooking?".
 - Starting a timer in cook mode keeps keyboard focus on its Pause button.

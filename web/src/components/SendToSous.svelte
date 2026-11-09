@@ -1,7 +1,7 @@
 <script>
   // Ways to send the page you're reading to /import without copying links:
   // a bookmarklet for desktop browsers and a Shortcut for the iOS Share sheet, and a Siri Shortcut that saves without opening Sous.
-  import { Bookmark } from '@lucide/svelte';
+  import { Bookmark, ChevronDown } from '@lucide/svelte';
   import SaveToSous from './SaveToSous.svelte';
 
   const origin = location.origin;
@@ -16,18 +16,23 @@
   <h2 id="send-h">Send recipes from anywhere</h2>
   <p class="lede">Import the page you’re reading in one step, without copying its link.</p>
 
+  <!-- Three set-ups, each done once: closed until someone asks for one, so
+       the page's own job (the link field above) stays the first thing. -->
   <div class="ways">
-    <div class="way">
-      <h3 class="label">Desktop browser</h3>
+    <details class="way">
+      <summary><h3>Desktop browser</h3><span class="what">A bookmark that sends the page you’re on</span><ChevronDown class="chev" size={20} aria-hidden="true" /></summary>
+      <div class="inner">
       <p>Drag this button to your bookmarks bar. On a recipe page, click the bookmark and Sous opens here with the recipe read in.</p>
       <a class="btn bookmarklet" href="/import" use:bookmarklet draggable="true" onclick={(e) => e.preventDefault()} title="Drag to your bookmarks bar">
         <Bookmark aria-hidden="true" />Send to Sous
       </a>
       <p class="hint">Clicking it on this page does nothing. It works from the recipe’s page.</p>
-    </div>
+      </div>
+    </details>
 
-    <div class="way">
-      <h3 class="label">iPhone and iPad</h3>
+    <details class="way">
+      <summary><h3>iPhone and iPad</h3><span class="what">A Share-sheet shortcut that opens the recipe here</span><ChevronDown class="chev" size={20} aria-hidden="true" /></summary>
+      <div class="inner">
       <p>Build a shortcut once in the Shortcuts app, then send any page from Safari’s Share button.</p>
       <ol class="steps">
         <li><span class="n fig" aria-hidden="true">1</span><span>New shortcut. In its details, turn on <b>Show in Share Sheet</b> and have it receive <b>URLs</b> and <b>Safari web pages</b>.</span></li>
@@ -36,10 +41,14 @@
         <li><span class="n fig" aria-hidden="true">4</span><span>Add <b>Text</b>: <code>{origin}/import?url=</code> followed by the <b>URL Encoded Text</b> variable.</span></li>
         <li><span class="n fig" aria-hidden="true">5</span><span>Add <b>Open URLs</b>, and name the shortcut “Send to Sous”.</span></li>
       </ol>
-      <p class="hint">Tailscale has to be connected, and Safari signed in to Sous through the gateway. To save without opening Sous, use the Siri card below.</p>
-    </div>
+      <p class="hint">Tailscale has to be connected, and Safari signed in to Sous through the gateway. To save without opening Sous, use the Siri set-up below.</p>
+      </div>
+    </details>
 
-    <SaveToSous />
+    <details class="way">
+      <summary><h3>Siri</h3><span class="what">A shortcut that saves the recipe without opening Sous</span><ChevronDown class="chev" size={20} aria-hidden="true" /></summary>
+      <SaveToSous />
+    </details>
   </div>
 </section>
 
@@ -60,23 +69,58 @@
   }
   .ways {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
-    gap: var(--space-4);
+    gap: var(--space-2);
     margin-top: var(--space-5);
-    align-items: start;
   }
   .way {
+    background: var(--ticket);
+  }
+  summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-1) var(--space-3);
+    min-height: 56px;
+    padding: var(--space-3) calc(var(--space-5) + 28px) var(--space-3) var(--space-5);
+    position: relative;
+    cursor: pointer;
+    list-style: none;
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  summary:hover {
+    background: var(--ticket-press);
+  }
+  summary h3 {
+    font-size: var(--ui);
+    font-weight: 800;
+  }
+  .what {
+    font-size: 0.9375rem;
+    color: var(--ink-2);
+  }
+  summary :global(.chev) {
+    position: absolute;
+    right: var(--space-4);
+    top: 50%;
+    margin-top: -10px;
+    color: var(--ink-2);
+    transition: transform 200ms var(--ease-out);
+  }
+  .way[open] summary :global(.chev) {
+    transform: rotate(180deg);
+  }
+  .way[open] summary {
+    border-bottom: 1.5px dashed var(--perf);
+  }
+  .way > :global(.inner) {
+    padding: var(--space-4) var(--space-5) var(--space-5);
+  }
+  .inner {
     display: grid;
     gap: var(--space-3);
     justify-items: start;
-    background: var(--ticket);
-    padding: var(--space-4) var(--space-5) var(--space-5);
-  }
-  .way .label {
-    color: var(--ink-3);
-    justify-self: stretch;
-    padding-bottom: var(--space-2);
-    border-bottom: 1.5px dashed var(--perf);
   }
   .way p {
     max-width: 60ch;

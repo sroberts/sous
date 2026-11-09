@@ -59,21 +59,35 @@
     return [...counts].filter(([, n]) => n > 2).sort((a, b) => b[1] - a[1]).slice(0, 300).map(([i]) => i);
   });
 
-  // Courses are each recipe's first tag, the fullest first.
+  // Courses are each recipe's first tag, the fullest first. Tags that differ
+  // only in case or a plural ("Side", "sides") are one course, named as most
+  // recipes spell it.
+  const courseKey = (t) => {
+    const k = t.trim().toLowerCase();
+    return k.length > 3 && k.endsWith('s') && !k.endsWith('ss') ? k.slice(0, -1) : k;
+  };
   const courses = $derived.by(() => {
     const by = new Map();
     for (const r of session.recipes) {
       const c = r.tags[0];
-      if (c) by.set(c, (by.get(c) ?? 0) + 1);
+      if (!c) continue;
+      const k = courseKey(c);
+      const e = by.get(k) ?? { n: 0, names: new Map() };
+      e.n++;
+      e.names.set(c, (e.names.get(c) ?? 0) + 1);
+      by.set(k, e);
     }
-    return [...by].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+    return [...by.values()]
+      .map((e) => [[...e.names].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0][0], e.n])
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   });
 
   const pool = $derived(
     session.recipes.filter(
       (r) =>
         (show === 'fav' ? r.mine.favorite : show === 'want' ? r.mine.want_to_cook : true) &&
-        (!course || r.tags.some((t) => t.toLowerCase() === course.toLowerCase())),
+        // A course is a recipe's first tag, as the course list counts them.
+        (!course || (!!r.tags[0] && courseKey(r.tags[0]) === courseKey(course))),
     ),
   );
 
@@ -104,10 +118,23 @@
       const matched = using.filter((t) => r.ingredient_items.some((i) => i.includes(t)) || title.includes(t)).length;
       if (using.length && !matched) continue;
       const titleHit = words.length && words.every((w) => title.includes(w));
-      out.push({ r, matched, score: matched * 10 + (titleHit ? 5 : 0) });
+      out.push({ r, matched, why: titleHit ? null : why(r, title), score: matched * 10 + (titleHit ? 5 : 0) });
     }
     return out.sort((a, b) => b.score - a.score || collator.compare(a.r.title, b.r.title));
   });
+
+  // Why a recipe matched a search its title doesn't explain: the first word
+  // found in an ingredient or a tag ("Uses chicken stock").
+  function why(r, title) {
+    for (const w of words) {
+      if (title.includes(w)) continue;
+      const item = r.ingredient_items.find((i) => i.includes(w));
+      if (item) return `Uses ${item}`;
+      const tag = r.tags.find((t) => t.toLowerCase().includes(w));
+      if (tag) return `Tagged ${tag}`;
+    }
+    return null;
+  }
 
   // The plain library, sorted once per change to the pool, not per keystroke.
   const sorted = $derived([...pool].sort((a, b) => collator.compare(a.title, b.title)).map((r) => ({ r, matched: null })));
@@ -186,7 +213,19 @@
 
   const count = (k) => k.toLocaleString();
   const of = (k) => `${count(k)} ${k === 1 ? 'recipe' : 'recipes'}`;
-  const subhead = $derived(ranked && using.length ? `${of(visible.length)} use ${list(using)}` : of(visible.length));
+  const subhead = $derived(
+    (ranked && using.length ? `${of(visible.length)} use ${list(using)}` : of(visible.length)) + (ranked && course ? ` in ${course}` : ''),
+  );
+
+  // A search that finds nothing in a course may still find recipes in the
+  // rest of the library: say how many, rather than a dead end.
+  const elsewhere = $derived(
+    course && words.length && !visible.length
+      ? session.recipes.filter(
+          (r) => (show === 'fav' ? r.mine.favorite : show === 'want' ? r.mine.want_to_cook : true) && words.every((w) => index.get(r.id).hay.includes(w)),
+        ).length
+      : 0,
+  );
 
   function list(xs) {
     return xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} or ${xs.at(-1)}`;
@@ -281,7 +320,8 @@
       <span>Everything</span><span class="fig n">{count(session.recipes.length)}</span>
     </a>
     {#each courses as [name, n] (name)}
-      <a href="/?{new URLSearchParams({ ...(show ? { show } : {}), course: name })}" use:link class:on={course === name} aria-current={course === name ? 'true' : undefined}>
+      {@const on = !!course && courseKey(course) === courseKey(name)}
+      <a href="/?{new URLSearchParams({ ...(show ? { show } : {}), course: name })}" use:link class:on aria-current={on ? 'true' : undefined}>
         <span>{name}</span><span class="fig n">{count(n)}</span>
       </a>
     {/each}
@@ -349,8 +389,11 @@
         {:else if using.length}
           <p>Nothing here uses {list(using)}.</p>
           <button class="btn" onclick={() => setParam('using', '')}>Clear ingredients</button>
+        {:else if q && elsewhere}
+          <p>Nothing in {course} matches “{params.get('q')}”, but {of(elsewhere)} {elsewhere === 1 ? 'does' : 'do'} elsewhere.</p>
+          <button class="btn" onclick={() => setParam('course', '')}>Search all recipes</button>
         {:else if q}
-          <p>Nothing matches “{params.get('q')}”.</p>
+          <p>Nothing{course ? ` in ${course}` : ''} matches “{params.get('q')}”.</p>
           <button class="btn" onclick={() => setParam('q', '')}>Clear search</button>
         {:else if show === 'fav'}
           <p>No favorites yet. Use the heart on a recipe to keep it here.</p>
@@ -363,7 +406,7 @@
         <p class="visually-hidden">Showing the first {count(drawn.length)} of {count(rows.length)}; more appear as you scroll.</p>
       {/if}
       <ol class="grid" bind:this={grid}>
-        {#each drawn as { r, matched } (r.id)}
+        {#each drawn as { r, matched, why: reason } (r.id)}
           {@const t = ticketTime(r.total_minutes, r.time_text)}
           {@const sel = wide && r.id === selectedId}
           <li id="t-{r.id}" animate:flip={{ duration: ranked && !still ? 360 : 0, easing: ease }}>
@@ -384,7 +427,7 @@
                   {#if r.mine.favorite}<Heart class="mark" size={14} aria-hidden="true" /><span class="visually-hidden">, a favorite</span>{/if}
                   {#if r.mine.want_to_cook}<Bookmark class="mark" size={14} aria-hidden="true" /><span class="visually-hidden">, want to cook</span>{/if}
                 </span>
-                {#if r.source_host}<span class="host">{r.source_host}</span>{/if}
+                {#if reason}<span class="host why">{reason}</span>{:else if r.source_host}<span class="host">{r.source_host}</span>{/if}
               </span>
               <hr class="perf" />
               <span class="foot">
@@ -418,6 +461,7 @@
     display: grid;
     grid-template-columns: 200px minmax(0, 1fr);
     min-height: calc(100dvh - var(--bar));
+    align-content: start; /* a short result list mustn't stretch its rows */
   }
   .library.wide {
     grid-template-columns: 200px minmax(0, 1fr) minmax(360px, 26vw);
@@ -555,6 +599,9 @@
     font-weight: 700;
     line-height: 1.2;
     letter-spacing: -0.01em;
+  }
+  .host.why {
+    color: var(--ink-2);
   }
   .host {
     font-size: 0.8125rem;
