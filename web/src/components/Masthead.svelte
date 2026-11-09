@@ -150,7 +150,7 @@
   <div class="who" bind:this={whoWrap}>
     <!-- Quiet, not an alarm: reading and cooking carry on from this device. -->
     <span class="net" role="status" title="You can read and cook from the library; changes need a connection.">
-      {#if isOffline()}<CloudOff size={17} aria-hidden="true" />{net.online ? 'Can’t reach Sous' : 'Offline'}{/if}
+      {#if isOffline()}<CloudOff size={17} aria-hidden="true" /><span class="net-text">{net.online ? 'Can’t reach Sous' : 'Offline'}</span>{/if}
     </span>
     {#if session.outpost}
       <!-- Outpost's login decides who this is, so there is no one to switch
@@ -269,6 +269,7 @@
     font-size: var(--ui);
     color: var(--ink);
     outline: none;
+    text-overflow: ellipsis; /* a narrow box ends its hint with …, not mid-word */
   }
   .search input::-webkit-search-cancel-button {
     display: none;
@@ -387,6 +388,42 @@
     }
     .add-menu {
       display: block;
+    }
+  }
+  /* An iPad in portrait: one row still, so the bar keeps its 56px. The
+     shortcut hint goes (there's no keyboard), the gaps close up, and the
+     connection note keeps its icon and says the rest to screen readers. */
+  @media (min-width: 761px) and (max-width: 1080px) {
+    .bar {
+      gap: var(--space-4);
+    }
+    nav a {
+      padding: 7px 10px;
+    }
+    .search {
+      min-width: 10rem;
+    }
+    kbd {
+      display: none;
+    }
+    .net-text {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+  }
+  @media (min-width: 761px) and (max-width: 860px) {
+    .bar {
+      gap: var(--space-3);
+    }
+    nav a {
+      padding: 7px 8px;
+    }
+    .search {
+      min-width: 8rem;
     }
   }
   @media (max-width: 760px) {
