@@ -33,7 +33,9 @@ export function onSignedOut(fn) {
   signedOut = fn;
 }
 
-async function request(method, path, { body, version, raw } = {}) {
+// read marks a POST that only reads (the body carries the question), so it
+// is treated like a GET when there is no connection or Sous is down.
+async function request(method, path, { body, version, raw, read = method === 'GET' } = {}) {
   const headers = { 'x-sous-via': 'ui' };
   if (person) headers['x-sous-person'] = person;
   if (version !== undefined) headers['if-match'] = `"${version}"`;
@@ -47,7 +49,7 @@ async function request(method, path, { body, version, raw } = {}) {
   }
   // Reading works offline from what this device has stored; changes don't
   // queue, so a write without a connection stops here.
-  if (method !== 'GET' && isOffline()) throw offline(OFFLINE_SAVE);
+  if (!read && isOffline()) throw offline(OFFLINE_SAVE);
   let res;
   try {
     // Sous never redirects, so a redirect is the gateway sending us to log in.
@@ -57,7 +59,7 @@ async function request(method, path, { body, version, raw } = {}) {
     throw offline();
   }
   // A proxy in front of Sous (tailscale serve, say) answers for it while it is down.
-  if (method === 'GET' && [502, 503, 504].includes(res.status) && !res.headers.get('content-type')?.includes('json')) {
+  if (read && [502, 503, 504].includes(res.status) && !res.headers.get('content-type')?.includes('json')) {
     unreachable();
     throw offline();
   }
@@ -96,6 +98,8 @@ export const api = {
     return items;
   },
   recipe: (id) => request('GET', `/v1/recipes/${id}`),
+  /** Up to 100 full recipes by id; unknown and deleted ones are left out. */
+  recipes: async (ids) => (await request('POST', '/v1/recipes/batch', { body: { ids }, read: true })).items,
   createRecipe: (body) => request('POST', '/v1/recipes', { body }),
   updateRecipe: (id, version, body) => request('PATCH', `/v1/recipes/${id}`, { body, version }),
   deleteRecipe: (id, version) => request('DELETE', `/v1/recipes/${id}`, { version }),

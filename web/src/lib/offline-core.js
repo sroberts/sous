@@ -31,6 +31,9 @@ export function staleIds(summaries, stored, stamp = (s) => s.version) {
   return summaries.filter((s) => stored.get(s.id) !== stamp(s)).map((s) => s.id);
 }
 
+/** xs in runs of at most n, in order: the batches a sync asks for. */
+export const chunks = (xs, n) => Array.from({ length: Math.ceil(xs.length / n) }, (_, i) => xs.slice(i * n, (i + 1) * n));
+
 /** The stored ids no longer in the library (trashed or gone). */
 export function removedIds(stored, summaries) {
   const live = new Set(summaries.map((s) => s.id));
