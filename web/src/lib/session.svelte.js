@@ -34,7 +34,6 @@ class Session {
   error = $state(null);
   asking = $state(false); // the who's-cooking prompt is open
   toast = $state(null); // { id, message, action? }
-  version = $state(null); // the running Sous, from /v1/status
 }
 
 export const session = new Session();
@@ -55,8 +54,6 @@ onSignedOut(() => {
 });
 
 export async function boot() {
-  // For the footer; offline it stays as it was.
-  api.status().then((st) => (session.version = st.version), () => {});
   try {
     const [me, { items: people }, recipes] = await Promise.all([signedIn(), api.people(), api.allRecipes()]);
     session.people = people;
