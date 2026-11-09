@@ -18,7 +18,7 @@
   // library, or to the page's heading elsewhere.
   function skip(e) {
     e.preventDefault();
-    const to = document.querySelector('.grid .card') ?? document.querySelector('main h1, h1');
+    const to = document.querySelector('.grid .card[tabindex="0"]') ?? document.querySelector('main h1, h1');
     if (!to) return;
     if (!to.matches('a, button, input') && !to.hasAttribute('tabindex')) to.setAttribute('tabindex', '-1');
     to.focus();

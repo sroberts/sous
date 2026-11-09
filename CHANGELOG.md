@@ -40,6 +40,12 @@ include breaking changes, and they're called out here.
 - The editor says that a recipe's first tag is its course in the library.
 
 ### Fixed
+- Searching the library no longer freezes on a phone. The library draws its
+  tickets a page at a time as you scroll, rather than every recipe at once,
+  and search waits for a pause in typing instead of re-sorting the whole
+  library on every keystroke.
+- Back from a recipe, or between library views, returns to the same place
+  in the library, with the ticket you left on still selected and focused.
 - Pressing Enter on a link in the library (the menu, a course, another
   recipe) followed that link instead of opening the selected recipe.
 - On a wide screen, clicking a recipe in the library opened it instead of
@@ -47,6 +53,9 @@ include breaking changes, and they're called out here.
 - Keyboard and screen-reader access: a "Skip to recipes" link, arrow keys
   that move focus through the library, headings in order, each Cook mode step
   announced as it changes, and form fields with edges that meet WCAG contrast.
+  The library grid is one stop in the tab order, so Tab reaches the preview
+  pane; Home and End jump through the grid; and a ticket's focus ring is no
+  longer hidden by its torn edge.
 - Cook mode's error page has a heading and a way back to the library.
 - A recipe's description, steps, notes and nutrition render their Markdown
   (bold, italics and links), as Mela writes them, instead of showing the raw

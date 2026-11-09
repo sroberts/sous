@@ -1,4 +1,15 @@
+<script module>
+  // Where the reader was in each library page of the session history: how far
+  // down the grid was drawn, the selected ticket and the scroll. Back from a
+  // recipe puts them back; the grid draws a page at a time, so without this
+  // the page comes back too short to scroll to where they were. Keyed by the
+  // history entry (the router numbers them) and its query.
+  const places = new Map();
+  const entry = (search) => `${history.state?.pos ?? 0} ${search}`;
+</script>
+
 <script>
+  import { tick, untrack } from 'svelte';
   import { flip } from 'svelte/animate';
   import { X, Heart, Bookmark } from '@lucide/svelte';
   import { route, go, link } from '../lib/router.svelte.js';
@@ -12,6 +23,8 @@
   const using = $derived((params.get('using') ?? '').split(',').map((s) => s.trim()).filter(Boolean));
   const show = $derived(params.get('show'));
   const course = $derived(params.get('course'));
+
+  const key = $derived(entry(params.toString()));
 
   let draft = $state('');
   let selectedId = $state(null);
@@ -66,9 +79,19 @@
 
   const words = $derived(q.split(/\s+/).filter(Boolean));
 
-  function haystack(r) {
-    return `${r.title} ${r.tags.join(' ')} ${r.source_host ?? ''} ${r.ingredient_items.join(' ')}`.toLowerCase();
-  }
+  // Each recipe's searchable text, lowercased once per library load rather
+  // than once per recipe per keystroke. Ingredient items come lower-cased.
+  const index = $derived.by(() => {
+    const m = new Map();
+    for (const r of session.recipes) {
+      const title = r.title.toLowerCase();
+      m.set(r.id, { title, hay: `${title} ${r.tags.join(' ')} ${r.source_host ?? ''} ${r.ingredient_items.join(' ')}`.toLowerCase() });
+    }
+    return m;
+  });
+
+  // localeCompare's ordering, without building a collator per comparison.
+  const collator = new Intl.Collator();
 
   // Search words must all appear; ingredients on hand rank recipes by how
   // many of them they use. Tickets keep their identity as they rerank.
@@ -76,18 +99,79 @@
     if (!words.length && !using.length) return null;
     const out = [];
     for (const r of pool) {
-      const hay = haystack(r);
+      const { title, hay } = index.get(r.id);
       if (!words.every((w) => hay.includes(w))) continue;
-      const matched = using.filter((t) => r.ingredient_items.some((i) => i.includes(t)) || r.title.toLowerCase().includes(t)).length;
+      const matched = using.filter((t) => r.ingredient_items.some((i) => i.includes(t)) || title.includes(t)).length;
       if (using.length && !matched) continue;
-      const titleHit = words.length && words.every((w) => r.title.toLowerCase().includes(w));
+      const titleHit = words.length && words.every((w) => title.includes(w));
       out.push({ r, matched, score: matched * 10 + (titleHit ? 5 : 0) });
     }
-    return out.sort((a, b) => b.score - a.score || a.r.title.localeCompare(b.r.title));
+    return out.sort((a, b) => b.score - a.score || collator.compare(a.r.title, b.r.title));
   });
 
-  const rows = $derived(ranked ?? [...pool].sort((a, b) => a.title.localeCompare(b.title)).map((r) => ({ r, matched: null })));
+  // The plain library, sorted once per change to the pool, not per keystroke.
+  const sorted = $derived([...pool].sort((a, b) => collator.compare(a.title, b.title)).map((r) => ({ r, matched: null })));
+  const rows = $derived(ranked ?? sorted);
   const visible = $derived(rows.map((x) => x.r));
+
+  // The grid draws a page of tickets and adds more as the end scrolls into
+  // view. Drawing every ticket at once (and animating each as a search
+  // reranks them) is what froze phones on large libraries.
+  const PAGE = 60;
+  let more = $state();
+  // A new search or view starts from the first page again; arriving by Back
+  // or Forward draws as far as the grid had been drawn there.
+  let shown = $derived.by(() => {
+    const k = key;
+    const back = route.back;
+    return Math.max(PAGE, (back && untrack(() => places.get(k)?.shown)) || 0);
+  });
+  // Observed afresh after each page, so a sentinel still in view adds another.
+  $effect(() => {
+    if (!more || shown >= rows.length) return;
+    const io = new IntersectionObserver((es) => es[0].isIntersecting && (shown += PAGE), { rootMargin: '800px 0px' });
+    io.observe(more);
+    return () => io.disconnect();
+  });
+  const drawn = $derived(rows.length > shown ? rows.slice(0, shown) : rows);
+
+  // Arriving by Back or Forward puts back the reader's ticket and scroll, with
+  // focus on that ticket so the next Tab or arrow carries on from there. A new
+  // search or view starts the cursor on its first result, so Enter opens what
+  // is at the top rather than a ticket left selected out of sight. (Declared
+  // before remember(), which would otherwise overwrite the place first.)
+  $effect(() => {
+    key;
+    untrack(() => {
+      const p = route.back ? places.get(key) : null;
+      selectedId = p?.selectedId ?? visible[0]?.id ?? null;
+      if (p)
+        tick().then(() => {
+          scrollTo(0, p.y);
+          document.querySelector(`#t-${p.selectedId} > a`)?.focus({ preventScroll: true });
+        });
+    });
+  });
+
+  function remember() {
+    if (route.name !== 'library') return; // leaving: the next page's scroll isn't ours
+    places.delete(key);
+    places.set(key, { shown, selectedId, y: scrollY });
+    if (places.size > 30) places.delete(places.keys().next().value);
+  }
+  $effect(remember);
+  $effect(() => {
+    let frame = 0;
+    const onscroll = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(remember);
+    };
+    addEventListener('scroll', onscroll, { passive: true });
+    return () => {
+      cancelAnimationFrame(frame);
+      removeEventListener('scroll', onscroll);
+    };
+  });
 
   // The rail holds what this person means to cook, on the plain library view.
   const rail = $derived(!show && !course && !ranked ? session.recipes.filter((r) => r.mine.want_to_cook) : []);
@@ -100,55 +184,93 @@
     ranked && !using.length ? `“${params.get('q')}”` : show === 'fav' ? 'Favorites' : show === 'want' ? 'Want to cook' : (course ?? 'Library'),
   );
 
-  const of = (k) => `${k} ${k === 1 ? 'recipe' : 'recipes'}`;
+  const count = (k) => k.toLocaleString();
+  const of = (k) => `${count(k)} ${k === 1 ? 'recipe' : 'recipes'}`;
   const subhead = $derived(ranked && using.length ? `${of(visible.length)} use ${list(using)}` : of(visible.length));
 
   function list(xs) {
     return xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} or ${xs.at(-1)}`;
   }
 
-  // On a wide screen a click selects the ticket for the preview, and a second
-  // click on the selected one opens it. Enter on a focused ticket (a click
-  // with no pointer) opens it straight away, as a link should.
-  // Narrow screens have no preview, so a click opens the recipe there.
-  function select(r, e) {
-    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-    e.preventDefault();
-    if (wide && e.detail !== 0 && r.id !== selectedId) selectedId = r.id;
-    else go(`/r/${r.id}`);
+  // One cursor: the selected ticket is where keyboard focus lands (the only
+  // ticket in the tab order, so Tab passes the grid in one step), arrows move
+  // both, and Enter opens it. On a wide screen, where the preview shows the
+  // selection, a click selects a ticket and a second click opens it; below
+  // that a click opens the recipe.
+  const tabId = $derived(drawn.some((x) => x.r.id === selectedId) ? selectedId : (drawn[0]?.r.id ?? null));
+
+  function open(id) {
+    selectedId = id;
+    remember(); // now, before leaving, so Back returns to this ticket
+    go(`/r/${id}`);
   }
 
-  // Arrow keys move through the grid as it is laid out on screen. From the
-  // search field they move the selection; on a ticket they move focus too.
-  // Enter opens the selected ticket only from the search field or the page
-  // itself: on any other link or control it does what that control does.
+  function choose(r, e) {
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; // a new tab stays the browser's
+    e.preventDefault();
+    if (wide && e.detail === 1 && r.id !== selectedId) selectedId = r.id;
+    else open(r.id);
+  }
+
+  // The grid's keys work from the page itself, the search box or a ticket.
+  // Anywhere else (a course, the Using field, a button) a key keeps its own
+  // meaning.
   function onkey(e) {
-    const tag = e.target.tagName;
-    const inField = tag === 'TEXTAREA' || tag === 'SELECT' || (tag === 'INPUT' && e.target.type !== 'search');
-    if (inField || !visible.length || session.asking || e.metaKey || e.ctrlKey || e.altKey) return;
-    const onCard = !!e.target.closest?.('.grid .card');
-    const control = !onCard && e.target.closest?.('a, button, summary, [role=menuitem], [role=menuitemradio], [contenteditable]');
-    if (control) return;
-    const i = Math.max(0, visible.findIndex((r) => r.id === selectedId));
+    if (session.asking || !visible.length || e.altKey || e.ctrlKey || e.metaKey) return;
+    const el = e.target;
+    const inSearch = el.tagName === 'INPUT' && el.type === 'search';
+    const card = el.closest?.('.grid a.card');
+    if (el !== document.body && !inSearch && !card) return;
+
+    if (e.key === 'Enter') {
+      if (card) {
+        e.preventDefault();
+        return open(card.dataset.id);
+      }
+      // Below the wide breakpoint the selection isn't shown, so Enter (a
+      // phone's Go key) only puts the keyboard away to show the results.
+      if (!wide) return inSearch && el.blur();
+      if (inSearch && !q && !using.length) return; // nothing searched, nothing chosen
+      e.preventDefault();
+      if (inSearch) el.blur(); // so the recipe page takes focus on arrival
+      return open(selectedId);
+    }
+
     const items = grid?.children ?? [];
     let cols = 1;
     while (cols < items.length && items[cols].offsetTop === items[0].offsetTop) cols++;
     const step = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: cols, ArrowUp: -cols }[e.key];
-    if (step && !(tag === 'INPUT' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight'))) {
-      e.preventDefault();
-      const next = visible[Math.max(0, Math.min(visible.length - 1, i + step))];
-      selectedId = next.id;
-      const li = document.getElementById(`t-${next.id}`);
-      if (onCard) li?.querySelector('a')?.focus();
-      else li?.scrollIntoView({ block: 'nearest' });
-    } else if (e.key === 'Enter' && selectedId && !onCard) {
-      e.preventDefault();
-      go(`/r/${selectedId}`);
+    // End goes to the last ticket drawn, and the next page draws as it comes
+    // into view, rather than drawing the whole library at once.
+    const edge = { Home: 0, End: drawn.length - 1 }[e.key];
+    if (step === undefined && edge === undefined) return;
+    // In the search box, left, right, Home and End move the caret, up is
+    // left alone, and down steps into the grid at the selected ticket.
+    if (inSearch && e.key !== 'ArrowDown') return;
+    e.preventDefault();
+    if (inSearch) {
+      const li = document.getElementById(`t-${tabId}`);
+      li?.querySelector('a').focus({ preventScroll: true });
+      return li?.scrollIntoView({ block: 'nearest' });
     }
+    const i = Math.max(0, visible.findIndex((r) => r.id === selectedId));
+    const j = edge ?? Math.max(0, Math.min(visible.length - 1, i + step));
+    const next = visible[j];
+    selectedId = next.id;
+    if (j >= shown) shown = j + PAGE;
+    tick().then(() => {
+      const li = document.getElementById(`t-${next.id}`);
+      if (card) li?.querySelector('a').focus({ preventScroll: true });
+      if (e.key === 'Home') scrollTo({ top: 0 });
+      else li?.scrollIntoView({ block: 'nearest' });
+    });
   }
 
   const selected = $derived(session.recipes.find((r) => r.id === selectedId));
   const ease = (t) => 1 - Math.pow(2, -10 * t);
+  // animate:flip runs as a Web Animation, which the stylesheet's
+  // reduced-motion rule doesn't reach.
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
 </script>
 
 <svelte:window onkeydown={onkey} />
@@ -156,11 +278,11 @@
 <div class="library" class:wide>
   <nav class="courses" aria-label="Courses">
     <a href="/{show ? `?show=${show}` : ''}" use:link class:on={!course} aria-current={!course ? 'true' : undefined}>
-      <span>Everything</span><span class="fig n">{session.recipes.length}</span>
+      <span>Everything</span><span class="fig n">{count(session.recipes.length)}</span>
     </a>
     {#each courses as [name, n] (name)}
       <a href="/?{new URLSearchParams({ ...(show ? { show } : {}), course: name })}" use:link class:on={course === name} aria-current={course === name ? 'true' : undefined}>
-        <span>{name}</span><span class="fig n">{n}</span>
+        <span>{name}</span><span class="fig n">{count(n)}</span>
       </a>
     {/each}
   </nav>
@@ -168,7 +290,7 @@
   <main class="pass" aria-labelledby="lib-title">
     <header class="head">
       <h1 id="lib-title">{heading}</h1>
-      <span class="sub">{session.loaded ? subhead : 'Loading the library…'}</span>
+      <span class="sub" role="status">{session.loaded ? subhead : 'Loading the library…'}</span>
       <form class="using" onsubmit={addIngredient}>
         <label for="using-input" class="label">Using</label>
         {#each using as term (term)}
@@ -237,12 +359,24 @@
         {/if}
       </div>
     {:else}
+      {#if drawn.length < rows.length}
+        <p class="visually-hidden">Showing the first {count(drawn.length)} of {count(rows.length)}; more appear as you scroll.</p>
+      {/if}
       <ol class="grid" bind:this={grid}>
-        {#each rows as { r, matched } (r.id)}
+        {#each drawn as { r, matched } (r.id)}
           {@const t = ticketTime(r.total_minutes, r.time_text)}
           {@const sel = wide && r.id === selectedId}
-          <li id="t-{r.id}" animate:flip={{ duration: ranked ? 360 : 0, easing: ease }}>
-            <a class="ticket card" class:sel href="/r/{r.id}" onclick={(e) => select(r, e)} onfocus={(e) => wide && e.currentTarget.matches(':focus-visible') && (selectedId = r.id)} aria-current={sel ? 'true' : undefined}>
+          <li id="t-{r.id}" animate:flip={{ duration: ranked && !still ? 360 : 0, easing: ease }}>
+            <a
+              class="ticket card"
+              class:sel
+              href="/r/{r.id}"
+              data-id={r.id}
+              tabindex={r.id === tabId ? 0 : -1}
+              onclick={(e) => choose(r, e)}
+              onfocus={(e) => e.currentTarget.matches(':focus-visible') && (selectedId = r.id)}
+              aria-current={sel ? 'true' : undefined}
+            >
               <Plate hash={r.cover} title={r.title} size="s" />
               <span class="body">
                 <span class="title">
@@ -268,6 +402,7 @@
           </li>
         {/each}
       </ol>
+      {#if drawn.length < rows.length}<div class="more" bind:this={more} aria-hidden="true"></div>{/if}
     {/if}
   </main>
 
@@ -530,6 +665,17 @@
   .card.sel {
     border-top-color: var(--red);
   }
+  /* A ticket's torn-edge mask would clip its own focus ring, so the ring is
+     drawn on the list item that holds it. */
+  .grid > li:has(> .card:focus-visible),
+  .hung > li:has(> .hang:focus-visible) {
+    outline: 2px solid var(--red);
+    outline-offset: 2px;
+  }
+  .card:focus-visible,
+  .hang:focus-visible {
+    outline: none;
+  }
   .card :global(.plate) {
     margin: 0 var(--space-2);
     width: auto;
@@ -594,6 +740,10 @@
   .match.all {
     border-color: var(--red);
     color: var(--red);
+  }
+
+  .more {
+    height: 1px;
   }
 
   .ghost {

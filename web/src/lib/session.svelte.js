@@ -19,19 +19,24 @@ function stored() {
   }
 }
 
-export const session = $state({
-  person: null, // { username, name }
-  outpost: false, // signed in through Outpost, so the person is fixed
-  portal: null, // the Outpost portal, for the account menu
-  signedOut: false, // the Outpost sign-in ended while the page was open
-  people: [],
-  recipes: [], // summaries from /v1/recipes
-  loaded: false,
-  fromCache: false, // opened from this device's stored library, offline
-  error: null,
-  asking: false, // the who's-cooking prompt is open
-  toast: null, // { id, message, action? }
-});
+class Session {
+  person = $state(null); // { username, name }
+  outpost = $state(false); // signed in through Outpost, so the person is fixed
+  portal = $state(null); // the Outpost portal, for the account menu
+  signedOut = $state(false); // the Outpost sign-in ended while the page was open
+  people = $state([]);
+  // Summaries from /v1/recipes. Raw, not deeply reactive: the library reads
+  // every field of every row on each search keystroke, and a proxy per row
+  // made that crawl on a phone. Replace the array (or a row) to change it.
+  recipes = $state.raw([]);
+  loaded = $state(false);
+  fromCache = $state(false); // opened from this device's stored library, offline
+  error = $state(null);
+  asking = $state(false); // the who's-cooking prompt is open
+  toast = $state(null); // { id, message, action? }
+}
+
+export const session = new Session();
 
 /** A short note at the foot of the page, with an optional action such as Undo.
  *  One with an action stays longer, so there is time to reach it. */
@@ -181,8 +186,9 @@ export async function asPerson(fn) {
 
 /** Keep the index row in step after a recipe changes. */
 export function patchSummary(id, fields) {
-  const i = session.recipes.findIndex((r) => r.id === id);
-  if (i >= 0) session.recipes[i] = { ...session.recipes[i], ...fields };
+  if (session.recipes.some((r) => r.id === id)) {
+    session.recipes = session.recipes.map((r) => (r.id === id ? { ...r, ...fields } : r));
+  }
   offline.saveIndex(session.person?.username ?? null, $state.snapshot(session.recipes));
 }
 

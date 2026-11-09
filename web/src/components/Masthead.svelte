@@ -1,4 +1,5 @@
 <script>
+  import { flushSync } from 'svelte';
   import { Search, Plus, Link2, ChevronDown, Check, ExternalLink, CloudOff } from '@lucide/svelte';
   import { route, go, link } from '../lib/router.svelte.js';
   import { session, choosePerson } from '../lib/session.svelte.js';
@@ -19,13 +20,44 @@
   const q = $derived(route.name === 'library' ? route.search.get('q') ?? '' : '');
   const show = $derived(route.name === 'library' ? route.search.get('show') : null);
 
-  function search(e) {
+  // Typing refines the library in place; from elsewhere it opens the library.
+  // In the library the search waits for a pause in typing, so a fast typist
+  // isn't made to wait on a search (and a history entry) per keystroke. It
+  // reads the field when it runs, so nothing typed meanwhile is lost.
+  let pending = null;
+  function search() {
+    clearTimeout(pending);
+    if (route.name !== 'library') return apply();
+    pending = setTimeout(apply, field.value ? 150 : 0);
+  }
+
+  function apply() {
+    clearTimeout(pending);
+    pending = null;
     const params = new URLSearchParams(route.name === 'library' ? route.search : '');
-    const value = e.currentTarget.value;
+    const value = field.value;
     value ? params.set('q', value) : params.delete('q');
-    // Typing refines the library in place; from elsewhere it opens the library.
     go(`/${params.size ? `?${params}` : ''}`, { replace: route.name === 'library' });
   }
+
+  // Enter and the up and down arrows act on the results, so a search still
+  // waiting runs first (and the library settles its selection) rather than
+  // acting on the results from before the last few keystrokes.
+  function flush(e) {
+    if (pending !== null && (e.key === 'Enter' || e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+      apply();
+      flushSync();
+    }
+  }
+
+  // A search still waiting belongs to the page it was typed on: going
+  // anywhere else (a link, Back, Clear search) drops it and the field shows
+  // that page's search. Nor does a timer outlive the masthead.
+  $effect(() => {
+    route.search;
+    if (field) field.value = q;
+    return () => clearTimeout(pending);
+  });
 
   // On a phone the masthead takes a fifth of the screen, so it slides away
   // while you scroll down and comes back as soon as you scroll up, at the
@@ -99,7 +131,7 @@
   <label class="search">
     <Search size={17} aria-hidden="true" />
     <span class="visually-hidden">Search recipes</span>
-    <input bind:this={field} type="search" placeholder="Search recipes, tags, ingredients" value={q} oninput={search} autocomplete="off" />
+    <input bind:this={field} type="search" placeholder="Search recipes, tags, ingredients" value={q} oninput={search} onkeydown={flush} autocomplete="off" />
     <kbd>⌘K</kbd>
   </label>
   <div class="add">
