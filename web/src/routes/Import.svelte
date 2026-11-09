@@ -458,7 +458,7 @@
   .field textarea {
     width: 100%;
     border: 0;
-    border-bottom: 1.5px solid var(--perf);
+    border-bottom: 1.5px solid var(--field);
     background: none;
     padding: var(--space-2) 0;
     outline: none;
