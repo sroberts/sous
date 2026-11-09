@@ -12,20 +12,27 @@ include breaking changes, and they're called out here.
   landscape the ingredients and method now show in the first screen. The
   description sits under Begin cooking, held to three lines with More, and the
   photo is shorter.
-- A recipe's notes sit under its ingredients, so make-ahead and substitution
-  advice is read before you shop and start, not after the last step.
+- A recipe's notes come before its method, so make-ahead and timing advice is
+  read before you start, not found after the ingredients or the last step.
 - Section headings ("For the sauce") are set at reading size on a heavy rule.
 - "Show as written" says "Show parsed" while the original lines are showing.
 - Links in recipe text are easier to see, carry an external-link mark, and
   tell screen readers they open a new tab. Screen readers now hear each step's
   number ("Step 7").
-- On a phone, switching between Ingredients and Method no longer hides the
-  first step under the bar at the top. The recipe comes up sooner: the photo
-  is a short strip and the times fit on one row. Once you scroll into the
-  recipe, a Cook button rides along with the tabs.
+- On a phone the recipe comes up sooner: the photo is a thumbnail beside the
+  title, Edit recipe sits under it, and the times fit on one row. A short
+  recipe shows its ingredients and method in one scroll; a long one splits
+  them into Ingredients and Method tabs. Switching tabs no longer hides the
+  first step under the bar at the top, and once you scroll into the recipe a
+  Cook button rides along with the tabs.
+- In the Method tab on a phone, an Ingredients bar at the foot of the screen
+  pulls the ingredient list up over the step you're reading.
+- On a recipe, New recipe in the top bar is a plain button, so Begin cooking
+  is the one red button in view. Tap targets on the recipe page are at least
+  44px.
 - Begin cooking also closes the method, so you can start from where you read.
 - Nutrition written as "**Calories** 1063" lines shows as figures, like the
-  times. The ingredient column is wider on large screens.
+  times, rounded the way a label is (1064, 55.3 g) with short units. The ingredient column is wider on large screens.
 - The source link tells screen readers it opens a new tab, and a recipe that
   fails to load says so plainly instead of showing a raw error.
 

@@ -88,7 +88,8 @@
   </label>
   <div class="add">
     <a class="btn" href="/import" use:link aria-current={route.name === 'import' ? 'page' : undefined}><Link2 aria-hidden="true" />Import</a>
-    <a class="btn primary" href="/new" use:link><Plus aria-hidden="true" />New recipe</a>
+    <!-- On a recipe, Begin cooking is the one red button in view. -->
+    <a class="btn" class:primary={route.name !== 'recipe'} href="/new" use:link><Plus aria-hidden="true" />New recipe</a>
   </div>
   <div class="who">
     <!-- Quiet, not an alarm: reading and cooking carry on from this device. -->
