@@ -9,8 +9,8 @@
   const who = $derived(username ?? '<username>');
 </script>
 
-<div class="way">
-  <h3 class="label">Save without opening Sous (Siri)</h3>
+<!-- The body of the Siri card; SendToSous gives it its heading. -->
+<div class="inner">
   <p>A second shortcut saves the recipe for you and Siri tells you what happened. Say “Hey Siri, Save to Sous” or use the Share button.</p>
   {#if phoneCannotReach}
     <p class="warn">You’re on <code>{location.hostname}</code>, which your phone can’t reach. Open Sous at the address your phone uses, then come back to this page.</p>
@@ -35,21 +35,12 @@
 </div>
 
 <style>
-  .way {
-    grid-column: 1 / -1;
+  .inner {
     display: grid;
     gap: var(--space-3);
     justify-items: start;
-    background: var(--ticket);
-    padding: var(--space-4) var(--space-5) var(--space-5);
   }
-  .way .label {
-    color: var(--ink-3);
-    justify-self: stretch;
-    padding-bottom: var(--space-2);
-    border-bottom: 1.5px dashed var(--perf);
-  }
-  .way p {
+  .inner p {
     max-width: 60ch;
   }
   .hint {

@@ -166,8 +166,11 @@ img {
   transition: background-color 120ms, color 120ms, border-color 120ms;
 }
 
-.btn:hover {
-  background: var(--ticket-press);
+/* Hover only where there is one: on touch a tapped button would keep it. */
+@media (hover: hover) {
+  .btn:hover {
+    background: var(--ticket-press);
+  }
 }
 
 .btn:active {
@@ -180,9 +183,11 @@ img {
   color: var(--ticket);
 }
 
-.btn.primary:hover {
-  background: var(--red-press);
-  border-color: var(--red-press);
+@media (hover: hover) {
+  .btn.primary:hover {
+    background: var(--red-press);
+    border-color: var(--red-press);
+  }
 }
 
 .btn.quiet {
@@ -190,8 +195,10 @@ img {
   background: transparent;
 }
 
-.btn.quiet:hover {
-  background: var(--pass-deep);
+@media (hover: hover) {
+  .btn.quiet:hover {
+    background: var(--pass-deep);
+  }
 }
 
 .btn[aria-pressed='true'] {
