@@ -742,10 +742,11 @@
       margin: -4px var(--space-2) 0;
       padding: var(--space-5) var(--space-4) calc(var(--space-5) + var(--tear));
     }
-    /* The photo follows the header text as a short band, and a photo-less
+    /* The photo follows the header text as a short band (short enough that
+       an iPad in portrait still opens on the ingredients), and a photo-less
        recipe shows no initial here. */
     .photo :global(.plate) {
-      max-height: 40vh;
+      max-height: min(22vh, 16rem);
     }
     /* Show as written is the panel's only visible head here (the tab names
        it), so it sits at the right like a tool, not alone at the start. */
