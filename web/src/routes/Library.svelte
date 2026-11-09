@@ -307,7 +307,8 @@
       <span>Everything</span><span class="fig n">{count(session.recipes.length)}</span>
     </a>
     {#each courses as [name, n] (name)}
-      <a href="/?{new URLSearchParams({ ...(show ? { show } : {}), course: name })}" use:link class:on={!!course && courseKey(course) === courseKey(name)} aria-current={course && courseKey(course) === courseKey(name) ? 'true' : undefined}>
+      {@const on = !!course && courseKey(course) === courseKey(name)}
+      <a href="/?{new URLSearchParams({ ...(show ? { show } : {}), course: name })}" use:link class:on aria-current={on ? 'true' : undefined}>
         <span>{name}</span><span class="fig n">{count(n)}</span>
       </a>
     {/each}

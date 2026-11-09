@@ -471,6 +471,9 @@
   /* The stage: a rail with the fired step hanging from it. */
   .stage {
     position: relative;
+    /* Its own stack, so the rail can sit above the held timer strip without
+       rising over the ingredients sheet beside it. */
+    isolation: isolate;
     overflow-y: auto;
     padding-bottom: var(--space-5);
     touch-action: pan-y;
@@ -479,7 +482,7 @@
   .stage > .rail {
     position: sticky;
     top: 0;
-    z-index: 1;
+    z-index: 2;
   }
   .clip {
     position: absolute;
