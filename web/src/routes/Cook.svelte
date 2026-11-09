@@ -310,7 +310,7 @@
             {/if}
           {/key}
           {#each queued as q (q.n)}
-            <button class="next ticket" onclick={() => move(q.n - 1 - step)} aria-label="Go to step {q.n}">
+            <button class="next ticket" onclick={() => move(q.n - 1 - step)}>
               <span class="clip" aria-hidden="true"></span>
               <span class="next-head"><span class="fig">{q.n}</span><span class="label">Up next</span></span>
               <span class="next-text"><Markdown text={q.text} links={false} /></span>

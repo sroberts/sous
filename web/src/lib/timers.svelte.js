@@ -18,6 +18,8 @@ function num(s) {
  * clause starts a sentence or follows "then", so "…for 1 minute, then
  * sprinkle in the flour and stir for 1 minute" names each minute apart. */
 export function actionOf(before) {
+  // Collapsed first: a long run of spaces would make the split below slow.
+  before = before.replace(/\s+/g, ' ');
   const clause = before.split(/[.;:!?]\s+|,?\s+then\s+/i).at(-1) ?? '';
   let first = clause.split(/[,(]|\s(?:and|until|while|for|over|about)\s/i)[0].trim();
   // "Cook the bacon in a large pot" → "Cook the bacon", but "Pour in the
@@ -39,7 +41,7 @@ export function findDurations(text) {
     const low = num(m[1]);
     if (!low) continue;
     const label = m[0].replace(/\s+/g, ' ');
-    out.push({ label, seconds: Math.round(low * mult), what: actionOf(text.slice(0, m.index)) || label });
+    out.push({ label, seconds: Math.round(low * mult), what: actionOf(text.slice(Math.max(0, m.index - 200), m.index)) || label });
   }
   return out;
 }

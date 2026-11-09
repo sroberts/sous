@@ -19,7 +19,8 @@ the UI built: `cd web && npm run build && cd .. && go run ./cmd/sous --port
 
 1. Open the Peach Melba recipe from the library.
    - URL is `/r/<id>`; title, cover image, ingredients and steps show.
-   - On phones the title, facts and Begin cooking come before the photo.
+   - On phones the photo is a small square beside the title, so the facts
+     and Begin cooking show in the first screen.
    - The colophon reads "Added by Sous …", never `_sous`.
    - The notes hold the original text and the source citation.
    - On phones, past the header, Ingredients and Method are tabs that stick
