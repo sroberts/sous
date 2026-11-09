@@ -36,3 +36,17 @@ export function inlineMarkdown(source) {
 export function plainText(source) {
   return inlineMarkdown(source).map((p) => p.text).join('');
 }
+
+/** Lines like "**Calories** 1063.75" or "**Fat** 55.2 grams", as Mela writes
+ *  nutrition: [{ label, fig, unit }], or null when any line is something else. */
+export function labelledFigures(source) {
+  const lines = source.split('\n').map((l) => l.trim()).filter(Boolean);
+  if (!lines.length) return null;
+  const out = [];
+  for (const line of lines) {
+    const m = /^\*\*(.+?):?\*\*:?\s+(\d[\d.,]*)\s*(.*)$/.exec(line);
+    if (!m) return null;
+    out.push({ label: m[1].trim(), fig: m[2], unit: m[3].trim() });
+  }
+  return out;
+}

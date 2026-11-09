@@ -10,7 +10,8 @@
   import Plate from '../components/Plate.svelte';
   import Facts from '../components/Facts.svelte';
   import Markdown from '../components/Markdown.svelte';
-  import { stickIfFits } from '../lib/stick.js';
+  import { stickIfFits, scrollQuietly } from '../lib/stick.js';
+  import { labelledFigures } from '../lib/markdown.js';
 
   let { id } = $props();
   let recipe = $state(null);
@@ -89,10 +90,23 @@
       tab = next;
       await tick();
       // Scrolled into one tab: open the other where you left it, or at its top.
-      if (stuck) scrollTo({ top: Math.max(placeOf[next] ?? home, home) });
+      if (stuck) scrollQuietly(Math.max(placeOf[next] ?? home, home));
     }
     if (focus) document.getElementById(`tab-${next}`)?.focus();
   }
+  // Once the tabs stick, the header and its Begin cooking are off screen, so
+  // the strip carries a Cook button of its own.
+  let tabsStuck = $state(false);
+  $effect(() => {
+    if (!narrow || !tabsAt) return;
+    const check = () => (tabsStuck = tabsAt.getBoundingClientRect().top < (parseFloat(getComputedStyle(tabs).top) || 0) + 1);
+    check();
+    addEventListener('scroll', check, { passive: true });
+    return () => removeEventListener('scroll', check);
+  });
+
+  const nutrition = $derived(recipe?.nutrition_text ? labelledFigures(recipe.nutrition_text) : null);
+
   function tabKey(e) {
     const to = { ArrowLeft: 'ingredients', Home: 'ingredients', ArrowRight: 'method', End: 'method' }[e.key];
     if (!to) return;
@@ -107,8 +121,13 @@
       <h1>This recipe isn’t on this device yet.</h1>
       <p>It will be once you’re back online.</p>
     {:else}
-      <h1>{error.status === 404 ? 'That recipe isn’t in the library.' : 'This recipe didn’t load.'}</h1>
-      <p>{error.message}</p>
+      {#if error.status === 404}
+        <h1>That recipe isn’t in the library.</h1>
+        <p>It may have been moved to the trash, or the link is wrong.</p>
+      {:else}
+        <h1>This recipe didn’t load.</h1>
+        <p>{error.status ? 'Sous had a problem fetching it.' : error.message} Try again in a moment.</p>
+      {/if}
     {/if}
     <a class="btn" href="/" use:link>Back to the library</a>
   </main>
@@ -129,10 +148,10 @@
         {#if recipe.source_url || recipe.tags.length}
           <p class="src">
             {#if recipe.tags.length}<span>{recipe.tags.join(', ')}</span>{#if recipe.source_url}<span class="dot" aria-hidden="true">·</span>{/if}{/if}
-            {#if webLink(recipe.source_url)}<a href={recipe.source_url.trim()} target="_blank" rel="noreferrer">{recipe.source_host ?? recipe.source_url}<ExternalLink size={13} aria-hidden="true" /></a>{:else if recipe.source_url}<span>{recipe.source_url}</span>{/if}
+            {#if webLink(recipe.source_url)}<a href={recipe.source_url.trim()} target="_blank" rel="noreferrer">{recipe.source_host ?? recipe.source_url}<ExternalLink size={13} aria-hidden="true" /><span class="visually-hidden">{' (opens in a new tab)'}</span></a>{:else if recipe.source_url}<span>{recipe.source_url}</span>{/if}
           </p>
         {/if}
-        <div class="facts"><Facts {recipe} size="l" /></div>
+        <div class="facts"><Facts {recipe} size="l" count={!narrow} /></div>
         <div class="acts">
           <a class="btn primary cook" href="/r/{id}/cook" use:link>Begin cooking</a>
           <button class="btn" aria-pressed={recipe.mine.favorite} disabled={isOffline()} onclick={() => toggle('favorite')}>
@@ -155,13 +174,16 @@
     <div class="body">
       {#if narrow}
         <div bind:this={tabsAt}></div>
-        <div class="tabs" role="tablist" aria-label="Recipe" bind:this={tabs}>
+        <div class="tabs" bind:this={tabs}>
+          <div class="tablist" role="tablist" aria-label="Recipe">
           <button role="tab" id="tab-ingredients" aria-selected={tab === 'ingredients'} aria-controls="panel-ingredients" tabindex={tab === 'ingredients' ? 0 : -1} onkeydown={tabKey} onclick={() => show('ingredients')}>
             Ingredients<span class="count fig">{recipe.ingredients.filter((i) => i.item).length}</span>
           </button>
           <button role="tab" id="tab-method" aria-selected={tab === 'method'} aria-controls="panel-method" tabindex={tab === 'method' ? 0 : -1} onkeydown={tabKey} onclick={() => show('method')}>
             Method<span class="count fig">{recipe.steps.length}</span>
           </button>
+          </div>
+          <a class="btn primary tab-cook" class:shown={tabsStuck} href="/r/{id}/cook" use:link>Cook</a>
         </div>
       {/if}
       <section id="panel-ingredients" class="ingredients sheet" role={narrow ? 'tabpanel' : undefined} aria-labelledby={narrow ? 'tab-ingredients' : 'ing-h'} hidden={narrow && tab !== 'ingredients'} use:stickIfFits={32}>
@@ -202,9 +224,21 @@
           </ol>
         {/each}
 
+        <div class="method-end">
+          <a class="btn primary cook" href="/r/{id}/cook" use:link>Begin cooking</a>
+        </div>
+
         {#if recipe.nutrition_text}
           <h2 class="label aside-h">Nutrition</h2>
-          <p class="notes"><Markdown text={recipe.nutrition_text} /></p>
+          {#if nutrition}
+            <dl class="nutrition">
+              {#each nutrition as n}
+                <div><dt class="label">{n.label}</dt><dd><span class="fig">{n.fig}</span>{#if n.unit}<span class="unit">{n.unit}</span>{/if}</dd></div>
+              {/each}
+            </dl>
+          {:else}
+            <p class="notes"><Markdown text={recipe.nutrition_text} /></p>
+          {/if}
         {/if}
 
         <p class="colophon">
@@ -308,7 +342,8 @@
     display: block;
   }
   .more {
-    min-height: 44px;
+    min-height: 24px;
+    margin-top: var(--space-1);
     padding: 0;
     border: 0;
     background: none;
@@ -358,13 +393,26 @@
     position: sticky;
     top: var(--bar-shown, 0px);
     z-index: 4;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
     margin: 0 calc(var(--gutter) * -1) calc(var(--space-4) * -1);
     padding: 0 var(--gutter);
     background: var(--pass);
     border-bottom: 1px solid var(--perf);
     transition: top 240ms var(--ease-out);
+  }
+  .tablist {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    flex: 1;
+  }
+  .tab-cook {
+    align-self: center;
+    min-height: 40px;
+    margin-left: var(--space-3);
+    visibility: hidden;
+  }
+  .tab-cook.shown {
+    visibility: visible;
   }
   .tabs button {
     display: inline-flex;
@@ -390,6 +438,22 @@
   .sheet {
     background: var(--ticket);
     padding: var(--space-4) var(--space-5) var(--space-6);
+  }
+  /* A laptop or an iPad in landscape: a shorter header so the recipe starts
+     in the first screen. */
+  @media (max-width: 1180px) and (min-width: 901px) {
+    .top {
+      padding-top: var(--space-5);
+    }
+    .desc {
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+    }
+  }
+  @media (min-width: 1280px) {
+    .body {
+      grid-template-columns: minmax(17rem, 27rem) minmax(0, 1fr);
+    }
   }
   .ingredients:global(.stuck) {
     position: sticky;
@@ -480,6 +544,35 @@
     max-width: 65ch;
     white-space: pre-line;
   }
+  .method-end {
+    margin-top: var(--space-6);
+  }
+  .nutrition {
+    display: flex;
+    flex-wrap: wrap;
+    margin: var(--space-3) 0 0;
+  }
+  .nutrition > div {
+    min-width: 6rem;
+    padding: var(--space-2) var(--space-5) var(--space-3) 0;
+  }
+  .nutrition dt {
+    color: var(--ink-3);
+    margin-bottom: var(--space-1);
+  }
+  .nutrition dd {
+    margin: 0;
+  }
+  .nutrition .fig {
+    font-size: 1.625rem;
+  }
+  .nutrition .unit {
+    margin-left: 3px;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
   .colophon {
     margin-top: var(--space-7);
     font-size: 0.875rem;
@@ -507,6 +600,12 @@
        recipe shows no initial here. */
     .photo :global(.plate) {
       max-height: 40vh;
+    }
+    /* Show as written is the panel's only visible head here (the tab names
+       it), so it sits at the right like a tool, not alone at the start. */
+    .as-written,
+    .steps {
+      margin-left: auto;
     }
     .photo.none {
       display: none;
@@ -541,6 +640,10 @@
     }
     .cook {
       width: 100%;
+    }
+    /* A short strip, so the tabs and the first ingredients come up sooner. */
+    .photo :global(.plate) {
+      max-height: 25vh;
     }
   }
 </style>

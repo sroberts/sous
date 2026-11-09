@@ -19,6 +19,15 @@ include breaking changes, and they're called out here.
 - Links in recipe text are easier to see, carry an external-link mark, and
   tell screen readers they open a new tab. Screen readers now hear each step's
   number ("Step 7").
+- On a phone, switching between Ingredients and Method no longer hides the
+  first step under the bar at the top. The recipe comes up sooner: the photo
+  is a short strip and the times fit on one row. Once you scroll into the
+  recipe, a Cook button rides along with the tabs.
+- Begin cooking also closes the method, so you can start from where you read.
+- Nutrition written as "**Calories** 1063" lines shows as figures, like the
+  times. The ingredient column is wider on large screens.
+- The source link tells screen readers it opens a new tab, and a recipe that
+  fails to load says so plainly instead of showing a raw error.
 
 ### Fixed
 - A recipe's description, steps, notes and nutrition render their Markdown

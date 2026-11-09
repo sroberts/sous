@@ -20,3 +20,12 @@ export function stickIfFits(node, top = 0) {
     },
   };
 }
+
+/** Scroll the page without the masthead taking it for the reader scrolling
+ *  up and sliding back in over whatever the scroll was meant to show. */
+export function scrollQuietly(top) {
+  const root = document.documentElement;
+  root.dataset.quietScroll = '';
+  scrollTo({ top });
+  requestAnimationFrame(() => requestAnimationFrame(() => delete root.dataset.quietScroll));
+}

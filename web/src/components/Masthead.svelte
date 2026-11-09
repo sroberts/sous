@@ -30,6 +30,11 @@
     let last = scrollY;
     const onscroll = () => {
       const y = scrollY;
+      // The page moved itself (scrollQuietly): not the reader scrolling.
+      if ('quietScroll' in document.documentElement.dataset) {
+        last = y;
+        return;
+      }
       if (!phone.matches || y < height || menuOpen || bar.contains(document.activeElement)) {
         hidden = false;
         last = y;
