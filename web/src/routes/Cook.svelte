@@ -217,7 +217,7 @@
   {:else if recipe}
     <div class="body">
       <aside class="ingredients sheet" class:open={sheet} aria-label="Ingredients">
-        <div class="ing-head"><h2 class="label">Ingredients</h2><span class="label">{checked.length} of {checked.length + left} gathered</span></div>
+        <div class="ing-head"><h2 class="label">Ingredients</h2><span class="label">{checked.length} of {checked.length + left} gathered</span><button class="btn sheet-done" onclick={() => (sheet = false)}>Done</button></div>
         {#each groups as g}
           {#if g.section}<h3>{g.section}</h3>{/if}
           <ul>
@@ -408,6 +408,9 @@
     justify-content: space-between;
     padding-bottom: var(--space-2);
     border-bottom: 3px solid var(--ink);
+  }
+  .sheet-done {
+    display: none;
   }
   .ing-head span {
     color: var(--ink-3);
@@ -787,6 +790,14 @@
       display: flex;
       gap: var(--space-3);
       margin-left: 0;
+      /* Held under the rail while the step scrolls, so a clock never slides
+         out of sight; the pass behind it hides the step passing beneath. */
+      position: sticky;
+      top: 6px;
+      z-index: 1;
+      padding-bottom: var(--space-3);
+      margin-bottom: calc(var(--space-3) * -1);
+      background: var(--pass);
       overflow-x: auto;
       scroll-snap-type: x mandatory;
       scrollbar-width: none;
@@ -825,11 +836,16 @@
     .ing-toggle {
       display: inline-flex;
     }
+    /* The sheet fills the stage between its insets and scrolls inside, with
+       its head and Done held at the top. */
     .ingredients {
       position: absolute;
       inset: var(--space-3) var(--space-2) 0;
       z-index: 2;
+      align-self: stretch;
       max-height: none;
+      overscroll-behavior: contain;
+      padding-top: 0;
       visibility: hidden;
       transform: translateY(16px);
       opacity: 0;
@@ -840,6 +856,22 @@
       opacity: 1;
       transform: none;
       transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out);
+    }
+    .ing-head {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      align-items: center;
+      gap: var(--space-3);
+      padding-top: var(--space-3);
+      background: var(--ticket);
+    }
+    .ing-head span {
+      margin-left: auto;
+    }
+    .sheet-done {
+      display: inline-flex;
+      min-height: 44px;
     }
     .sheet-close {
       display: flex;
@@ -859,6 +891,30 @@
     }
     .tick .t-clock {
       font-size: 2.25rem;
+    }
+  }
+  /* A short screen (an iPad in landscape) sets the step a little smaller, so
+     the step and its timer buttons fit above the pager. */
+  @media (min-width: 901px) and (max-height: 820px) {
+    .step {
+      padding-top: var(--space-4);
+      padding-bottom: calc(var(--space-5) + var(--tear));
+    }
+    .num {
+      font-size: 3.5rem;
+    }
+    .step-head {
+      margin-bottom: var(--space-2);
+    }
+    .step-text {
+      margin-top: var(--space-3);
+      font-size: 1.625rem;
+    }
+    .step-text.long {
+      font-size: 1.375rem;
+    }
+    .timer-btns {
+      margin-top: var(--space-4);
     }
   }
   /* A portrait tablet reads the step from across the counter: set it larger. */
