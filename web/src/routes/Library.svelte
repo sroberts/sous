@@ -194,8 +194,9 @@
 
   // One cursor: the selected ticket is where keyboard focus lands (the only
   // ticket in the tab order, so Tab passes the grid in one step), arrows move
-  // both, and Enter opens it. A click selects from the wide breakpoint, where
-  // the preview shows the selection, and opens the recipe below it.
+  // both, and Enter opens it. On a wide screen, where the preview shows the
+  // selection, a click selects a ticket and a second click opens it; below
+  // that a click opens the recipe.
   const tabId = $derived(drawn.some((x) => x.r.id === selectedId) ? selectedId : (drawn[0]?.r.id ?? null));
 
   function open(id) {
@@ -207,7 +208,7 @@
   function choose(r, e) {
     if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; // a new tab stays the browser's
     e.preventDefault();
-    if (wide) selectedId = r.id;
+    if (wide && e.detail === 1 && r.id !== selectedId) selectedId = r.id;
     else open(r.id);
   }
 
@@ -287,6 +288,29 @@
   </nav>
 
   <main class="pass" aria-labelledby="lib-title">
+    <header class="head">
+      <h1 id="lib-title">{heading}</h1>
+      <span class="sub" role="status">{session.loaded ? subhead : 'Loading the library…'}</span>
+      <form class="using" onsubmit={addIngredient}>
+        <label for="using-input" class="label">Using</label>
+        {#each using as term (term)}
+          <span class="chip">
+            {term}
+            <button type="button" onclick={() => removeIngredient(term)} aria-label="Remove {term}"><X size={14} /></button>
+          </span>
+        {/each}
+        <input id="using-input" list="pantry" bind:value={draft} placeholder={using.length ? 'and…' : 'ingredients you have'} autocomplete="off" />
+        <datalist id="pantry">
+          {#each pantry as item}<option value={item}></option>{/each}
+        </datalist>
+        {#if using.length}
+          <button type="button" class="clear" onclick={() => setParam('using', '')}>Clear</button>
+        {/if}
+      </form>
+    </header>
+
+    <!-- The rail comes after the page heading for screen readers, and is
+         shown above it. -->
     {#if rail.length}
       <section class="rail-wrap" aria-labelledby="rail-title">
         <h2 id="rail-title" class="label">Want to cook <span class="count">{rail.length} on the rail</span></h2>
@@ -310,27 +334,6 @@
         </ul>
       </section>
     {/if}
-
-    <header class="head">
-      <h1 id="lib-title">{heading}</h1>
-      <span class="sub" role="status">{session.loaded ? subhead : 'Loading the library…'}</span>
-      <form class="using" onsubmit={addIngredient}>
-        <label for="using-input" class="label">Using</label>
-        {#each using as term (term)}
-          <span class="chip">
-            {term}
-            <button type="button" onclick={() => removeIngredient(term)} aria-label="Remove {term}"><X size={14} /></button>
-          </span>
-        {/each}
-        <input id="using-input" list="pantry" bind:value={draft} placeholder={using.length ? 'and…' : 'ingredients you have'} autocomplete="off" />
-        <datalist id="pantry">
-          {#each pantry as item}<option value={item}></option>{/each}
-        </datalist>
-        {#if using.length}
-          <button type="button" class="clear" onclick={() => setParam('using', '')}>Clear</button>
-        {/if}
-      </form>
-    </header>
 
     {#if !session.loaded}
       <ol class="grid" aria-hidden="true">
@@ -371,16 +374,15 @@
               data-id={r.id}
               tabindex={r.id === tabId ? 0 : -1}
               onclick={(e) => choose(r, e)}
-              onfocus={() => (selectedId = r.id)}
-              ondblclick={(e) => !(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) && open(r.id)}
+              onfocus={(e) => e.currentTarget.matches(':focus-visible') && (selectedId = r.id)}
               aria-current={sel ? 'true' : undefined}
             >
               <Plate hash={r.cover} title={r.title} size="s" />
               <span class="body">
                 <span class="title">
                   {r.title}
-                  {#if r.mine.favorite}<Heart class="mark" size={14} aria-label="Favorite" />{/if}
-                  {#if r.mine.want_to_cook}<Bookmark class="mark" size={14} aria-label="Want to cook" />{/if}
+                  {#if r.mine.favorite}<Heart class="mark" size={14} aria-hidden="true" /><span class="visually-hidden">, a favorite</span>{/if}
+                  {#if r.mine.want_to_cook}<Bookmark class="mark" size={14} aria-hidden="true" /><span class="visually-hidden">, want to cook</span>{/if}
                 </span>
                 {#if r.source_host}<span class="host">{r.source_host}</span>{/if}
               </span>
@@ -469,12 +471,15 @@
   }
 
   .pass {
+    display: flex;
+    flex-direction: column;
     padding: var(--space-5) var(--gutter) var(--space-8);
     min-width: 0;
   }
 
   /* The rail */
   .rail-wrap {
+    order: -1;
     margin-bottom: var(--space-6);
   }
   .rail-wrap h2 {
@@ -494,7 +499,9 @@
     padding: 0 var(--space-4);
     margin-top: -4px;
     overflow-x: auto;
-    scrollbar-width: none;
+    scrollbar-width: thin;
+    scrollbar-color: var(--steel) transparent;
+    padding-bottom: var(--space-2);
   }
   .hang {
     position: relative;
@@ -583,15 +590,15 @@
     min-height: 40px;
     padding: 0 var(--space-2) 0 var(--space-3);
     background: var(--ticket);
-    border: 2px solid var(--perf);
+    border: 2px solid var(--field);
     border-radius: 3px;
     align-self: center;
   }
   .using:focus-within {
-    border-color: var(--ink);
+    border-color: var(--red);
   }
   .using > label {
-    color: var(--red);
+    color: var(--ink-3);
   }
   .chip {
     display: inline-flex;
@@ -690,7 +697,7 @@
     display: inline;
     vertical-align: -2px;
     margin-left: 3px;
-    color: var(--red);
+    color: var(--ink-2);
     stroke-width: 2.25;
   }
   .card .perf {
@@ -709,8 +716,9 @@
     color: var(--red);
   }
   .notime {
-    font-size: 0.75rem;
-    color: var(--ink-3);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--ink-2);
     line-height: 1.2;
     overflow: hidden;
     display: -webkit-box;

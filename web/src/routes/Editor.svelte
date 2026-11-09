@@ -494,8 +494,9 @@
               <li>{t}<button type="button" onclick={() => (form.tags.splice(i, 1), touch())} aria-label="Remove tag {t}"><X size={14} /></button></li>
             {/each}
           </ul>
-          <input id="tag-input" list="all-tags" bind:value={tagDraft} placeholder="Add a tag" onkeydown={(e) => e.key === 'Enter' && addTag(e)} />
+          <input id="tag-input" list="all-tags" bind:value={tagDraft} placeholder="Add a tag" aria-describedby="tag-hint" onkeydown={(e) => e.key === 'Enter' && addTag(e)} />
           <datalist id="all-tags">{#each allTags as t}<option value={t}></option>{/each}</datalist>
+          <p class="hint tag-hint" id="tag-hint">The first tag is the recipe’s course in the library, like <em>Main</em> or <em>Dessert</em>.</p>
         </div>
 
         {#if id && !draft}
@@ -633,7 +634,7 @@
   .times input {
     width: 100%;
     border: 0;
-    border-bottom: 1.5px solid var(--perf);
+    border-bottom: 1.5px solid var(--field);
     background: none;
     padding: var(--space-2) 0;
     outline: none;
@@ -665,6 +666,9 @@
   .hint {
     font-size: 0.8125rem;
     color: var(--ink-3);
+  }
+  .tag-hint {
+    margin-top: var(--space-2);
   }
   .hint em {
     font-style: normal;
@@ -734,6 +738,12 @@
   .lines li:focus-within .rm,
   .rm:focus-visible {
     opacity: 1;
+  }
+  /* No hover on a touch screen: the remove buttons always show. */
+  @media (hover: none) {
+    .rm {
+      opacity: 1;
+    }
   }
   .rm:hover {
     color: var(--red);

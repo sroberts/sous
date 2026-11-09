@@ -102,3 +102,21 @@ export function togglePause(t) {
 export function dismiss(t) {
   timers.list = timers.list.filter((x) => x.id !== t.id);
 }
+
+/** Put back a timer that was cancelled by mistake. It kept counting while it
+ * was gone, so it may come back finished. */
+export function restore(t) {
+  if (timers.list.some((x) => x.id === t.id)) return;
+  timers.list.push(t);
+  if (!t.done && !t.paused) tick ??= setInterval(loop, 250);
+  loop();
+}
+
+/** Timers still counting down (running or paused), not finished ones. */
+export function counting() {
+  return timers.list.filter((t) => !t.done).length;
+}
+
+export function clearAll() {
+  timers.list = [];
+}
