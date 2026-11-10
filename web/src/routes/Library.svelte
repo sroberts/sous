@@ -11,7 +11,7 @@
 <script>
   import { tick, untrack } from 'svelte';
   import { flip } from 'svelte/animate';
-  import { X, Heart, Bookmark } from '@lucide/svelte';
+  import { X, Heart, Bookmark, Plus } from '@lucide/svelte';
   import { route, go, link } from '../lib/router.svelte.js';
   import { session } from '../lib/session.svelte.js';
   import { ticketTime } from '../lib/format.js';
@@ -50,6 +50,14 @@
     draft = '';
   }
 
+  // On a phone the Using field folds to a button until it's wanted, so the
+  // first recipes sit higher on the screen.
+  let usingOpen = $state(false);
+  function openUsing() {
+    usingOpen = true;
+    tick().then(() => document.getElementById('using-input')?.focus());
+  }
+
   const removeIngredient = (term) => setParam('using', using.filter((t) => t !== term).join(','));
 
   // Ingredient names across the library, most common first, for suggestions.
@@ -66,9 +74,13 @@
     const k = t.trim().toLowerCase();
     return k.length > 3 && k.endsWith('s') && !k.endsWith('ss') ? k.slice(0, -1) : k;
   };
+  // Favorites and Want to cook count their own recipes, so a course's number
+  // is what clicking it shows.
+  const mineOnly = (r) => (show === 'fav' ? r.mine.favorite : show === 'want' ? r.mine.want_to_cook : true);
+  const shelf = $derived(session.recipes.filter(mineOnly));
   const courses = $derived.by(() => {
     const by = new Map();
-    for (const r of session.recipes) {
+    for (const r of shelf) {
       const c = r.tags[0];
       if (!c) continue;
       const k = courseKey(c);
@@ -82,14 +94,8 @@
       .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   });
 
-  const pool = $derived(
-    session.recipes.filter(
-      (r) =>
-        (show === 'fav' ? r.mine.favorite : show === 'want' ? r.mine.want_to_cook : true) &&
-        // A course is a recipe's first tag, as the course list counts them.
-        (!course || (!!r.tags[0] && courseKey(r.tags[0]) === courseKey(course))),
-    ),
-  );
+  // A course is a recipe's first tag, as the course list counts them.
+  const pool = $derived(shelf.filter((r) => !course || (!!r.tags[0] && courseKey(r.tags[0]) === courseKey(course))));
 
   const words = $derived(q.split(/\s+/).filter(Boolean));
 
@@ -221,9 +227,7 @@
   // rest of the library: say how many, rather than a dead end.
   const elsewhere = $derived(
     course && words.length && !visible.length
-      ? session.recipes.filter(
-          (r) => (show === 'fav' ? r.mine.favorite : show === 'want' ? r.mine.want_to_cook : true) && words.every((w) => index.get(r.id).hay.includes(w)),
-        ).length
+      ? shelf.filter((r) => words.every((w) => index.get(r.id).hay.includes(w))).length
       : 0,
   );
 
@@ -317,7 +321,7 @@
 <div class="library" class:wide>
   <nav class="courses" aria-label="Courses">
     <a href="/{show ? `?show=${show}` : ''}" use:link class:on={!course} aria-current={!course ? 'true' : undefined}>
-      <span>Everything</span><span class="fig n">{count(session.recipes.length)}</span>
+      <span>Everything</span><span class="fig n" class:none={!shelf.length}>{count(shelf.length)}</span>
     </a>
     {#each courses as [name, n] (name)}
       {@const on = !!course && courseKey(course) === courseKey(name)}
@@ -331,7 +335,9 @@
     <header class="head">
       <h1 id="lib-title">{heading}</h1>
       <span class="sub" role="status">{session.loaded ? subhead : 'Loading the library…'}</span>
-      <form class="using" onsubmit={addIngredient}>
+      {#if shelf.length}
+      <button type="button" class="using-open" class:gone={usingOpen || using.length} onclick={openUsing}><Plus size={16} aria-hidden="true" />Using ingredients</button>
+      <form class="using" class:shut={!usingOpen && !using.length} onsubmit={addIngredient}>
         <label for="using-input" class="label">Using</label>
         {#each using as term (term)}
           <span class="chip">
@@ -347,6 +353,7 @@
           <button type="button" class="clear" onclick={() => setParam('using', '')}>Clear</button>
         {/if}
       </form>
+      {/if}
     </header>
 
     <!-- The rail comes after the page heading for screen readers, and is
@@ -395,6 +402,9 @@
         {:else if q}
           <p>Nothing{course ? ` in ${course}` : ''} matches “{params.get('q')}”.</p>
           <button class="btn" onclick={() => setParam('q', '')}>Clear search</button>
+        {:else if show && !session.person}
+          <p>{show === 'fav' ? 'Favorites' : 'Want to cook'} is kept for each cook. Say who’s cooking to see yours.</p>
+          <button class="btn" onclick={() => (session.asking = true)}>Who’s cooking?</button>
         {:else if show === 'fav'}
           <p>No favorites yet. Use the heart on a recipe to keep it here.</p>
         {:else}
@@ -513,6 +523,10 @@
   .courses a.on .n {
     color: var(--red);
   }
+  /* Nothing to choose from is nothing live: no red. */
+  .courses a.on .n.none {
+    color: var(--ink-3);
+  }
 
   .pass {
     display: flex;
@@ -613,6 +627,19 @@
   }
 
   /* Head and the Using filter */
+  .using-open {
+    display: none;
+    align-items: center;
+    gap: var(--space-1);
+    margin-left: auto;
+    min-height: 44px;
+    padding: 0 var(--space-1);
+    border: 0;
+    background: none;
+    font-size: var(--ui);
+    font-weight: 700;
+    color: var(--ink-2);
+  }
   .head {
     display: flex;
     flex-wrap: wrap;
@@ -849,6 +876,12 @@
     .using {
       margin-left: 0;
       width: 100%;
+    }
+    .using.shut {
+      display: none;
+    }
+    .using-open:not(.gone) {
+      display: inline-flex;
     }
     .using input {
       flex: 1;

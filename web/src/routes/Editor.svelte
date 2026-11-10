@@ -6,7 +6,7 @@
   import { session, asPerson, refreshIndex, toast } from '../lib/session.svelte.js';
   import { getRecipe } from '../lib/library.js';
   import { isOffline } from '../lib/net.svelte.js';
-  import { amount, ago, personName } from '../lib/format.js';
+  import { amount, ago, personName, readTime, writeTime } from '../lib/format.js';
   import Plate from '../components/Plate.svelte';
   import { stickIfFits } from '../lib/stick.js';
 
@@ -64,9 +64,9 @@
       source_url: r.source_url ?? '',
       description: r.description ?? '',
       yield_text: r.yield_text ?? '',
-      prep_minutes: r.prep_minutes ?? '',
-      cook_minutes: r.cook_minutes ?? '',
-      total_minutes: r.total_minutes ?? '',
+      prep_minutes: writeTime(r.prep_minutes),
+      cook_minutes: writeTime(r.cook_minutes),
+      total_minutes: writeTime(r.total_minutes),
       time_text: r.time_text ?? '',
       nutrition_text: r.nutrition_text ?? '',
       notes: r.notes ?? '',
@@ -86,9 +86,9 @@
       source_url: d.source_url ?? '',
       description: d.description ?? '',
       yield_text: d.yield_text ?? '',
-      prep_minutes: d.prep_minutes ?? '',
-      cook_minutes: d.cook_minutes ?? '',
-      total_minutes: d.total_minutes ?? '',
+      prep_minutes: writeTime(d.prep_minutes),
+      cook_minutes: writeTime(d.cook_minutes),
+      total_minutes: writeTime(d.total_minutes),
       time_text: d.time_text ?? '',
       nutrition_text: d.nutrition_text ?? '',
       notes: d.notes ?? '',
@@ -273,7 +273,17 @@
     }
   }
 
-  const num = (v) => (v === '' || v == null ? null : Math.max(0, Math.round(+v)));
+  // A time that doesn't read stays as typed, marked, and holds up the save.
+  const TIMES = ['prep_minutes', 'cook_minutes', 'total_minutes'];
+  const badTime = (k) => Number.isNaN(readTime(form[k]));
+  // Said once the field is left (or a save is tried), not mid-typing "1:".
+  let timesLeft = $state([]);
+  const timesBad = $derived(TIMES.some((k) => timesLeft.includes(k) && badTime(k)));
+  const tidyTime = (k) => {
+    if (!timesLeft.includes(k)) timesLeft = [...timesLeft, k];
+    const m = readTime(form[k]);
+    if (m != null && !Number.isNaN(m) && writeTime(m) !== form[k]) form[k] = writeTime(m);
+  };
 
   function body() {
     return {
@@ -281,9 +291,9 @@
       source_url: form.source_url.trim() || null,
       description: form.description.trim() || null,
       yield_text: form.yield_text.trim() || null,
-      prep_minutes: num(form.prep_minutes),
-      cook_minutes: num(form.cook_minutes),
-      total_minutes: num(form.total_minutes),
+      prep_minutes: readTime(form.prep_minutes),
+      cook_minutes: readTime(form.cook_minutes),
+      total_minutes: readTime(form.total_minutes),
       time_text: form.time_text.trim() || null,
       nutrition_text: form.nutrition_text.trim() || null,
       notes: form.notes.trim() || null,
@@ -300,6 +310,12 @@
     if (!form.title.trim()) {
       titleError = true;
       document.getElementById('title')?.focus();
+      return;
+    }
+    const bad = TIMES.find(badTime);
+    if (bad) {
+      timesLeft = TIMES;
+      document.getElementById(bad)?.focus();
       return;
     }
     saving = true;
@@ -473,10 +489,11 @@
           <input bind:value={form.yield_text} placeholder="e.g. how many it serves or makes" />
         </label>
         <fieldset class="times">
-          <legend class="label">Minutes</legend>
-          <label><span>Prep</span><input type="number" min="0" inputmode="numeric" bind:value={form.prep_minutes} /></label>
-          <label><span>Cook</span><input type="number" min="0" inputmode="numeric" bind:value={form.cook_minutes} /></label>
-          <label><span>Total</span><input type="number" min="0" inputmode="numeric" bind:value={form.total_minutes} /></label>
+          <legend class="label">Times</legend>
+          {#each [['prep_minutes', 'Prep'], ['cook_minutes', 'Cook'], ['total_minutes', 'Total']] as [k, name] (k)}
+            <label><span>{name}</span><input id={k} bind:value={form[k]} onblur={() => tidyTime(k)} placeholder="0:00" autocomplete="off" aria-invalid={timesLeft.includes(k) && badTime(k)} aria-describedby="times-hint" /></label>
+          {/each}
+          <p class="times-hint" class:hint={!timesBad} class:field-error={timesBad} id="times-hint">{timesBad ? 'Write a time as minutes (90) or hours and minutes (1:30).' : 'Minutes, or hours and minutes: 90 or 1:30.'}</p>
         </fieldset>
         <label class="field">
           <span class="label">Time note</span>
@@ -810,6 +827,13 @@
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: var(--space-4);
+  }
+  .times input[aria-invalid='true'] {
+    border-bottom-color: var(--red);
+  }
+  .times-hint {
+    grid-column: 1 / -1;
+    margin-top: calc(var(--space-2) * -1);
   }
   .times legend {
     padding: 0;
