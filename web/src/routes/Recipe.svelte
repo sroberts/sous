@@ -1,9 +1,9 @@
 <script>
   import { tick } from 'svelte';
-  import { ArrowLeft, Heart, Bookmark, Pencil, ExternalLink } from '@lucide/svelte';
-  import { link } from '../lib/router.svelte.js';
+  import { ArrowLeft, Heart, Bookmark, Pencil, ExternalLink, ChevronUp, ArrowDown } from '@lucide/svelte';
+  import { link, go } from '../lib/router.svelte.js';
   import { api } from '../lib/api.js';
-  import { session, asPerson, patchSummary, toast } from '../lib/session.svelte.js';
+  import { session, asPerson, patchSummary, toast, refreshIndex } from '../lib/session.svelte.js';
   import { getRecipe } from '../lib/library.js';
   import { isOffline } from '../lib/net.svelte.js';
   import { amount, ago, personName, webLink } from '../lib/format.js';
@@ -18,13 +18,34 @@
   let error = $state(null);
   let asWritten = $state(false);
 
-  getRecipe(id).then(
-    (r) => {
+  const load = () =>
+    getRecipe(id).then(
+      (r) => {
+        recipe = r;
+        error = null;
+        document.title = `${r.title} · Sous`;
+      },
+      (err) => (error = err),
+    );
+  load();
+
+  // A recipe in the trash still opens (from a link, or the change log), so
+  // the page says so and brings it back from here.
+  let restoring = $state(false);
+  async function restore() {
+    restoring = true;
+    try {
+      const r = await asPerson(() => api.restoreRecipe(id));
+      if (!r) return;
       recipe = r;
-      document.title = `${r.title} · Sous`;
-    },
-    (err) => (error = err),
-  );
+      await refreshIndex();
+      toast(`Restored ${r.title} from the trash.`);
+    } catch (err) {
+      toast(`Couldn’t restore it. ${err.message}`);
+    } finally {
+      restoring = false;
+    }
+  }
 
   const groups = (rows) => {
     const out = [];
@@ -35,7 +56,7 @@
     return out;
   };
 
-  async function toggle(flag) {
+  async function toggle(flag, say = false) {
     const next = { ...recipe.mine, [flag]: !recipe.mine[flag] };
     let saved;
     try {
@@ -47,6 +68,8 @@
     if (!saved) return;
     recipe.mine = saved;
     patchSummary(id, { mine: saved });
+    // From a key there's no button under the pointer to show it changed.
+    if (say) toast(flag === 'favorite' ? (saved.favorite ? 'Added to your favorites.' : 'Taken out of your favorites.') : saved.want_to_cook ? 'Added to Want to cook.' : 'Taken off Want to cook.');
   }
 
   const person = (u) => personName(u, session.people);
@@ -56,9 +79,13 @@
   let descEl = $state();
   let descOpen = $state(false);
   let descLong = $state(false);
+  let descClipped = $state(false);
   $effect(() => {
     if (!descEl) return;
-    const measure = () => (descLong = descOpen || descEl.scrollHeight > descEl.clientHeight + 1);
+    const measure = () => {
+      descClipped = descEl.scrollHeight > descEl.clientHeight + 1;
+      descLong = descOpen || descClipped;
+    };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(descEl);
@@ -66,14 +93,21 @@
   });
 
   // Notes open the method, but read once and returned to never: collapsed,
-  // only the first paragraph shows, held to two lines; More opens them all.
+  // one paragraph shows, held to two lines; Show all opens them all. That
+  // paragraph is the first piece of advice, not a credit ("Inspired by…").
   let notesEl = $state();
   let notesOpen = $state(false);
   let notesLong = $state(false);
+  let notesClipped = $state(false);
+  const CREDIT = /^(inspired by|adapted from|based on|recipe (from|by)|source:|from the book)\b/i;
   const notesParas = $derived(recipe?.notes ? recipe.notes.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean) : []);
+  const notesLead = $derived(notesParas.find((p) => !CREDIT.test(p)) ?? notesParas[0] ?? '');
   $effect(() => {
     if (!notesEl) return;
-    const measure = () => (notesLong = notesOpen || notesParas.length > 1 || notesEl.scrollHeight > notesEl.clientHeight + 1);
+    const measure = () => {
+      notesClipped = notesEl.scrollHeight > notesEl.clientHeight + 1;
+      notesLong = notesOpen || notesParas.length > 1 || notesClipped;
+    };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(notesEl);
@@ -127,9 +161,10 @@
     }
     if (focus) document.getElementById(`tab-${next}`)?.focus();
   }
-  // Once the tabs stick, the header and its Begin cooking are off screen, so
-  // the strip carries a Cook button of its own, except while the Begin
-  // cooking after the last step is in view: one red button at a time.
+  // Once the header's Begin cooking is off screen, the strip carries a Cook
+  // button of its own, except while the Begin cooking after the last step is
+  // in view: one red button at a time. (Keyed to the header, not to the strip
+  // sticking: a short tab may never scroll far enough to stick.)
   let tabsStuck = $state(false);
   let endCook = $state();
   let endInView = $state(false);
@@ -164,7 +199,14 @@
   let sheet = $state();
   let drag = $state(0); // px the sheet is pulled down by its handle
   let dragFrom = null;
-  const openSheet = () => sheet?.showModal();
+  function openSheet() {
+    if (!sheet) return;
+    sheet.showModal();
+    // Open at the ingredients for the part of the method you're reading.
+    const g = sheet.querySelector(`.sheet-in [data-sect="${sectionNow()}"]`);
+    const list = sheet.querySelector('.sheet-in');
+    if (list) list.scrollTop = g ? g.offsetTop - 12 : 0;
+  }
   const closeSheet = () => sheet?.close();
   function dragStart(e) {
     dragFrom = e.clientY;
@@ -180,6 +222,94 @@
     if (drag > 80) closeSheet();
     dragFrom = null;
     drag = 0;
+  }
+
+  // Method sections and ingredient groups pair by name: "The garnish" and
+  // "For the garnish" are one key, "garnish". A method section with no
+  // ingredients of its own ("To finish") keeps the last group that had some.
+  const sectKey = (name) => (name ?? '').toLowerCase().replace(/[:.]/g, '').replace(/^(for|to make|to)\s+/, '').replace(/^the\s+/, '').trim();
+  const ingKeys = $derived(new Set((recipe?.ingredients ?? []).map((i) => sectKey(i.section)).filter(Boolean)));
+  // The ingredient group for the part of the method at the reading line, a
+  // third of the way down the screen.
+  function sectionNow() {
+    let key = '';
+    for (const h of methodPanel?.querySelectorAll('h3.sect[data-sect]') ?? []) {
+      if (h.getBoundingClientRect().top > innerHeight / 3) break;
+      if (ingKeys.has(h.dataset.sect)) key = h.dataset.sect;
+    }
+    return key;
+  }
+
+  // Side by side, the ingredients column is no taller than the window. When
+  // the list is longer, a foot says how much is below, and the column follows
+  // the method: reading into "The garnish" brings "For the garnish" into it.
+  let below = $state(0); // rows hidden under the column's foot
+  let overflowing = $state(false);
+  function measureBelow() {
+    if (!ingPanel || narrow) {
+      below = 0;
+      overflowing = false;
+      return;
+    }
+    overflowing = ingPanel.scrollHeight > ingPanel.clientHeight + 1;
+    const edge = ingPanel.getBoundingClientRect().bottom - 8;
+    below = overflowing ? [...ingPanel.querySelectorAll('li')].filter((li) => li.getBoundingClientRect().top > edge - 24).length : 0;
+  }
+  $effect(() => {
+    if (!ingPanel || narrow) {
+      measureBelow();
+      return;
+    }
+    asWritten;
+    measureBelow();
+    const ro = new ResizeObserver(measureBelow);
+    ro.observe(ingPanel);
+    ingPanel.addEventListener('scroll', measureBelow, { passive: true });
+    return () => {
+      ro.disconnect();
+      ingPanel.removeEventListener('scroll', measureBelow);
+    };
+  });
+  const still = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function scrollColumn(top) {
+    ingPanel.scrollTo({ top, behavior: still() ? 'auto' : 'smooth' });
+  }
+  const moreBelow = () => scrollColumn(ingPanel.scrollTop + ingPanel.clientHeight * 0.75);
+  $effect(() => {
+    if (narrow || !ingPanel || !methodPanel || !ingKeys.size) return;
+    let last = sectionNow();
+    let frame = 0;
+    const follow = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const key = sectionNow();
+        if (key === last || !overflowing) return (last = key);
+        last = key;
+        const first = ingPanel.querySelector('[data-sect]');
+        const g = ingPanel.querySelector(`[data-sect="${key}"]`);
+        scrollColumn(!g || g === first ? 0 : g.offsetTop - 12);
+      });
+    };
+    addEventListener('scroll', follow, { passive: true });
+    return () => {
+      cancelAnimationFrame(frame);
+      removeEventListener('scroll', follow);
+    };
+  });
+
+  // Keys, as in the library and cook mode: C to cook, E to edit, F and W
+  // for the marks, ? to list them.
+  function onkey(e) {
+    if (!recipe || session.asking || e.altKey || e.ctrlKey || e.metaKey || sheet?.open) return;
+    const el = e.target;
+    if (el.closest?.('input, textarea, select, [contenteditable], dialog')) return;
+    const k = e.key.toLowerCase();
+    if (k === 'c') go(`/r/${id}/cook`);
+    else if (k === 'e') go(`/r/${id}/edit`);
+    else if ((k === 'f' || k === 'w') && !isOffline()) toggle(k === 'f' ? 'favorite' : 'want_to_cook', true);
+    else if (e.key === '?') toast('Keys on a recipe: C begins cooking, E edits, F favorites, W adds to Want to cook.');
+    else return;
+    e.preventDefault();
   }
 
   const nutrition = $derived(recipe?.nutrition_text ? labelledFigures(recipe.nutrition_text) : null);
@@ -203,6 +333,8 @@
   }
 </script>
 
+<svelte:window onkeydown={onkey} />
+
 {#if error}
   <main class="missing">
     {#if error.code === 'not_on_device'}
@@ -210,8 +342,8 @@
       <p>It will be once you’re back online.</p>
     {:else}
       {#if error.status === 404}
-        <h1>That recipe isn’t in the library.</h1>
-        <p>It may have been moved to the trash, or the link is wrong.</p>
+        <h1>That recipe isn’t in Sous.</h1>
+        <p>The link may be wrong or cut short.</p>
       {:else}
         <h1>This recipe didn’t load.</h1>
         <p>{error.status ? 'Sous had a problem fetching it.' : error.message} Try again in a moment.</p>
@@ -223,9 +355,15 @@
   <main class="page loading" aria-busy="true"><span class="visually-hidden">Loading recipe</span></main>
 {:else}
   <main class="page">
+    {#if recipe.deleted_at}
+      <div class="trashed" role="status">
+        <p>This recipe is in the trash, so it’s gone from the library and from search.</p>
+        <button class="btn" disabled={restoring || isOffline()} onclick={restore}>Restore</button>
+      </div>
+    {/if}
     <div class="crumbs">
       <a class="back" href="/" use:link><ArrowLeft size={16} aria-hidden="true" />Library</a>
-      <a class="back" href="/r/{id}/edit" use:link><Pencil size={16} aria-hidden="true" />Edit recipe</a>
+      <a class="back" href="/r/{id}/edit" use:link aria-keyshortcuts="e" title="Edit recipe (E)"><Pencil size={16} aria-hidden="true" />Edit recipe</a>
     </div>
 
     <div class="rail" aria-hidden="true"></div>
@@ -234,7 +372,7 @@
       <div class="head">
         <h1>{recipe.title}</h1>
         <!-- On a phone, Edit recipe ends the source line (the crumb row is gone). -->
-        <p class="src" class:bare={!recipe.source_url && !recipe.tags.length}>
+        <p class="src" class:bare={!recipe.source_url && !recipe.tags.length} class:sourced={!!recipe.source_url}>
           {#if recipe.tags.length}<span>{recipe.tags.join(', ')}</span>{#if recipe.source_url}<span class="dot" aria-hidden="true">·</span>{/if}{/if}
           <span class="src-line">
             {#if webLink(recipe.source_url)}<a href={recipe.source_url.trim()} target="_blank" rel="noreferrer">{recipe.source_host ?? recipe.source_url}<ExternalLink size={13} aria-hidden="true" /><span class="visually-hidden">{' (opens in a new tab)'}</span></a>{:else if recipe.source_url}<span>{recipe.source_url}</span>{/if}
@@ -243,19 +381,19 @@
         </p>
         <div class="facts"><Facts {recipe} size="l" count={!narrow} /></div>
         <div class="acts">
-          <a class="btn primary cook" href="/r/{id}/cook" use:link bind:this={headCook}>Begin cooking</a>
+          <a class="btn primary cook" href="/r/{id}/cook" use:link bind:this={headCook} aria-keyshortcuts="c" title="Begin cooking (C)">Begin cooking</a>
           <!-- On a phone these are icon buttons beside Begin cooking; the
                name stays for screen readers and as a tooltip. -->
-          <button class="btn mark" aria-pressed={recipe.mine.favorite} disabled={isOffline()} title="Favorite" onclick={() => toggle('favorite')}>
+          <button class="btn mark" aria-pressed={recipe.mine.favorite} disabled={isOffline()} title="Favorite (F)" aria-keyshortcuts="f" onclick={() => toggle('favorite')}>
             <Heart aria-hidden="true" fill={recipe.mine.favorite ? 'currentColor' : 'none'} /><span class="mark-name">Favorite</span>
           </button>
-          <button class="btn mark" aria-pressed={recipe.mine.want_to_cook} disabled={isOffline()} title="Want to cook" onclick={() => toggle('want_to_cook')}>
+          <button class="btn mark" aria-pressed={recipe.mine.want_to_cook} disabled={isOffline()} title="Want to cook (W)" aria-keyshortcuts="w" onclick={() => toggle('want_to_cook')}>
             <Bookmark aria-hidden="true" fill={recipe.mine.want_to_cook ? 'currentColor' : 'none'} /><span class="mark-name">Want to cook</span>
           </button>
         </div>
         {#if recipe.description}
           <div class="desc-wrap">
-            <p class="desc" class:open={descOpen} id="desc" bind:this={descEl}><Markdown text={recipe.description} /></p>
+            <p class="desc" class:open={descOpen} class:fade-end={descClipped && !descOpen} id="desc" bind:this={descEl}><Markdown text={recipe.description} /></p>
             {#if descLong}<button class="more" aria-expanded={descOpen} aria-controls="desc" onclick={() => (descOpen = !descOpen)}>{descOpen ? 'Less' : 'More'}</button>{/if}
           </div>
         {/if}
@@ -275,34 +413,42 @@
             Method<span class="count fig" aria-hidden="true">{recipe.steps.length}</span><span class="visually-hidden">{`, ${recipe.steps.length} ${recipe.steps.length === 1 ? 'step' : 'steps'}`}</span>
           </button>
           </div>
-          <a class="btn primary tab-cook" class:shown={tabsStuck && !endInView} href="/r/{id}/cook" use:link aria-label="Begin cooking">Cook</a>
+          <a class="btn primary tab-cook" class:shown={!headInView && !endInView} href="/r/{id}/cook" use:link aria-label="Begin cooking">Cook</a>
         </div>
       {/if}
-      <section id="panel-ingredients" class="ingredients sheet" role={tabbed ? 'tabpanel' : undefined} aria-labelledby={tabbed ? 'tab-ingredients' : 'ing-h'} hidden={tabbed && tab !== 'ingredients'} bind:this={ingPanel}>
+      <!-- A column that scrolls on its own takes focus, so the keyboard can
+           scroll it too. -->
+      <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+      <section id="panel-ingredients" class="ingredients sheet" role={tabbed ? 'tabpanel' : undefined} aria-labelledby={tabbed ? 'tab-ingredients' : 'ing-h'} hidden={tabbed && tab !== 'ingredients'} tabindex={overflowing ? 0 : undefined} bind:this={ingPanel}>
         <div class="col-head">
           <h2 id="ing-h" class="label" class:visually-hidden={tabbed}>Ingredients</h2>
-          <button class="as-written" onclick={() => (asWritten = !asWritten)}>{asWritten ? 'Show parsed' : 'Show as written'}</button>
+          <button class="as-written" onclick={() => (asWritten = !asWritten)}>{asWritten ? 'Show tidied' : 'Show as written'}</button>
         </div>
         {@render ingredientList()}
+        {#if below}
+          <div class="below"><button class="below-btn" onclick={moreBelow} tabindex="-1">{below} more<ArrowDown size={15} aria-hidden="true" /></button></div>
+        {/if}
       </section>
 
       <section id="panel-method" class="method sheet" role={tabbed ? 'tabpanel' : undefined} aria-labelledby={tabbed ? 'tab-method' : 'method-h'} hidden={tabbed && tab !== 'method'} bind:this={methodPanel}>
         <!-- Notes come before the method: make-ahead and timing advice is
              read before you start, not found after the ingredients. -->
         {#if recipe.notes}
-          <div class="col-head"><h2 class="label">Notes</h2></div>
+          <div class="col-head">
+            <h2 class="label">Notes</h2>
+            {#if notesLong}<button class="as-written" aria-expanded={notesOpen} aria-controls="notes" onclick={() => (notesOpen = !notesOpen)}>{notesOpen ? 'Show less' : 'Show all'}</button>{/if}
+          </div>
           <div class="notes-block" id="notes">
             {#if notesOpen}
               {#each notesParas as para}<p class="notes"><Markdown text={para} /></p>{/each}
             {:else}
-              <p class="notes clamped" bind:this={notesEl}><Markdown text={notesParas[0] ?? ''} /></p>
+              <p class="notes clamped" class:fade-end={notesClipped} bind:this={notesEl}><Markdown text={notesLead} /></p>
             {/if}
           </div>
-          {#if notesLong}<button class="more" aria-expanded={notesOpen} aria-controls="notes" onclick={() => (notesOpen = !notesOpen)}>{notesOpen ? 'Less' : 'More'}</button>{/if}
         {/if}
         <div class="col-head" class:after-notes={recipe.notes}><h2 id="method-h" class="label" class:visually-hidden={tabbed && !recipe.notes}>Method</h2>{#if !tabbed}<span class="label steps">{recipe.steps.length} {recipe.steps.length === 1 ? 'step' : 'steps'}</span>{/if}</div>
         {#each groups(recipe.steps) as g}
-          {#if g.section}<h3 class="sect">{g.section}</h3>{/if}
+          {#if g.section}<h3 class="sect" data-sect={sectKey(g.section)}>{g.section}</h3>{/if}
           <ol role="list">
             {#each g.rows as s}
               <li><span class="n fig"><span class="visually-hidden">{'Step '}</span>{recipe.steps.indexOf(s) + 1}</span><p><Markdown text={s.text} /></p></li>
@@ -334,8 +480,8 @@
     </div>
 
     {#if tabbed && tab === 'method'}
-      <div class="peek" class:shown={tabsStuck} inert={!tabsStuck}>
-        <button class="btn peek-btn" aria-haspopup="dialog" onclick={openSheet}>Ingredients<span class="count fig" aria-hidden="true">{recipe.ingredients.filter((i) => i.item).length}</span></button>
+      <div class="peek" class:shown={tabsStuck && !endInView} inert={!tabsStuck || endInView}>
+        <button class="btn peek-btn" aria-haspopup="dialog" onclick={openSheet}><ChevronUp size={18} aria-hidden="true" />Ingredients<span class="count fig" aria-hidden="true">{recipe.ingredients.filter((i) => i.item).length}</span></button>
       </div>
     {/if}
     {#if tabbed}
@@ -361,7 +507,7 @@
 
 {#snippet ingredientList()}
   {#each groups(recipe.ingredients) as g}
-    {#if g.section}<h3 class="sect">{g.section}</h3>{/if}
+    {#if g.section}<h3 class="sect" data-sect={sectKey(g.section)}>{g.section}</h3>{/if}
     <ul role="list">
       {#each g.rows as i}
         {#if asWritten}
@@ -441,15 +587,21 @@
   .src {
     display: flex;
     flex-wrap: wrap;
+    align-items: baseline;
+    align-self: start;
     gap: 0 var(--space-3);
   }
   .dot {
     color: var(--ink-3);
   }
+  /* 44px targets on a text line: the extra height is taken back from the
+     margins, so the line keeps its height. */
   .src a {
     display: inline-flex;
     align-items: center;
     gap: 5px;
+    min-height: 44px;
+    margin: -10px 0;
   }
   .src.bare {
     display: none;
@@ -459,12 +611,8 @@
     align-items: center;
     gap: var(--space-4);
   }
-  /* A 44px target on a text line: the extra height is taken back from the
-     margins, so the line keeps its height. */
   .src .edit-here {
     display: none;
-    min-height: 44px;
-    margin: -10px 0;
     font-weight: 600;
     color: var(--ink-2);
     text-decoration: none;
@@ -479,23 +627,31 @@
     margin-top: var(--space-4);
     max-width: 65ch;
   }
+  /* Held to a few lines. The last one fades out rather than ending in an
+     ellipsis, which landed after a full stop or a hyphen (".…", "co-…"). */
   .desc {
+    --lines: 3;
     color: var(--ink-2);
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
-    line-clamp: 3;
+    max-height: calc(var(--lines) * 1lh);
     overflow: hidden;
   }
   .desc.open {
-    display: block;
+    max-height: none;
+  }
+  .fade-end {
+    mask-image: linear-gradient(#000, #000), linear-gradient(to right, #000 55%, transparent 92%);
+    mask-size:
+      100% calc(100% - 1lh),
+      100% 1lh;
+    mask-position: top, bottom;
+    mask-repeat: no-repeat;
   }
   /* A 44px target around a text-sized link: the extra height is taken back
      from the margins so the line sits where it did. */
   .more {
     min-height: 44px;
-    margin: calc(var(--space-1) - 10px) 0 -10px;
-    padding: 0;
+    margin: calc(var(--space-1) - 10px) 0 -10px calc(var(--space-3) * -1);
+    padding: 0 var(--space-3);
     border: 0;
     background: none;
     font-size: var(--ui);
@@ -558,10 +714,11 @@
     border-bottom: 1px solid var(--perf);
     transition: top 240ms var(--ease-out);
   }
+  /* The tabs take their own width, a tab bar's, with Cook at the far end;
+     halves would be uneven once Cook claims its space. */
   .tablist {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    flex: 1;
+    display: flex;
+    gap: var(--space-6);
   }
   /* Shifted down past the grid gap, so it marks the strip's own top. */
   .tabs-at {
@@ -572,7 +729,7 @@
     align-self: center;
     min-height: 44px;
     margin-block: var(--space-1);
-    margin-left: var(--space-3);
+    margin-left: auto;
     visibility: hidden;
   }
   .tab-cook.shown {
@@ -583,8 +740,8 @@
     justify-content: center;
     align-items: baseline;
     gap: var(--space-2);
-    min-height: 48px;
-    padding: var(--space-3) 0 0;
+    min-height: 52px;
+    padding: var(--space-3) var(--space-1) 0;
     border: 0;
     border-bottom: 3px solid transparent;
     background: none;
@@ -610,8 +767,14 @@
       padding-top: var(--space-5);
     }
     .desc {
-      -webkit-line-clamp: 2;
-      line-clamp: 2;
+      --lines: 2;
+    }
+    /* One line of the notes is enough to say what's in them. */
+    .method .notes.clamped {
+      max-height: 1lh;
+    }
+    .method .col-head.after-notes {
+      margin-top: var(--space-5);
     }
   }
   @media (min-width: 1280px) {
@@ -630,6 +793,35 @@
     overscroll-behavior: contain;
     scrollbar-width: thin;
     scrollbar-color: var(--ink-3) transparent;
+  }
+  /* The column's foot when the list runs on below it: a fade, and how many
+     rows are under it. It takes no room, so the list doesn't move. */
+  .below {
+    position: sticky;
+    /* Sticky edges sit inside the panel's padding; this takes it back. */
+    bottom: calc(var(--space-6) * -1);
+    height: 0;
+  }
+  .below-btn {
+    position: absolute;
+    bottom: 0;
+    left: calc(var(--space-5) * -1);
+    right: calc(var(--space-5) * -1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--space-1);
+    min-height: 44px;
+    padding: var(--space-6) 0 var(--space-2);
+    border: 0;
+    border-bottom: 1px solid var(--perf);
+    background: linear-gradient(to bottom, transparent, var(--ticket) 55%);
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--ink-2);
+  }
+  .below-btn:hover {
+    color: var(--red);
   }
   .col-head {
     display: flex;
@@ -721,14 +913,8 @@
     color: var(--ink-2);
   }
   .notes.clamped {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
+    max-height: 2lh;
     overflow: hidden;
-  }
-  .notes-block + .more {
-    margin-bottom: calc(var(--space-1) * -1);
   }
   .col-head.after-notes {
     margin-top: var(--space-6);
@@ -823,6 +1009,7 @@
     border-bottom: 3px solid var(--ink);
   }
   .sheet-in {
+    position: relative;
     flex: 1;
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -866,6 +1053,18 @@
     font-size: 0.875rem;
     color: var(--ink-3);
   }
+  .trashed {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3) var(--space-5);
+    margin-bottom: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    background: var(--ticket);
+    border-top: 3px solid var(--ink);
+    font-weight: 600;
+  }
   .missing {
     max-width: 36rem;
     margin: var(--space-8) auto;
@@ -884,11 +1083,36 @@
       margin: -4px var(--space-2) 0;
       padding: var(--space-5) var(--space-4) calc(var(--space-5) + var(--tear));
     }
-    /* The photo follows the header text as a short band (short enough that
-       an iPad in portrait still opens on the ingredients), and a photo-less
-       recipe shows no initial here. */
+    /* The photo is a thumbnail beside the title, so the first screen reaches
+       the ingredients instead of a band of photo: on a phone, and on an iPad
+       held upright. */
+    .top.has-photo {
+      grid-template-columns: minmax(0, 1fr) 112px;
+      grid-template-rows: auto 1fr; /* the photo's extra height goes under the source line */
+      column-gap: var(--space-5);
+      row-gap: 0;
+    }
+    .has-photo .head {
+      display: contents;
+    }
+    .has-photo .head > :global(*) {
+      grid-column: 1 / -1;
+    }
+    .has-photo .head h1 {
+      grid-column: 1;
+      grid-row: 1;
+    }
+    .has-photo .head .src {
+      grid-column: 1;
+      grid-row: 2;
+    }
+    .has-photo .photo {
+      grid-column: 2;
+      grid-row: 1 / 3;
+    }
     .photo :global(.plate) {
-      max-height: min(22vh, 16rem);
+      aspect-ratio: 1 !important;
+      max-height: none;
     }
     /* Show as written is the panel's only visible head here (the tab names
        it), so it sits at the right like a tool, not alone at the start. */
@@ -922,8 +1146,9 @@
   }
   @media (max-width: 760px) {
     /* Tags and source each take a line, so no separator is left hanging at
-       the end of the tags when the source wraps. */
-    .src {
+       the end of the tags when the source wraps. With no source, Edit ends
+       the tags' line instead. */
+    .src.sourced {
       flex-direction: column;
       align-items: flex-start;
     }
@@ -948,8 +1173,7 @@
       display: flex;
     }
     .desc {
-      -webkit-line-clamp: 2;
-      line-clamp: 2;
+      --lines: 2;
     }
     /* Begin cooking and the two marks share one row: the marks as 52px icon
        buttons, named for screen readers. */
@@ -973,34 +1197,47 @@
       clip-path: inset(50%);
       white-space: nowrap;
     }
-    /* The photo is a thumbnail beside the title, so the first screen reaches
-       the ingredients instead of a band of photo. */
     .top.has-photo {
       grid-template-columns: minmax(0, 1fr) 88px;
       column-gap: var(--space-4);
-      row-gap: 0;
     }
-    .has-photo .head {
-      display: contents;
+    /* With no photo and no source line, Edit sits at the end of the title's
+       row rather than alone on a line of its own. */
+    .top:not(.has-photo) .head:has(.src.bare) {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      column-gap: var(--space-4);
     }
-    .has-photo .head > :global(*) {
+    .top:not(.has-photo) .head > :global(*) {
       grid-column: 1 / -1;
     }
-    .has-photo .head h1 {
+    .top:not(.has-photo) .head:has(.src.bare) h1 {
       grid-column: 1;
       grid-row: 1;
     }
-    .has-photo .head .src {
-      grid-column: 1;
-      grid-row: 2;
-    }
-    .has-photo .photo {
+    .top:not(.has-photo) .head .src.bare {
       grid-column: 2;
-      grid-row: 1 / 3;
+      grid-row: 1;
+      margin-top: 0;
+      align-self: start;
     }
-    .photo :global(.plate) {
-      aspect-ratio: 1 !important;
-      max-height: none;
+  }
+  /* An iPad held upright: the Ingredients bar is a button at the corner, not
+     a band across the screen. */
+  @media (min-width: 761px) and (max-width: 900px) {
+    .peek {
+      left: auto;
+      right: var(--gutter);
+      bottom: var(--space-4);
+      padding: 0;
+      border: 0;
+      background: none;
+      transform: translateY(calc(100% + var(--space-4)));
+    }
+    .peek-btn {
+      width: auto;
+      padding: 0 var(--space-6);
+      background: var(--ticket);
     }
   }
 </style>
