@@ -235,7 +235,7 @@
       <h1 class="name">{recipe?.title ?? (error ? 'Cook mode' : '')}</h1>
       {#if recipe}<p class="where label">{end ? 'All steps done' : `Step ${step + 1} of ${total}`}{#if awake}<span class="awake" title="The screen won’t sleep while cooking"><Sun size={13} aria-hidden="true" />Screen stays on</span>{/if}</p>{/if}
     </div>
-    <button class="btn ing-toggle" aria-expanded={sheet} aria-controls="cook-ingredients" onclick={() => setSheet(!sheet)}><ListChecks aria-hidden="true" />Ingredients{#if recipe}<span class="fig left">{left}<span class="visually-hidden"> left to gather</span></span>{/if}</button>
+    <button class="btn ing-toggle" aria-expanded={sheet} aria-controls="cook-ingredients" onclick={() => setSheet(!sheet)}><ListChecks aria-hidden="true" /><span class="ing-word">Ingredients</span>{#if recipe}{#if left}<span class="left"><span class="fig">{left}</span> left<span class="visually-hidden"> to gather</span></span>{:else}<span class="left all"><Check size={20} strokeWidth={3} aria-hidden="true" /><span class="visually-hidden">, all gathered</span></span>{/if}{/if}</button>
   </header>
 
   <p class="visually-hidden" aria-live="polite">{said}</p>
@@ -245,7 +245,7 @@
     <div class="leaving" role="alertdialog" aria-labelledby="leaving-q">
       <p id="leaving-q">{n === 1 ? 'A timer is' : `${n} timers are`} still running. Leaving stops {n === 1 ? 'it' : 'them'}.</p>
       <button class="btn" onclick={() => leave({ done })}>Stop {n === 1 ? 'the timer' : 'timers'} and leave</button>
-      <button class="btn" id="keep-cooking" onclick={stay}>Keep cooking</button>
+      <button class="btn" id="keep-cooking" onclick={stay}>{end ? 'Stay' : 'Keep cooking'}</button>
     </div>
   {/if}
 
@@ -288,7 +288,7 @@
                 <span class="clip" aria-hidden="true"></span>
                 <header class="step-head">
                   <span class="num fig" aria-hidden="true"><Check strokeWidth={3} /></span>
-                  <span class="of">{total} of {total}</span>
+                  <span class="of">{total} {total === 1 ? 'step' : 'steps'}</span>
                 </header>
                 <hr class="perf" />
                 <h2 class="end-title">That’s {recipe.title}.</h2>
@@ -418,17 +418,27 @@
   .icon-btn:hover {
     background: var(--ticket-press);
   }
+  /* Timer controls are reached across the counter with a wet hand. */
   .icon-btn.small {
-    width: 44px;
-    height: 44px;
+    width: 52px;
+    height: 52px;
   }
   .ing-toggle {
     display: none;
     min-height: 52px;
   }
+  /* What's left to gather, not the total: it says so. A count, not a live
+     thing, so no red. */
   .left {
+    font-weight: 600;
+    color: var(--ink-2);
+  }
+  .left .fig {
     font-size: 1.125rem;
-    color: var(--ink-2); /* a count, not a live thing: no red */
+    font-weight: 800;
+  }
+  .left.all {
+    display: inline-grid;
   }
 
   .body {
@@ -575,7 +585,7 @@
   /* The lane is held under the rail while a long step scrolls, so a running
      clock never leaves the screen. */
   .timers {
-    flex: 0 0 13.5rem;
+    flex: 0 0 15rem;
     display: grid;
     gap: var(--space-3);
     margin-left: auto;
@@ -589,9 +599,16 @@
     gap: 2px;
     padding: var(--space-3) var(--space-2) calc(var(--space-1) + var(--tear)) var(--space-4);
   }
+  /* Which pot a timer is for, read from across the counter: sentence case
+     at a reading size, not the 11px label caps. */
   .t-label {
-    color: var(--ink-3);
     padding-top: 4px;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--ink-2);
   }
   .t-row {
     display: flex;
@@ -687,14 +704,16 @@
   .step-text {
     margin-top: var(--space-4);
     max-width: 36ch;
-    font-size: clamp(1.5rem, 0.95rem + 1.5vw, 2.25rem);
+    /* As wide and as tall as the screen allows: a laptop's height, not only
+       its width, decides how large the step reads. */
+    font-size: clamp(1.5rem, min(0.95rem + 1.5vw, 3.4vh), 2.25rem);
     font-weight: 500;
     line-height: 1.32;
     letter-spacing: -0.01em;
   }
   /* A long step drops a size so it still fits the counter-distance view. */
   .step-text.long {
-    font-size: clamp(1.25rem, 0.85rem + 1.1vw, 1.75rem);
+    font-size: clamp(1.25rem, min(0.85rem + 1.1vw, 2.7vh), 1.75rem);
     max-width: 44ch;
   }
   .timer-btns {
@@ -803,12 +822,13 @@
     font-size: 2rem;
   }
   .next-text {
-    font-size: var(--ui);
+    font-size: 1.0625rem;
     line-height: 1.4;
     color: var(--ink-2);
     overflow: hidden;
     display: -webkit-box;
     -webkit-line-clamp: 5;
+    line-clamp: 5;
     -webkit-box-orient: vertical;
   }
 
@@ -893,7 +913,7 @@
       scrollbar-width: none;
     }
     .tick {
-      flex: 0 0 min(13.5rem, 78%);
+      flex: 0 0 min(15rem, 80%);
       scroll-snap-align: start;
     }
     .timed .step > .clip {
@@ -991,17 +1011,13 @@
       padding-bottom: calc(var(--space-5) + var(--tear));
     }
     .num {
-      font-size: 3.5rem;
+      font-size: clamp(3.5rem, 8vh, 4.5rem);
     }
     .step-head {
       margin-bottom: var(--space-2);
     }
     .step-text {
       margin-top: var(--space-3);
-      font-size: 1.625rem;
-    }
-    .step-text.long {
-      font-size: 1.375rem;
     }
     .timer-btns {
       margin-top: var(--space-4);
@@ -1010,17 +1026,34 @@
   /* A portrait tablet reads the step from across the counter: set it larger. */
   @media (min-width: 600px) and (max-width: 1180px) and (orientation: portrait) {
     .step-text {
-      font-size: 2.125rem;
+      font-size: clamp(2.125rem, 3.2vh, 2.5rem);
       max-width: 34ch;
     }
     .step-text.long {
-      font-size: 1.625rem;
+      font-size: clamp(1.625rem, 2.5vh, 1.875rem);
       max-width: 42ch;
+    }
+    .next-text {
+      font-size: 1.1875rem;
+      -webkit-line-clamp: 3;
+      line-clamp: 3;
     }
   }
   @media (max-width: 560px) {
     .bar .ing-toggle {
       padding: 0 var(--space-3);
+    }
+    /* The list icon names it; the count is what a glance needs. */
+    .ing-word {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+    .where {
+      white-space: nowrap;
     }
     .name {
       font-size: var(--ui);

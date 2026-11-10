@@ -110,6 +110,19 @@ include breaking changes, and they're called out here.
   like Side and Sides, are listed once.
 - The Import page's set-up guides (bookmarklet, iPhone and iPad Shortcut,
   Siri) are folded away until you open one.
+- Cook mode reads better from the counter: a timer says which step it's
+  for in larger, darker type, its Pause and Cancel buttons are bigger, Up
+  next is larger, and the step grows to fill a tall laptop or iPad screen.
+- The Ingredients button in cook mode says what's left ("17 left"), and
+  shows a check once everything is gathered.
+- The editor takes times as minutes (90) or hours and minutes (1:30), and
+  shows them back as 1:30, the way the recipe does.
+- Favorites and Want to cook, with no one picked, say they're kept for each
+  cook and offer Who's cooking?. The course list counts the view you're on.
+- On a phone, the library's Using field folds into a button until you need
+  it, so more recipes show in the first screen.
+- The end card counts the steps ("11 steps") instead of "11 of 11", and
+  the leave prompt there says Stay.
 
 ### Fixed
 - In cook mode, a new step opens at its top; it could open scrolled down
