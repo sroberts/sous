@@ -41,7 +41,15 @@
       return {};
     }
   })();
-  let step = $state(saved.step ?? 0); // one past the last step is the end card
+  // "Cook from step 7" on the recipe page links here with ?step=7: it starts
+  // there, once, and the address drops it so a reload keeps your place.
+  const asked = (() => {
+    const n = parseInt(new URLSearchParams(location.search).get('step') ?? '', 10);
+    if (!(n >= 1)) return null;
+    history.replaceState(history.state, '', location.pathname);
+    return n - 1;
+  })();
+  let step = $state(asked ?? saved.step ?? 0); // one past the last step is the end card
   let checked = $state(saved.checked ?? []);
   const started = saved.started ?? Date.now();
 

@@ -1,6 +1,6 @@
 <script>
   import { tick } from 'svelte';
-  import { ArrowLeft, Heart, Bookmark, Pencil, ExternalLink, ChevronUp, ArrowDown } from '@lucide/svelte';
+  import { ArrowLeft, Heart, Bookmark, Pencil, ExternalLink, ChevronUp, ArrowDown, ArrowUp } from '@lucide/svelte';
   import { link, go } from '../lib/router.svelte.js';
   import { api } from '../lib/api.js';
   import { session, asPerson, patchSummary, toast, refreshIndex } from '../lib/session.svelte.js';
@@ -231,46 +231,116 @@
   // In the Method tab the quantities are a tab away, so a bar at the foot of
   // the screen, in thumb reach, pulls them up over the step you're on. The
   // sheet opens no taller than its list or 58% of the screen, so the step
-  // stays in view above it; pulling the handle up opens it to 85%.
+  // stays in view above it; the handle (a tap, or a pull up) opens it to 85%.
   let sheet = $state();
+  let sheetList = $state();
   let sheetTall = $state(false);
   let drag = $state(0); // px the sheet is pulled down (positive) or up by its handle
   let dragFrom = null;
+  let dragBase = $state(0); // the sheet's height when the pull began
+  let dragging = $state(false);
+  let above = $state(null); // the group above the one at the top of the sheet: { name, el }
+  // Where a group starts in its list. Group headings stick, so the heading's
+  // own offset moves; the list under it doesn't.
+  const groupTop = (h) => (h.nextElementSibling?.offsetTop ?? h.offsetTop) - h.offsetHeight;
   function openSheet() {
     if (!sheet) return;
     sheetTall = false;
+    readingStep = stepNow();
     sheet.showModal();
-    // Open at the ingredients for the part of the method you're reading,
-    // with room below for that group to reach the top.
-    const list = sheet.querySelector('.sheet-in');
-    if (!list) return;
-    list.style.paddingBottom = '';
-    const g = list.querySelector(`[data-sect="${sectionNow()}"]`);
-    if (!g || g === list.querySelector('[data-sect]')) return void (list.scrollTop = 0);
-    // The group's own heavy rule tucks under the sheet's, so only one shows.
-    const top = g.offsetTop + 3;
-    const short = list.clientHeight - (list.scrollHeight - top);
-    if (short > 0) list.style.paddingBottom = `${short + 16}px`;
-    list.scrollTop = top;
+    // Open at the ingredients for the part of the method you're reading. A
+    // last group can't reach the top; it shows whole at the foot instead.
+    if (!sheetList) return;
+    const g = sheetList.querySelector(`[data-sect="${sectionNow()}"]`);
+    sheetList.scrollTop = !g || g === sheetList.querySelector('[data-sect]') ? 0 : groupTop(g) + 3; // its rule under the sheet's
+    sheetScrolled();
+  }
+  function sheetScrolled() {
+    const heads = [...(sheetList?.querySelectorAll('h3.sect') ?? [])];
+    let i = -1;
+    for (const [k, h] of heads.entries()) if (groupTop(h) <= sheetList.scrollTop + 8) i = k;
+    above = i > 0 ? { name: heads[i - 1].textContent, el: heads[i - 1] } : null;
+  }
+  function toAbove() {
+    if (above) sheetList.scrollTo({ top: above.el === sheetList.querySelector('h3.sect') ? 0 : groupTop(above.el) + 3, behavior: still() ? 'auto' : 'smooth' });
   }
   const closeSheet = () => sheet?.close();
+  // The pointer is captured only once the pull has begun, so a tap on a
+  // button in the head (the handle, the group above) stays a tap.
   function dragStart(e) {
     dragFrom = e.clientY;
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {}
+    dragBase = sheet.offsetHeight;
   }
   function dragMove(e) {
-    if (dragFrom !== null) drag = e.clientY - dragFrom;
+    if (dragFrom === null) return;
+    const d = e.clientY - dragFrom;
+    if (!dragging && Math.abs(d) > 6) {
+      dragging = true;
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {}
+    }
+    if (dragging) drag = d;
   }
   function dragEnd() {
     if (dragFrom === null) return;
-    if (drag < -40) sheetTall = true;
-    else if (drag > 80 && sheetTall) sheetTall = false;
-    else if (drag > 80) closeSheet();
+    if (dragging) {
+      if (drag < -40) sheetTall = true;
+      else if (drag > 80 && sheetTall) sheetTall = false;
+      else if (drag > 80) closeSheet();
+    }
     dragFrom = null;
+    dragging = false;
     drag = 0;
   }
+
+  // The step at the reading line, a little under halfway down the screen,
+  // so "Cook from step 7" starts cook mode where you are.
+  let readingStep = $state(1);
+  function stepNow() {
+    let n = 1;
+    for (const [k, li] of [...(methodPanel?.querySelectorAll('ol > li') ?? [])].entries()) {
+      if (li.getBoundingClientRect().top > innerHeight * 0.45) break;
+      n = k + 1;
+    }
+    return n;
+  }
+  $effect(() => {
+    if (!tabbed || tab !== 'method') {
+      readingStep = 1;
+      return;
+    }
+    let frame = 0;
+    const read = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => (readingStep = stepNow()));
+    };
+    read();
+    addEventListener('scroll', read, { passive: true });
+    return () => {
+      cancelAnimationFrame(frame);
+      removeEventListener('scroll', read);
+    };
+  });
+  const cookFrom = (n) => (n > 1 ? `/r/${id}/cook?step=${n}` : `/r/${id}/cook`);
+
+  // Reading the method on a phone, a nudge back up doesn't bring the
+  // masthead down over the line you're on.
+  $effect(() => {
+    if (!tabbed || tab !== 'method') return;
+    document.documentElement.dataset.steadyBar = '';
+    return () => delete document.documentElement.dataset.steadyBar;
+  });
+
+  // On a short recipe the Begin cooking after the last step is in view with
+  // the header's from the start: one is enough. Judged once, as it lands.
+  let endRedundant = $state(false);
+  let endJudged = false;
+  $effect(() => {
+    if (!endCook || endJudged) return;
+    endJudged = true;
+    if (endCook.getBoundingClientRect().bottom + scrollY <= innerHeight) endRedundant = true;
+  });
 
   // Method sections and ingredient groups pair by name: "The garnish" and
   // "For the garnish" are one key, "garnish". A method section with no
@@ -335,7 +405,7 @@
         last = key;
         const first = ingPanel.querySelector('[data-sect]');
         const g = ingPanel.querySelector(`[data-sect="${key}"]`);
-        scrollColumn(!g || g === first ? 0 : g.offsetTop - 12);
+        scrollColumn(!g || g === first ? 0 : groupTop(g) - 16);
       });
     };
     addEventListener('scroll', follow, { passive: true });
@@ -438,7 +508,7 @@
             <a class="edit-here" href="/r/{id}/edit" use:link><Pencil size={15} aria-hidden="true" />Edit</a>
           </span>
         </p>
-        <div class="facts"><Facts {recipe} size="l" count={!narrow} /></div>
+        <div class="facts"><Facts {recipe} size="l" count={false} /></div>
         <div class="acts">
           <a class="btn primary cook" href="/r/{id}/cook" use:link bind:this={headCook} aria-keyshortcuts="c" title="Begin cooking (C)">Begin cooking</a>
           <!-- On a phone these are icon buttons beside Begin cooking; the
@@ -472,20 +542,18 @@
             Method<span class="count fig" aria-hidden="true">{recipe.steps.length}</span><span class="visually-hidden">{`, ${recipe.steps.length} ${recipe.steps.length === 1 ? 'step' : 'steps'}`}</span>
           </button>
           </div>
-          <a class="btn primary tab-cook" class:shown={tabCookShown} href="/r/{id}/cook" use:link aria-keyshortcuts="c" title="Begin cooking (C)">Cook</a>
+          <a class="btn primary tab-cook" class:shown={tabCookShown} href={cookFrom(readingStep)} use:link aria-keyshortcuts="c" title={readingStep > 1 ? `Cook from step ${readingStep}` : 'Begin cooking (C)'}>{readingStep > 1 ? `Cook from ${readingStep}` : 'Cook'}</a>
         </div>
       {/if}
-      <!-- A column that scrolls on its own takes focus, so the keyboard can
-           scroll it too. -->
-      <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-      <section id="panel-ingredients" class="ingredients sheet" role={tabbed ? 'tabpanel' : undefined} aria-labelledby={tabbed ? 'tab-ingredients' : 'ing-h'} hidden={tabbed && tab !== 'ingredients'} tabindex={overflowing ? 0 : undefined} bind:this={ingPanel}>
+      <!-- Keys scroll the column from Show as written, or from its foot. -->
+      <section id="panel-ingredients" class="ingredients sheet" role={tabbed ? 'tabpanel' : undefined} aria-labelledby={tabbed ? 'tab-ingredients' : 'ing-h'} hidden={tabbed && tab !== 'ingredients'} bind:this={ingPanel}>
         <div class="col-head">
-          <h2 id="ing-h" class="label">Ingredients</h2>
+          <h2 id="ing-h" class="label">Ingredients{#if !tabbed}<span class="steps">{recipe.ingredients.filter((i) => i.item).length}</span>{/if}</h2>
           <button class="as-written" aria-keyshortcuts="a" title="Show as written or tidied (A)" onclick={() => (asWritten = !asWritten)}>{asWritten ? 'Show tidied' : 'Show as written'}</button>
         </div>
         {@render ingredientList()}
         {#if below}
-          <div class="below"><button class="below-btn" onclick={moreBelow} tabindex="-1">{below} more<ArrowDown size={15} aria-hidden="true" /></button></div>
+          <div class="below"><button class="below-btn" onclick={moreBelow} aria-label="{below} more {below === 1 ? 'ingredient' : 'ingredients'} below; show them">{below} more<ArrowDown size={15} aria-hidden="true" /></button></div>
         {/if}
       </section>
 
@@ -515,9 +583,11 @@
           </ol>
         {/each}
 
-        <div class="method-end" bind:this={endCook}>
-          <a class="btn cook" class:primary={!headInView} href="/r/{id}/cook" use:link>Begin cooking</a>
-        </div>
+        {#if !endRedundant}
+          <div class="method-end" bind:this={endCook}>
+            <a class="btn cook" class:primary={!headInView} href="/r/{id}/cook" use:link>Begin cooking</a>
+          </div>
+        {/if}
 
         {#if recipe.nutrition_text}
           <h2 class="label aside-h">Nutrition</h2>
@@ -544,21 +614,29 @@
       </div>
     {/if}
     {#if tabbed}
-      <dialog class="ing-sheet" bind:this={sheet} aria-labelledby="sheet-h" class:tall={sheetTall} style:transform={drag > 0 ? `translateY(${drag}px)` : null} onclick={(e) => e.target === sheet && closeSheet()}>
-        <!-- Pull the head down to close, as with any sheet. A touch extra:
-             Back to the method and Escape close it from the keyboard. -->
+      <dialog class="ing-sheet" bind:this={sheet} aria-labelledby="sheet-h" class:tall={sheetTall} class:dragging style:transform={drag > 0 ? `translateY(${drag}px)` : null} style:max-height={drag < 0 ? `min(85dvh, ${dragBase - drag}px)` : null} onclick={(e) => e.target === sheet && closeSheet()} onclose={() => (sheetTall = false)}>
+        <!-- Pull the head up for more of the list or down to close, as with
+             any sheet; the handle is also a button, and Escape and Back to the
+             method close it from the keyboard. -->
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div class="sheet-head" onpointerdown={dragStart} onpointermove={dragMove} onpointerup={dragEnd} onpointercancel={dragEnd}>
-          <span class="handle" aria-hidden="true"></span>
-          <h2 id="sheet-h" class="label">Ingredients</h2>
+          <button class="handle" aria-label={sheetTall ? 'Show less of the list' : 'Show more of the list'} aria-expanded={sheetTall} onclick={() => (sheetTall = !sheetTall)}><span aria-hidden="true"></span></button>
+          <div class="sheet-title">
+            <h2 id="sheet-h" class="label">Ingredients</h2>
+            {#if above}<button class="as-written" onclick={toAbove}>{above.name}<ArrowUp size={14} aria-hidden="true" /></button>{/if}
+          </div>
         </div>
-        <div class="sheet-in">
+        <div class="sheet-in" bind:this={sheetList} onscroll={sheetScrolled}>
           {@render ingredientList()}
         </div>
-        <!-- In thumb reach, and always in view, so focus lands here without
-             scrolling the list. -->
-        <!-- svelte-ignore a11y_autofocus -->
-        <div class="sheet-foot"><button class="btn sheet-close" autofocus onclick={closeSheet}>Back to the method</button></div>
+        <!-- In thumb reach, and always in view, so focus lands on Back to the
+             method without scrolling the list. Cook from the step you were
+             reading hands over to cook mode. -->
+        <div class="sheet-foot">
+          <!-- svelte-ignore a11y_autofocus -->
+          <button class="btn sheet-close" autofocus onclick={closeSheet}>Back to the method</button>
+          <a class="btn sheet-cook" href={cookFrom(readingStep)} use:link>{readingStep > 1 ? `Cook from step ${readingStep}` : 'Begin cooking'}</a>
+        </div>
       </dialog>
     {/if}
   </main>
@@ -848,6 +926,29 @@
     background: var(--ticket);
     padding: var(--space-4) var(--space-5) var(--space-6);
   }
+  /* Room under the tab strip, so a tab's label doesn't sit against it. */
+  .sheet[role='tabpanel'] {
+    padding-top: var(--space-5);
+  }
+  h2 .steps {
+    margin-left: var(--space-2);
+  }
+  @media (min-width: 901px) {
+    /* In the column too, a group's heading stays at the top while its rows
+       scroll under it (the edge sits inside the panel's padding). */
+    .ingredients .sect {
+      position: sticky;
+      top: calc(var(--space-4) * -1);
+      z-index: 1;
+      background: var(--ticket);
+    }
+    /* Without a photo the ticket is as wide as what's on it, not a band of
+       empty paper; it hangs at the middle of the rail. */
+    .top:not(.has-photo) {
+      max-width: 52rem;
+      margin-inline: auto;
+    }
+  }
   /* A laptop or an iPad in landscape: a shorter header so the recipe starts
      in the first screen. */
   @media (max-width: 1180px) and (min-width: 901px) {
@@ -881,6 +982,7 @@
   /* The column's foot when the list runs on below it: a fade, and how many
      rows are under it. It takes no room, so the list doesn't move. */
   .below {
+    z-index: 2;
     position: sticky;
     /* Sticky edges sit inside the panel's padding; this takes it back. */
     bottom: calc(var(--space-6) * -1);
@@ -1127,24 +1229,49 @@
     display: flex;
     justify-content: flex-end;
   }
-  /* The head is the grab: a handle, and the label under it. */
+  /* The head is the grab: a handle, and the label under it. The handle is
+     a button too, a 44px strip, for more or less of the list. */
   .sheet-head {
     flex: none;
-    padding: var(--space-2) var(--gutter) 0;
+    padding: 0 var(--gutter);
     touch-action: none;
     cursor: grab;
   }
   .handle {
-    display: block;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    min-height: 32px;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: inherit;
+  }
+  .handle span {
     width: 40px;
     height: 4px;
-    margin: 0 auto var(--space-3);
     border-radius: 2px;
     background: var(--perf);
   }
-  .sheet-head h2 {
+  .handle:hover span {
+    background: var(--ink-3);
+  }
+  .sheet-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 2.25rem;
     padding-bottom: var(--space-2);
     border-bottom: 3px solid var(--ink);
+  }
+  .sheet-title .as-written {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+  }
+  .ing-sheet.dragging {
+    transition: none;
   }
   .sheet-in {
     position: relative;
@@ -1158,7 +1285,21 @@
     padding-top: 0;
     border-top: 0;
   }
+  /* A group's heading stays at the top while its rows scroll under it; its
+     rule tucks under the sheet's, so only one shows. */
+  .sheet-in .sect {
+    position: sticky;
+    top: -3px;
+    z-index: 1;
+    background: var(--ticket);
+  }
+  .sheet-in > .sect:first-child {
+    top: 0;
+  }
   .sheet-foot {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-2);
     flex: none;
     padding: var(--space-3) var(--gutter) calc(var(--space-3) + env(safe-area-inset-bottom));
     border-top: 1px solid var(--perf);
@@ -1175,7 +1316,8 @@
       opacity: 0;
     }
   }
-  .sheet-close {
+  .sheet-close,
+  .sheet-cook {
     width: 100%;
     min-height: 52px;
   }
@@ -1369,6 +1511,13 @@
     .method li p {
       font-size: 1.1875rem;
       line-height: 1.5;
+    }
+    /* Lines end short of the Ingredients button in the corner. */
+    .method[role='tabpanel'] li {
+      grid-template-columns: 2.25rem minmax(0, 50ch);
+    }
+    .method[role='tabpanel'] .notes {
+      max-width: 50ch;
     }
     .peek {
       left: auto;

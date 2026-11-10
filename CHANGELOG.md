@@ -48,7 +48,9 @@ include breaking changes, and they're called out here.
   the screen pulls the ingredient list up over the step you're reading. Pull
   the sheet down by its handle, or tap Back to the method, to close it. The
   sheet opens at about half the screen so the step stays in view above it;
-  pull the handle up for more. The bar stays through the last steps, stepping
+  tap or pull the handle up for more. Group headings stay at the top of the
+  sheet and of the ingredient column as their rows scroll, and the sheet
+  offers the group above ("For the stew ↑"). The bar stays through the last steps, stepping
   aside only when the Begin cooking after the last step reaches it, and on an
   iPad held upright it's a button at the corner that stays put.
 - One red button at a time: the Begin cooking after the last step turns red
@@ -56,6 +58,14 @@ include breaking changes, and they're called out here.
   button with the tabs hides while it's in view. Tap
   targets on the recipe page are at least 44px.
 - Begin cooking also closes the method, so you can start from where you read.
+- Partway down the method on a phone or tablet, the Cook button with the
+  tabs and the ingredient sheet offer "Cook from step 7": cook mode opens at
+  the step you were reading.
+- Reading the method on a phone, a small scroll back up to re-read a line
+  no longer brings the masthead down over it.
+- A short recipe shows one Begin cooking, not a second one just below it,
+  and without a photo its header is as wide as what's on it. The ingredient
+  count sits with the Ingredients heading instead of in the times.
 - Keys on the recipe page: C begins cooking, E edits, F and W set Favorite
   and Want to cook (with Undo), A shows the ingredients as written, I and M
   switch tabs, and ? lists them.
