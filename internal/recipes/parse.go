@@ -241,16 +241,24 @@ func ParseIngredient(raw string) Ingredient {
 			rest = ofRE.ReplaceAllString(tail, "")
 		}
 	}
+	// "8 bone-in, skin-on chicken thighs" keeps its comma; "garlic, minced" splits.
+	// A comma inside parentheses never splits.
+	prep := ""
+	for _, m := range commaRE.FindAllStringIndex(rest, -1) {
+		before := rest[:m[0]]
+		if strings.Count(before, "(") <= strings.Count(before, ")") && isPrep(rest[m[1]:]) {
+			prep = jsTrim(rest[m[1]:])
+			rest = before
+			break
+		}
+	}
+	// Asides in the name ("beef chuck (1.6 kg)") become notes; one inside the
+	// preparation ("cut into 2-inch (5 cm) chunks") stays where it reads.
 	rest = jsTrim(replaceAllNotes(parenRE, rest, " ", func(inner string) {
 		notes = append(notes, jsTrim(inner))
 	}))
-	// "8 bone-in, skin-on chicken thighs" keeps its comma; "garlic, minced" splits.
-	for _, m := range commaRE.FindAllStringIndex(rest, -1) {
-		if isPrep(rest[m[1]:]) {
-			notes = append(notes, jsTrim(rest[m[1]:]))
-			rest = jsTrim(rest[:m[0]])
-			break
-		}
+	if prep != "" {
+		notes = append(notes, prep)
 	}
 	ing.Item = trailingRE.ReplaceAllString(rest, "")
 	if ing.Item == "" {

@@ -81,16 +81,22 @@ export function parseIngredient(raw) {
       }
     }
   }
+  // "8 bone-in, skin-on chicken thighs" keeps its comma; "garlic, minced" splits.
+  // A comma inside parentheses never splits.
+  const inParens = (i) => (rest.slice(0, i).match(/\(/g)?.length ?? 0) > (rest.slice(0, i).match(/\)/g)?.length ?? 0);
+  const comma = [...rest.matchAll(/,\s*/g)].find((m) => !inParens(m.index) && PREP.test(rest.slice(m.index + m[0].length)));
+  let prep = '';
+  if (comma) {
+    prep = rest.slice(comma.index + comma[0].length).trim();
+    rest = rest.slice(0, comma.index);
+  }
+  // Asides in the name ("beef chuck (1.6 kg)") become notes; one inside the
+  // preparation ("cut into 2-inch (5 cm) chunks") stays where it reads.
   rest = rest.replace(/\s*\(([^)]*)\)\s*/g, (_, inner) => {
     notes.push(inner.trim());
     return ' ';
   }).trim();
-  // "8 bone-in, skin-on chicken thighs" keeps its comma; "garlic, minced" splits.
-  const comma = [...rest.matchAll(/,\s*/g)].find((m) => PREP.test(rest.slice(m.index + m[0].length)));
-  if (comma) {
-    notes.push(rest.slice(comma.index + comma[0].length).trim());
-    rest = rest.slice(0, comma.index).trim();
-  }
+  if (prep) notes.push(prep);
   base.item = rest.replace(/[\s,;]+$/, '') || raw;
   base.note = notes.filter(Boolean).join('; ') || null;
   return base;

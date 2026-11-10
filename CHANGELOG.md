@@ -10,12 +10,14 @@ include breaking changes, and they're called out here.
 ### Changed
 - The recipe page starts the recipe sooner: on a laptop or an iPad in
   landscape the ingredients and method now show in the first screen. The
-  description sits under Begin cooking, held to three lines with More (the
-  last line fades out rather than ending in "…"), and the photo is shorter.
+  description sits under Begin cooking, held to three lines with Show all at
+  the end of the last (which fades out rather than ending in "…"), and the
+  photo is shorter.
 - A recipe's notes come before its method, so make-ahead and timing advice is
   read before you start. The first lines of advice show, with Show all for the
   rest, so the steps aren't pushed down; a credit line ("Inspired by…") waits
-  behind Show all rather than taking that place.
+  behind Show all rather than taking that place, and comes last when the
+  notes are open.
 - On a laptop or an iPad in landscape, the ingredients stay beside the method
   all the way down, scrolling on their own when the list is long. A long
   list says how many more are below it, and it follows the method: reading
@@ -28,6 +30,11 @@ include breaking changes, and they're called out here.
 - Links in recipe text are easier to see, carry an external-link mark, and
   tell screen readers they open a new tab. Screen readers now hear each step's
   number ("Step 7").
+- On an iPad held upright, method steps are set larger and held to a
+  readable line, for reading from the counter.
+- Ingredient notes keep asides where they belong: "cut into 2-inch (5 cm)
+  chunks" now reads as written, instead of the "(5 cm)" being moved out
+  ahead of it. This applies to recipes added or edited from now on.
 - On a phone or an iPad held upright the recipe comes up sooner, with the
   first ingredients in the first screen: the photo is a thumbnail beside the
   title. On a phone, Edit sits at the end of the source line (or the tags'
@@ -40,15 +47,18 @@ include breaking changes, and they're called out here.
 - In the Method tab on a phone or tablet, an Ingredients bar at the foot of
   the screen pulls the ingredient list up over the step you're reading. Pull
   the sheet down by its handle, or tap Back to the method, to close it. The
-  bar steps aside for the Begin cooking after the last step, and on an iPad
-  held upright it's a button at the corner rather than a band.
+  sheet opens at about half the screen so the step stays in view above it;
+  pull the handle up for more. The bar stays through the last steps, stepping
+  aside only when the Begin cooking after the last step reaches it, and on an
+  iPad held upright it's a button at the corner that stays put.
 - One red button at a time: the Begin cooking after the last step turns red
   only once the one at the top has scrolled away, and on a phone the Cook
   button with the tabs hides while it's in view. Tap
   targets on the recipe page are at least 44px.
 - Begin cooking also closes the method, so you can start from where you read.
 - Keys on the recipe page: C begins cooking, E edits, F and W set Favorite
-  and Want to cook, and ? lists them.
+  and Want to cook (with Undo), A shows the ingredients as written, I and M
+  switch tabs, and ? lists them.
 - A recipe in the trash says so at the top of its page, with Restore. A link
   to a recipe that doesn't exist says the link may be wrong.
 - Nutrition written as "**Calories** 1063" lines shows as figures, like the
