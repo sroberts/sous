@@ -60,8 +60,9 @@
   });
 
   // On a phone the masthead takes a fifth of the screen, so it slides away
-  // while you scroll down and comes back as soon as you scroll up, at the
-  // top of the page, or when focus or the person menu is in it. --bar-shown
+  // while you scroll down and comes back as soon as you scroll up (120px up
+  // while a page sets data-steady-bar), at the top of the page, or when focus
+  // or the person menu is in it. --bar-shown
   // is how much of it is showing, for anything that sticks below it.
   let bar;
   let hidden = $state(false);
@@ -79,8 +80,13 @@
       if (!phone.matches || y < height || menuOpen || addOpen || bar.contains(document.activeElement)) {
         hidden = false;
         last = y;
-      } else if (Math.abs(y - last) > 8) {
-        hidden = y > last;
+      } else if (y > last + 8) {
+        hidden = true;
+        last = y;
+      } else if (last - y > ('steadyBar' in document.documentElement.dataset ? 120 : 8)) {
+        // Reading a recipe's method, a nudge back up to re-read a line
+        // shouldn't bring the masthead down over it; a real scroll up does.
+        hidden = false;
         last = y;
       }
     };
