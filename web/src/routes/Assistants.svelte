@@ -66,14 +66,17 @@
 </script>
 
 {#snippet copyBtn(id, text)}
-  <button type="button" class="btn quiet copy" onclick={() => copy(id, text)}>
+  <button type="button" class="btn copy" disabled={!username} onclick={() => copy(id, text)}>
     {#if copied === id}<Check size={16} aria-hidden="true" />Copied{:else if copied === `sel:${id}`}Press {mac ? '⌘C' : 'Ctrl+C'}{:else}<Copy size={16} aria-hidden="true" />Copy{/if}
   </button>
 {/snippet}
 
-{#snippet block(id, text)}
-  <div class="block">
-    <pre id={id}>{text}</pre>
+{#snippet block(id, text, label, wrap = false)}
+  <div class="block" class:unready={!username} class:wrap>
+    <!-- Kept as written, so a long line scrolls rather than breaking inside
+         an address; focusable so the keyboard can scroll it too. -->
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex (a scrolling region needs focus) -->
+    <pre id={id} tabindex="0" role="region" aria-label={label}>{text}</pre>
     {@render copyBtn(id, text)}
   </div>
 {/snippet}
@@ -81,37 +84,33 @@
 <main class="assistants" id="main">
   <h1>Connect an AI assistant</h1>
   <p class="lede">
-    An assistant that speaks MCP can search the library, read recipes, import links and make changes, with the same rights as the person it acts for. Every change is signed with that name and recorded as made by an assistant, and anything it deletes goes to the trash.
+    An assistant on your own computer, like Claude Code or Crush, can search the library, read recipes, import links and make changes for one person in the household. Every change is signed with their name, and anything it deletes goes to the trash. Setting one up takes a terminal or a config file.
   </p>
 
   <!-- Until boot says whether Outpost is in front, the address could be the
        gateway's, which assistants can't use. -->
   {#if session.loaded}
   <section class="panel conn" aria-labelledby="conn-h">
-    <h2 id="conn-h" class="label">The connection</h2>
-    <div class="fact">
-      <span class="k">Address</span>
-      <code id="mcp-url">{url}</code>
-      {@render copyBtn('mcp-url', url)}
-    </div>
-    <div class="fact">
-      <span class="k">Header</span>
-      <code id="mcp-header">{header}</code>
-      {@render copyBtn('mcp-header', header)}
-    </div>
+    <h2 id="conn-h" class="label">Who it acts for</h2>
     {#if !session.outpost && session.people.length}
       <label class="fact">
-        <span class="k">Acts for</span>
-        <select value={username ?? ''} onchange={(e) => (chosen = e.currentTarget.value)}>
-          {#if !username}<option value="" disabled>Choose someone</option>{/if}
-          {#each session.people as p (p.username)}<option value={p.username}>{p.name}</option>{/each}
-        </select>
+        <span class="k">Person</span>
+        <span class="pick">
+          <select value={username ?? ''} onchange={(e) => (chosen = e.currentTarget.value)}>
+            {#if !username}<option value="" disabled>Choose someone</option>{/if}
+            {#each session.people as p (p.username)}<option value={p.username}>{p.name}</option>{/each}
+          </select>
+          <ChevronDown size={18} aria-hidden="true" />
+        </span>
       </label>
-    {/if}
-    {#if !username}
+      {#if !username}<p class="wait">Choose someone to fill in the set-ups below.</p>{/if}
+      <p class="note">Only for this set-up; it doesn’t change who’s cooking here. Without a name, an assistant can only read.</p>
+    {:else if username}
+      <p class="note">It acts for <b>{session.person.name}</b>, who’s signed in.</p>
+    {:else}
       <p class="note">
-        The header names who the assistant acts for. Without it, the assistant can only read.
-        {#if !session.people.length}<button type="button" class="text-btn" onclick={() => (session.asking = true)}>Add who’s cooking</button> to fill it in.{:else}Choose someone above to fill it in.{/if}
+        An assistant acts for one person, and without a name it can only read.
+        {#if !session.people.length}<button type="button" class="text-btn" onclick={() => (session.asking = true)}>Add who’s cooking</button> to fill it in.{/if}
       </p>
     {/if}
     {#if session.outpost}
@@ -119,7 +118,7 @@
         Under Outpost the login only lets in people with a browser, so an assistant connects on the machine running Sous. There, <code>outpost status sous</code> shows the port to use in place of <code>&lt;port&gt;</code>. If <code>SOUS_REQUIRE_GATEWAY</code> is set, this route is closed.
       </p>
     {:else if local}
-      <p class="note">This address only works on this machine. For an assistant on another computer, open Sous at its tailnet address and use the address shown there.</p>
+      <p class="note strong">These set-ups only work on this machine. For an assistant on another computer, open Sous at its tailnet address and copy them from there.</p>
     {:else}
       <p class="note">The assistant’s computer needs to be on your tailnet, the same as a browser.</p>
     {/if}
@@ -132,7 +131,7 @@
         <summary><h3>Claude Code</h3><span class="what">One command in your terminal</span><ChevronDown class="chev" size={20} aria-hidden="true" /></summary>
         <div class="inner">
           <p>Run this, then type <code>/mcp</code> in Claude Code to see Sous connected.</p>
-          {@render block('cfg-claude-code', claudeCode)}
+          {@render block('cfg-claude-code', claudeCode, 'Claude Code command', true)}
           <p class="hint">It’s added for the folder you run it in. Add <code>--scope user</code> to have Sous in every project.</p>
         </div>
       </details>
@@ -141,7 +140,7 @@
         <summary><h3>Claude Desktop</h3><span class="what">A bridge in its config file</span><ChevronDown class="chev" size={20} aria-hidden="true" /></summary>
         <div class="inner">
           <p>In Claude, open <b>Settings</b>, then <b>Developer</b>, then <b>Edit Config</b>. Put this in the file (merge it into <code>mcpServers</code> if you already have servers), save, and restart Claude.</p>
-          {@render block('cfg-claude-desktop', claudeDesktop)}
+          {@render block('cfg-claude-desktop', claudeDesktop, 'Claude Desktop config')}
           <p class="hint">It needs Node.js installed. Claude’s Connectors setting reaches servers from Anthropic’s cloud, which can’t see your tailnet, so Sous goes in the config file instead.</p>
         </div>
       </details>
@@ -150,12 +149,29 @@
         <summary><h3>Crush</h3><span class="what">An entry in crush.json</span><ChevronDown class="chev" size={20} aria-hidden="true" /></summary>
         <div class="inner">
           <p>Add this to <code>crush.json</code> in your project, or to <code>~/.config/crush/crush.json</code> to have Sous everywhere. If the file already has an <code>mcp</code> section, add the <code>sous</code> entry to it.</p>
-          {@render block('cfg-crush', crush)}
+          {@render block('cfg-crush', crush, 'Crush config')}
         </div>
       </details>
 
       <details class="way">
-        <summary><h3>ChatGPT</h3><span class="what">Can’t reach Sous yet</span><ChevronDown class="chev" size={20} aria-hidden="true" /></summary>
+        <summary><h3>Another MCP client</h3><span class="what">The address and header</span><ChevronDown class="chev" size={20} aria-hidden="true" /></summary>
+        <div class="inner">
+          <p>Any client that can send a header works: give it these, with the Streamable HTTP transport.</p>
+          <div class="fact">
+            <span class="k">Address</span>
+            <code id="mcp-url">{url}</code>
+            {@render copyBtn('mcp-url', url)}
+          </div>
+          <div class="fact">
+            <span class="k">Header</span>
+            <code id="mcp-header">{header}</code>
+            {@render copyBtn('mcp-header', header)}
+          </div>
+        </div>
+      </details>
+
+      <details class="way">
+        <summary><h3>ChatGPT</h3><span class="what">Can’t reach Sous</span><ChevronDown class="chev" size={20} aria-hidden="true" /></summary>
         <div class="inner">
           <p>ChatGPT connects to MCP servers from OpenAI’s servers, over the public internet, and can’t send the header that says who it acts for. Sous is only on your tailnet, so ChatGPT can’t reach it. The same goes for Claude on the web and on your phone.</p>
           {#if session.outpost}
@@ -166,7 +182,7 @@
         </div>
       </details>
     </div>
-    <p class="other">Any other MCP client that can send a header works too: give it the address and header above, with the Streamable HTTP transport.</p>
+    <p class="help"><b>If it doesn’t connect:</b> check the assistant’s computer can open Sous in a browser at the same address, that the name in the header is someone in the household, and restart the assistant after changing its config.</p>
   </section>
   {/if}
   <p class="visually-hidden" aria-live="polite">{said}</p>
@@ -215,11 +231,48 @@
   }
   .fact code {
     font-size: 1rem;
+    background: none;
+    padding: 0;
   }
-  .fact select {
+  .wait {
+    font-weight: 700;
+  }
+  .help {
+    margin-top: var(--space-4);
+    max-width: 62ch;
+    font-size: 0.9375rem;
+    color: var(--ink-2);
+  }
+  .unready pre {
+    color: var(--ink-3);
+  }
+  .pick {
     justify-self: start;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
+  /* Drawn like the other fields: a 2px ink stroke on ticket, with Sous's
+     own chevron in place of the browser's. */
+  .pick select {
+    appearance: none;
     min-height: 44px;
     min-width: 12rem;
+    padding: 0 calc(var(--space-3) + 24px) 0 var(--space-3);
+    border: 2px solid var(--ink);
+    border-radius: 3px;
+    background: var(--ticket);
+    cursor: pointer;
+  }
+  .pick :global(svg) {
+    position: absolute;
+    right: var(--space-3);
+    pointer-events: none;
+    color: var(--ink-2);
+  }
+  .note.strong {
+    color: var(--ink);
+    font-weight: 600;
   }
   .note {
     max-width: 62ch;
@@ -239,7 +292,8 @@
     text-underline-offset: 3px;
   }
   .copy {
-    min-height: 40px;
+    background: var(--ticket);
+    min-height: 44px;
     padding: 0 var(--space-3);
     font-size: 0.875rem;
     white-space: nowrap;
@@ -312,14 +366,8 @@
     max-width: 62ch;
   }
   .hint {
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     color: var(--ink-3);
-  }
-  .other {
-    margin-top: var(--space-4);
-    max-width: 62ch;
-    font-size: 0.9375rem;
-    color: var(--ink-2);
   }
   b {
     font-weight: 700;
@@ -347,11 +395,12 @@
     font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
     font-size: 0.8125rem;
     line-height: 1.5;
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
+    white-space: pre;
+    overflow-x: auto;
+    scrollbar-width: thin;
   }
-  .block .copy {
-    background: var(--ticket);
+  .block.wrap pre {
+    white-space: pre-wrap;
   }
 
   @media (max-width: 560px) {
@@ -360,6 +409,18 @@
     }
     .fact .k {
       grid-column: 1 / -1;
+    }
+    /* The snippet gets the full width; its Copy sits above it. */
+    .block {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .block .copy {
+      grid-row: 1;
+      justify-self: end;
+    }
+    /* Every row's description on its own line, so the rows match. */
+    .what {
+      flex-basis: 100%;
     }
     .panel,
     summary,
