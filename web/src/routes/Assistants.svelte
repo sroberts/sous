@@ -17,6 +17,7 @@
   const username = $derived(session.outpost ? session.person?.username : (chosen ?? session.person?.username));
   const who = $derived(username ?? '<username>');
   const header = $derived(`X-Sous-Person: ${who}`);
+  const personName = $derived(session.people.find((p) => p.username === username)?.name ?? session.person?.name ?? username);
 
   // mcp-remote refuses plain http except to localhost and 127.0.0.1 (not
   // [::1]); the Outpost address is always 127.0.0.1.
@@ -25,7 +26,9 @@
   // Single-quoted for the shell, so a username from the Outpost login can't
   // expand or end the argument when the command is pasted.
   const sh = (s) => `'${s.replaceAll("'", `'\\''`)}'`;
-  const claudeCode = $derived(`claude mcp add --transport http sous ${sh(url)} --header ${sh(header)}`);
+  // On two lines, so the header (and the name in it) starts its own line
+  // rather than breaking wherever the box ends.
+  const claudeCode = $derived(`claude mcp add --transport http sous ${sh(url)} \\\n  --header ${sh(header)}`);
   const claudeDesktop = $derived(
     JSON.stringify(
       { mcpServers: { sous: { command: 'npx', args: ['-y', 'mcp-remote', url, '--header', `X-Sous-Person:${who}`, ...(plainRemote ? ['--allow-http'] : [])] } } },
@@ -71,8 +74,8 @@
   </button>
 {/snippet}
 
-{#snippet block(id, text, label, wrap = false)}
-  <div class="block" class:unready={!username} class:wrap>
+{#snippet block(id, text, label)}
+  <div class="block" class:unready={!username}>
     <!-- Kept as written, so a long line scrolls rather than breaking inside
          an address; focusable so the keyboard can scroll it too. -->
     <!-- svelte-ignore a11y_no_noninteractive_tabindex (a scrolling region needs focus) -->
@@ -103,8 +106,8 @@
           <ChevronDown size={18} aria-hidden="true" />
         </span>
       </label>
-      {#if !username}<p class="wait">Choose someone to fill in the set-ups below.</p>{/if}
-      <p class="note">Only for this set-up; it doesn’t change who’s cooking here. Without a name, an assistant can only read.</p>
+      {#if !username}<p class="wait">Choose someone to fill in the set-ups below. Without a name, an assistant can only read.</p>{/if}
+      <p class="note">Only for this set-up; it doesn’t change who’s cooking here.</p>
     {:else if username}
       <p class="note">It acts for <b>{session.person.name}</b>, who’s signed in.</p>
     {:else}
@@ -131,7 +134,7 @@
         <summary><h3>Claude Code</h3><span class="what">One command in your terminal</span><ChevronDown class="chev" size={20} aria-hidden="true" /></summary>
         <div class="inner">
           <p>Run this, then type <code>/mcp</code> in Claude Code to see Sous connected.</p>
-          {@render block('cfg-claude-code', claudeCode, 'Claude Code command', true)}
+          {@render block('cfg-claude-code', claudeCode, 'Claude Code command')}
           <p class="hint">It’s added for the folder you run it in. Add <code>--scope user</code> to have Sous in every project.</p>
         </div>
       </details>
@@ -171,6 +174,23 @@
       </details>
 
       <details class="way">
+        <summary><h3>Check it works</h3><span class="what">A question to ask, and what goes wrong</span><ChevronDown class="chev" size={20} aria-hidden="true" /></summary>
+        <div class="inner">
+          <p>Once it’s set up, ask the assistant something only Sous knows, like <q>What’s on my want-to-cook list in Sous?</q> It should answer from the library and name the recipes{username ? ` ${personName} has marked` : ''}.</p>
+          <dl class="trouble">
+            <dt>It says Sous failed, or won’t connect</dt>
+            <dd>The assistant’s computer can’t reach the address. Open {session.outpost ? 'Sous on that machine' : 'this page'} in a browser there{session.outpost ? '; under Outpost, also check the port and that SOUS_REQUIRE_GATEWAY isn’t set' : ', and check the computer is on your tailnet'}.</dd>
+            <dt>It asks you to sign in or authenticate</dt>
+            <dd>The name in the header isn’t anyone in the household. Copy the set-up again from here.</dd>
+            <dt>It reads recipes but can’t save</dt>
+            <dd>The header is missing, so it’s connected as nobody. Check the set-up has the <code>X-Sous-Person</code> line.</dd>
+            <dt>Nothing changes after editing a config file</dt>
+            <dd>Quit the assistant fully and open it again; most only read their config at start.</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details class="way">
         <summary><h3>ChatGPT</h3><span class="what">Can’t reach Sous</span><ChevronDown class="chev" size={20} aria-hidden="true" /></summary>
         <div class="inner">
           <p>ChatGPT connects to MCP servers from OpenAI’s servers, over the public internet, and can’t send the header that says who it acts for. Sous is only on your tailnet, so ChatGPT can’t reach it. The same goes for Claude on the web and on your phone.</p>
@@ -182,7 +202,6 @@
         </div>
       </details>
     </div>
-    <p class="help"><b>If it doesn’t connect:</b> check the assistant’s computer can open Sous in a browser at the same address, that the name in the header is someone in the household, and restart the assistant after changing its config.</p>
   </section>
   {/if}
   <p class="visually-hidden" aria-live="polite">{said}</p>
@@ -237,10 +256,26 @@
   .wait {
     font-weight: 700;
   }
-  .help {
-    margin-top: var(--space-4);
+  q {
+    font-weight: 700;
+    quotes: '“' '”';
+  }
+  .trouble {
+    display: grid;
+    gap: var(--space-1);
     max-width: 62ch;
-    font-size: 0.9375rem;
+  }
+  .trouble dt {
+    font-weight: 700;
+  }
+  .trouble dt:not(:first-child) {
+    margin-top: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: 1.5px dashed var(--ticket-press);
+  }
+  .trouble dd {
+    margin: 0;
+    text-wrap: pretty;
     color: var(--ink-2);
   }
   .unready pre {
@@ -398,9 +433,6 @@
     white-space: pre;
     overflow-x: auto;
     scrollbar-width: thin;
-  }
-  .block.wrap pre {
-    white-space: pre-wrap;
   }
 
   @media (max-width: 560px) {

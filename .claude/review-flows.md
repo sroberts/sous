@@ -97,3 +97,5 @@ the UI built: `cd web && npm run build && cd .. && go run ./cmd/sous --port
      the address and header.
 3. Open the ChatGPT row.
    - It explains ChatGPT can't reach Sous and gives no public-exposure steps.
+4. Open the Check it works row.
+   - It gives a question to ask (naming Ada) and four symptoms with causes.
