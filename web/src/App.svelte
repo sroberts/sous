@@ -25,7 +25,7 @@
     to.focus();
   }
 
-  const titles = { library: 'Sous', new: 'New recipe · Sous', import: 'Import a recipe · Sous' };
+  const titles = { library: 'Sous', new: 'New recipe · Sous', import: 'Import a recipe · Sous', assistants: 'Connect an AI assistant · Sous' };
   $effect(() => {
     if (titles[route.name]) document.title = titles[route.name];
   });

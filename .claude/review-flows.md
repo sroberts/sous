@@ -82,3 +82,17 @@ the UI built: `cd web && npm run build && cd .. && go run ./cmd/sous --port
 
 1. In the editor, set a source to `javascript:alert(1)` and save.
    - "source_url must be an http or https link"; nothing is saved.
+
+## 10. Connect an AI assistant
+
+1. From the person menu, choose Connect an AI assistant (`/assistants`).
+   - The tab reads "Connect an AI assistant · Sous".
+   - The address is this Sous's origin plus `/mcp`; Copy copies it (or, on
+     plain http away from this machine, selects it and says to press the
+     copy key).
+2. Pick Ada under Acts for.
+   - The header reads `X-Sous-Person: ada`, and every set-up (Claude Code,
+     Claude Desktop, Crush) uses it. The Claude Code command single-quotes
+     the address and header.
+3. Open the ChatGPT row.
+   - It explains ChatGPT can't reach Sous and gives no public-exposure steps.

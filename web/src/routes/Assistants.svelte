@@ -18,10 +18,14 @@
   const who = $derived(username ?? '<username>');
   const header = $derived(`X-Sous-Person: ${who}`);
 
-  // mcp-remote refuses plain http except to this machine.
-  const plainRemote = $derived(url.startsWith('http:') && !session.outpost && !local);
+  // mcp-remote refuses plain http except to localhost and 127.0.0.1 (not
+  // [::1]); the Outpost address is always 127.0.0.1.
+  const plainRemote = $derived(url.startsWith('http:') && !session.outpost && !['localhost', '127.0.0.1'].includes(location.hostname));
 
-  const claudeCode = $derived(`claude mcp add --transport http sous ${url} --header "${header}"`);
+  // Single-quoted for the shell, so a username from the Outpost login can't
+  // expand or end the argument when the command is pasted.
+  const sh = (s) => `'${s.replaceAll("'", `'\\''`)}'`;
+  const claudeCode = $derived(`claude mcp add --transport http sous ${sh(url)} --header ${sh(header)}`);
   const claudeDesktop = $derived(
     JSON.stringify(
       { mcpServers: { sous: { command: 'npx', args: ['-y', 'mcp-remote', url, '--header', `X-Sous-Person:${who}`, ...(plainRemote ? ['--allow-http'] : [])] } } },
@@ -35,30 +39,35 @@
 
   // Copy where the browser allows it (HTTPS or this machine); elsewhere,
   // select the text so the keyboard's copy takes it.
+  const mac = /Mac|iPhone|iPad/.test(navigator.platform);
   let copied = $state(null);
   let said = $state('');
+  let timer;
   async function copy(id, text) {
+    let message;
     try {
       await navigator.clipboard.writeText(text);
       copied = id;
-      said = 'Copied.';
+      message = 'Copied.';
     } catch {
       const range = document.createRange();
       range.selectNodeContents(document.getElementById(id));
       getSelection().removeAllRanges();
       getSelection().addRange(range);
       copied = `sel:${id}`;
-      said = 'Selected. Press Command-C or Control-C to copy.';
+      message = `Selected. Press ${mac ? 'Command' : 'Control'}-C to copy.`;
     }
-    setTimeout(() => {
-      if (copied?.endsWith(id)) copied = null;
-    }, 2500);
+    // Cleared first, so the same message is announced again.
+    said = '';
+    setTimeout(() => (said = message), 50);
+    clearTimeout(timer);
+    timer = setTimeout(() => (copied = null), 2500);
   }
 </script>
 
 {#snippet copyBtn(id, text)}
   <button type="button" class="btn quiet copy" onclick={() => copy(id, text)}>
-    {#if copied === id}<Check size={16} aria-hidden="true" />Copied{:else if copied === `sel:${id}`}Press ⌘C{:else}<Copy size={16} aria-hidden="true" />Copy{/if}
+    {#if copied === id}<Check size={16} aria-hidden="true" />Copied{:else if copied === `sel:${id}`}Press {mac ? '⌘C' : 'Ctrl+C'}{:else}<Copy size={16} aria-hidden="true" />Copy{/if}
   </button>
 {/snippet}
 
@@ -75,6 +84,9 @@
     An assistant that speaks MCP can search the library, read recipes, import links and make changes, with the same rights as the person it acts for. Every change is signed with that name and recorded as made by an assistant, and anything it deletes goes to the trash.
   </p>
 
+  <!-- Until boot says whether Outpost is in front, the address could be the
+       gateway's, which assistants can't use. -->
+  {#if session.loaded}
   <section class="panel conn" aria-labelledby="conn-h">
     <h2 id="conn-h" class="label">The connection</h2>
     <div class="fact">
@@ -146,12 +158,17 @@
         <summary><h3>ChatGPT</h3><span class="what">Can’t reach Sous yet</span><ChevronDown class="chev" size={20} aria-hidden="true" /></summary>
         <div class="inner">
           <p>ChatGPT connects to MCP servers from OpenAI’s servers, over the public internet, and can’t send the header that says who it acts for. Sous is only on your tailnet, so ChatGPT can’t reach it. The same goes for Claude on the web and on your phone.</p>
-          <p>Putting Sous on the public internet to let them in would let anyone read and change the library, since Sous has no passwords yet. Use an assistant on your own computer instead.</p>
+          {#if session.outpost}
+            <p>Outpost’s login only lets in people with a browser, so they can’t get through it either. Use an assistant on the machine running Sous instead.</p>
+          {:else}
+            <p>Putting Sous on the public internet to let them in would let anyone read and change the library, since Sous has no passwords yet. Use an assistant on your own computer instead.</p>
+          {/if}
         </div>
       </details>
     </div>
     <p class="other">Any other MCP client that can send a header works too: give it the address and header above, with the Streamable HTTP transport.</p>
   </section>
+  {/if}
   <p class="visually-hidden" aria-live="polite">{said}</p>
 </main>
 
@@ -327,13 +344,11 @@
   }
   pre {
     margin: 0;
-    overflow-x: auto;
     font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
     font-size: 0.8125rem;
     line-height: 1.5;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
-    scrollbar-width: thin;
   }
   .block .copy {
     background: var(--ticket);
