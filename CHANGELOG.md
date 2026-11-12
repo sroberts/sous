@@ -30,8 +30,9 @@ include breaking changes, and they're called out here.
 - Links in recipe text are easier to see, carry an external-link mark, and
   tell screen readers they open a new tab. Screen readers now hear each step's
   number ("Step 7").
-- On an iPad held upright, method steps are set larger and held to a
-  readable line, for reading from the counter.
+- On a touch screen (a phone, or an iPad either way up), method steps are
+  set larger for reading from the counter; on an iPad held upright they're
+  also held to a readable line. A laptop keeps the usual size.
 - Ingredient notes keep asides where they belong: "cut into 2-inch (5 cm)
   chunks" now reads as written, instead of the "(5 cm)" being moved out
   ahead of it. This applies to recipes added or edited from now on.
@@ -61,10 +62,15 @@ include breaking changes, and they're called out here.
 - Partway down the method, the recipe offers "Cook from step 7": cook mode
   opens at the step you were reading. On a phone or tablet it's the Cook
   button with the tabs and the ingredient sheet; on a laptop or an iPad in
-  landscape, the foot of the ingredients column. The sheet names a step you
-  can still see above it, and its first words ("Step 6 · Bring to a
-  simmer…"), and C cooks from that step too. Leaving cook mode brings you
-  back to the method at the step you'd got to.
+  landscape, the foot of the ingredients column. It's called "Cook from step
+  7" wherever it's offered. Opening the ingredient sheet lifts the step
+  you're reading into view above it, so the number doesn't change, and the
+  sheet names it by its first words ("Step 7 · While the beef braises…"). C
+  cooks from that step too. Leaving cook mode brings you back to the method
+  at the step you'd got to, with the ingredients column at its part of the
+  list.
+- Side by side, the ingredients column's head stays at its top as the list
+  scrolls, so Show as written is always in reach.
 - Reading the method on a phone, a small scroll back up to re-read a line
   no longer brings the masthead down over it.
 - A short recipe shows one Begin cooking, not a second one just below it,
@@ -135,6 +141,10 @@ include breaking changes, and they're called out here.
   fractions (1/2, 2 1/2, 1¼) now count.
 - Group headings that stay at the top of an ingredient list no longer show
   the tops of the row passing under them.
+- Pulling the ingredient sheet's head with a mouse no longer selects text or
+  closes the sheet when you meant to make it taller.
+- On a wide screen, there's no longer a stretch just under the header with
+  no Begin cooking or Cook button in view.
 - Screen readers hear the description's and the notes' Show all apart, and
   the tabs' names without a stray pause.
 - In cook mode, a new step opens at its top; it could open scrolled down

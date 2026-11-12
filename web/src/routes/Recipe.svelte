@@ -223,7 +223,9 @@
     if (!headCook) return;
     // Under the masthead counts as scrolled away.
     const bar = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bar')) || 56;
-    const io = new IntersectionObserver(([e]) => (headInView = e.isIntersecting), { rootMargin: `-${bar}px 0px 0px 0px` });
+    // Half under it is gone: the next red button takes over as this one goes,
+    // not after the last sliver of it has.
+    const io = new IntersectionObserver(([e]) => (headInView = e.intersectionRatio >= 0.5), { rootMargin: `-${bar}px 0px 0px 0px`, threshold: [0, 0.5, 1] });
     io.observe(headCook);
     return () => io.disconnect();
   });
@@ -237,6 +239,9 @@
   let sheetTall = $state(false);
   let drag = $state(0); // px the sheet is pulled down (positive) or up by its handle
   let dragFrom = null;
+  // A press that began on the sheet and let go off it (a mouse pulling the
+  // head) isn't a click on the backdrop.
+  let pressedBackdrop = false;
   let dragBase = $state(0); // the sheet's height when the pull began
   let dragging = $state(false);
   let above = $state(null); // the group above the one at the top of the sheet: { name, el }
@@ -246,18 +251,28 @@
   function openSheet() {
     if (!sheet) return;
     sheetTall = false;
+    // The part of the method you're reading, before the page moves.
+    const key = sectionNow();
     sheet.showModal();
-    // The step to cook from is one you can still see above the sheet, not
-    // the one at the reading line, which the sheet now covers.
-    readingStep = stepNow(innerHeight - sheet.offsetHeight - 24); // its first line in view
+    // The sheet would cover the step you were reading, so the page lifts it
+    // into view above the sheet: Cook from step 7 still means the step you
+    // can see.
+    liftStep(readingStep);
     // Open at the ingredients for the part of the method you're reading. A
     // last group can't reach the top; it shows whole at the foot instead.
     if (!sheetList) return;
-    const g = sheetList.querySelector(`[data-sect="${sectionNow()}"]`);
+    const g = sheetList.querySelector(`[data-sect="${key}"]`);
     sheetList.scrollTop = !g || g === sheetList.querySelector('[data-sect]') ? 0 : groupTop(g) + 3; // its rule under the sheet's
     sheetScrolled();
   }
+  // A heading that has stuck sits lower than its own place in the list. Only
+  // then does it lay paper over the rows passing under it; at rest that would
+  // cover its own first row.
+  function markStuck(list) {
+    for (const h of list?.querySelectorAll('h3.sect') ?? []) h.classList.toggle('stuck', h.offsetTop > groupTop(h) + 1);
+  }
   function sheetScrolled() {
+    markStuck(sheetList);
     const heads = [...(sheetList?.querySelectorAll('h3.sect') ?? [])];
     let i = -1;
     for (const [k, h] of heads.entries()) if (groupTop(h) <= sheetList.scrollTop + 8) i = k;
@@ -267,9 +282,18 @@
     if (above) sheetList.scrollTo({ top: above.el === sheetList.querySelector('h3.sect') ? 0 : groupTop(above.el) + 3, behavior: still() ? 'auto' : 'smooth' });
   }
   const closeSheet = () => sheet?.close();
+  // Closed, the step stays the one you were reading until you scroll on.
   function sheetClosed() {
     sheetTall = false;
-    readingStep = stepNow();
+  }
+  function liftStep(n) {
+    const li = methodPanel?.querySelectorAll('ol > li')[n - 1];
+    if (!li) return;
+    const top = li.getBoundingClientRect().top;
+    const under = stickTop() + (tabs?.offsetHeight ?? 0) + 12;
+    // Already in view above the sheet, with a couple of its lines showing.
+    if (top >= under && top <= innerHeight - sheet.offsetHeight - 64) return;
+    scrollQuietly(top + scrollY - under);
   }
   // The pointer is captured only once the pull has begun, so a tap on a
   // button in the head (the handle, the group above) stays a tap.
@@ -333,6 +357,9 @@
     };
   });
   const cookFrom = (n) => (n > 1 ? `/r/${id}/cook?step=${n}` : `/r/${id}/cook`);
+  // One name for the hand-off wherever it's offered: the strip, the column's
+  // foot, the sheet.
+  const cookLabel = $derived(readingStep > 1 ? `Cook from step ${readingStep}` : 'Begin cooking');
   // A step's first words, to say which one "Cook from step 7" means.
   function stepWords(n) {
     const t = (recipe?.steps[n - 1]?.text ?? '').replace(/\[([^\]]*)\]\([^)]*\)/g, '$1').replace(/[*_`#>]/g, '').trim();
@@ -369,6 +396,9 @@
       if (!li) return;
       const under = stickTop() + (tabbed ? (tabs?.offsetHeight ?? 0) : 0) + 16;
       scrollQuietly(li.getBoundingClientRect().top + scrollY - Math.max(under, innerHeight * 0.45 - 32));
+      // Side by side, the column comes back at that part of the list too, at
+      // once rather than gliding there.
+      if (!narrow) requestAnimationFrame(() => requestAnimationFrame(() => alignColumn(sectionNow(), true)));
     })();
   });
 
@@ -417,6 +447,9 @@
       overflowing = false;
       return;
     }
+    // Group headings stick under the column's own head, however tall it is.
+    ingPanel.style.setProperty('--col-head', `${ingPanel.querySelector('.col-head')?.offsetHeight ?? 0}px`);
+    markStuck(ingPanel);
     overflowing = ingPanel.scrollHeight > ingPanel.clientHeight + 1;
     // Rows under the Cook band count as below too.
     const band = ingPanel.querySelector('.col-cook.shown')?.offsetHeight ?? 0;
@@ -440,29 +473,57 @@
     };
   });
   const still = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
-  function scrollColumn(top) {
-    ingPanel.scrollTo({ top, behavior: still() ? 'auto' : 'smooth' });
+  function scrollColumn(top, instant = false) {
+    ingPanel.scrollTo({ top, behavior: instant || still() ? 'auto' : 'smooth' });
+  }
+  // The column at the ingredients for a part of the method, its heading just
+  // under the column's own (which stays at the top).
+  let colKey = null;
+  function alignColumn(key, instant = false) {
+    colKey = key;
+    const first = ingPanel.querySelector('[data-sect]');
+    const g = ingPanel.querySelector(`[data-sect="${key}"]`);
+    const head = ingPanel.querySelector('.col-head')?.offsetHeight ?? 0;
+    scrollColumn(!g || g === first ? 0 : groupTop(g) - head + 3, instant);
   }
   const moreBelow = () => scrollColumn(ingPanel.scrollTop + ingPanel.clientHeight * 0.75);
   $effect(() => {
     if (narrow || !ingPanel || !methodPanel || !ingKeys.size) return;
-    let last = sectionNow();
+    // Seeded with nothing, so the column lines up with wherever the page
+    // already is, reloaded mid-method.
+    colKey = null;
     let frame = 0;
     const follow = () => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         const key = sectionNow();
-        if (key === last || !overflowing) return (last = key);
-        last = key;
-        const first = ingPanel.querySelector('[data-sect]');
-        const g = ingPanel.querySelector(`[data-sect="${key}"]`);
-        scrollColumn(!g || g === first ? 0 : groupTop(g) - 16);
+        if (overflowing && key !== colKey) alignColumn(key);
       });
     };
+    follow();
     addEventListener('scroll', follow, { passive: true });
     return () => {
       cancelAnimationFrame(frame);
       removeEventListener('scroll', follow);
+    };
+  });
+  // Before the column sticks, its foot would sit below the fold, and with it
+  // the Cook band: so it ends at the foot of the window from the start.
+  $effect(() => {
+    if (narrow || !ingPanel) return;
+    let frame = 0;
+    const fit = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => ingPanel.style.setProperty('--col-room', `${Math.max(240, innerHeight - ingPanel.getBoundingClientRect().top - 8)}px`));
+    };
+    fit();
+    addEventListener('scroll', fit, { passive: true });
+    addEventListener('resize', fit);
+    return () => {
+      cancelAnimationFrame(frame);
+      removeEventListener('scroll', fit);
+      removeEventListener('resize', fit);
+      ingPanel.style.removeProperty('--col-room');
     };
   });
 
@@ -593,7 +654,7 @@
             Method<span class="count fig" aria-hidden="true">{recipe.steps.length}</span>
           </button>
           </div>
-          <a class="btn primary tab-cook" class:shown={tabCookShown} href={cookFrom(readingStep)} use:link aria-keyshortcuts="c" title={readingStep > 1 ? `Cook from step ${readingStep} (C)` : 'Begin cooking (C)'}>{readingStep > 1 ? `Cook from ${readingStep}` : 'Cook'}</a>
+          <a class="btn primary tab-cook" class:shown={tabCookShown} href={cookFrom(readingStep)} use:link aria-keyshortcuts="c" title="{cookLabel} (C)">{#if readingStep > 1}Cook<span class="cook-from">{`\u00a0from step ${readingStep}`}</span>{:else}{cookLabel}{/if}</a>
         </div>
       {/if}
       <!-- Keys scroll the column from Show as written, or from its foot. -->
@@ -608,7 +669,7 @@
             {#if below}<button class="below-btn" class:raised={colCookShown} onclick={moreBelow} aria-label="{below} more {below === 1 ? 'ingredient' : 'ingredients'} below; show them">{below} more<ArrowDown size={15} aria-hidden="true" /></button>{/if}
             {#if !narrow}
               <div class="col-cook" class:shown={colCookShown} inert={!colCookShown}>
-                <a class="btn primary" href={cookFrom(readingStep)} use:link aria-keyshortcuts="c" title="{readingStep > 1 ? `Cook from step ${readingStep}` : 'Begin cooking'} (C)">{readingStep > 1 ? `Cook from step ${readingStep}` : 'Begin cooking'}</a>
+                <a class="btn primary" href={cookFrom(readingStep)} use:link aria-keyshortcuts="c" title="{cookLabel} (C)">{cookLabel}</a>
               </div>
             {/if}
           </div>
@@ -672,7 +733,7 @@
       </div>
     {/if}
     {#if tabbed}
-      <dialog class="ing-sheet" bind:this={sheet} aria-labelledby="sheet-h" class:tall={sheetTall} class:dragging style:transform={drag > 0 ? `translateY(${drag}px)` : null} style:max-height={drag < 0 ? `min(85dvh, ${dragBase - drag}px)` : null} onclick={(e) => e.target === sheet && closeSheet()} onclose={sheetClosed}>
+      <dialog class="ing-sheet" bind:this={sheet} aria-labelledby="sheet-h" class:tall={sheetTall} class:dragging style:transform={drag > 0 ? `translateY(${drag}px)` : null} style:max-height={drag < 0 ? `min(85dvh, ${dragBase - drag}px)` : null} onpointerdown={(e) => (pressedBackdrop = e.target === sheet)} onclick={(e) => e.target === sheet && pressedBackdrop && closeSheet()} onclose={sheetClosed}>
         <!-- Pull the head up for more of the list or down to close, as with
              any sheet; the handle is also a button, and Escape and Back to the
              method close it from the keyboard. -->
@@ -694,7 +755,7 @@
           {#if readingStep > 1}<p class="sheet-at" id="sheet-at"><span class="fig">Step {readingStep}</span> · {stepWords(readingStep)}</p>{/if}
           <!-- svelte-ignore a11y_autofocus -->
           <button class="btn sheet-close" autofocus onclick={closeSheet}>Back to the method</button>
-          <a class="btn sheet-cook" href={cookFrom(readingStep)} use:link aria-describedby={readingStep > 1 ? 'sheet-at' : undefined}>{readingStep > 1 ? `Cook from step ${readingStep}` : 'Begin cooking'}</a>
+          <a class="btn primary sheet-cook" href={cookFrom(readingStep)} use:link aria-describedby={readingStep > 1 ? 'sheet-at' : undefined}>{cookLabel}</a>
         </div>
       </dialog>
     {/if}
@@ -951,6 +1012,7 @@
     top: var(--space-4);
   }
   .tab-cook {
+    gap: 0;
     align-self: center;
     min-height: 44px;
     margin-block: var(--space-1);
@@ -997,18 +1059,31 @@
        scroll under it (the edge sits inside the panel's padding). */
     .ingredients .sect {
       position: sticky;
-      top: calc(var(--space-4) * -1);
+      top: calc(var(--col-head, 0px) - var(--space-4) - 3px);
       z-index: 1;
       background: var(--ticket);
     }
-    /* Paper under a stuck heading, as deep as a row's own top space, then a
-       short fade, so a row passing under it goes rather than being cut. */
-    .ingredients .sect::after {
+    .ingredients .col-head + .sect {
+      top: calc(var(--col-head, 0px) - var(--space-4));
+    }
+    /* The column's head stays too, so Show as written is in reach however
+       far the list has scrolled; a group's rule tucks under its own. */
+    .ingredients .col-head {
+      position: sticky;
+      top: calc(var(--space-4) * -1);
+      z-index: 2;
+      margin-top: calc(var(--space-4) * -1);
+      padding-top: var(--space-4);
+      background: var(--ticket);
+    }
+    /* Paper under a heading once it has stuck, a line deep, then a short
+       fade, so a row passing under it goes rather than being cut. */
+    .ingredients .sect:global(.stuck)::after {
       content: '';
       position: absolute;
       inset: 100% 0 auto;
-      height: var(--space-3);
-      background: linear-gradient(var(--ticket) var(--space-2), transparent);
+      height: var(--space-5);
+      background: linear-gradient(var(--ticket) var(--space-4), transparent);
       pointer-events: none;
     }
     /* Without a photo the ticket is as wide as what's on it, not a band of
@@ -1042,7 +1117,7 @@
   .ingredients {
     position: sticky;
     top: calc(var(--bar) + var(--space-4));
-    max-height: calc(100dvh - var(--bar) - var(--space-6));
+    max-height: min(calc(100dvh - var(--bar) - var(--space-6)), var(--col-room, 100dvh));
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-width: thin;
@@ -1349,6 +1424,7 @@
     flex: none;
     padding: 0 var(--gutter);
     touch-action: none;
+    user-select: none;
     cursor: grab;
   }
   .handle {
@@ -1407,12 +1483,12 @@
     z-index: 1;
     background: var(--ticket);
   }
-  .sheet-in .sect::after {
+  .sheet-in .sect:global(.stuck)::after {
     content: '';
     position: absolute;
     inset: 100% 0 auto;
-    height: var(--space-3);
-    background: linear-gradient(var(--ticket) var(--space-2), transparent);
+    height: var(--space-5);
+    background: linear-gradient(var(--ticket) var(--space-4), transparent);
     pointer-events: none;
   }
   .sheet-in > .sect:first-child {
@@ -1641,14 +1717,55 @@
       align-self: start;
     }
   }
+  /* A phone: the strip holds both tabs and "Cook from step 12", so the tabs
+     drop their counts (the Ingredients bar and the tab's name still give
+     them) and sit a little closer. */
+  @media (max-width: 480px) {
+    .tabs .count {
+      display: none;
+    }
+    .tablist {
+      gap: var(--space-5);
+    }
+    .tab-cook {
+      padding-inline: var(--space-4);
+    }
+  }
+  @media (max-width: 389px) {
+    .tablist {
+      gap: var(--space-4);
+    }
+    .tabs button {
+      padding-inline: 0;
+    }
+    .tab-cook {
+      padding-inline: var(--space-3);
+      font-size: 0.9375rem;
+    }
+  }
+  /* The narrowest phones have room for Cook alone; the step is still in its
+     name for a screen reader, and on the sheet. */
+  @media (max-width: 359px) {
+    .cook-from {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+  }
   /* An iPad held upright: the Ingredients bar is a button at the corner, not
-     a band across the screen, and the steps are set larger for reading at
-     arm's length from the counter. */
-  @media (min-width: 761px) and (max-width: 900px) {
+     a band across the screen. */
+  /* Wherever the pointer is a finger, the steps are set larger, for reading
+     at arm's length from the counter: a phone, an iPad either way up. */
+  @media (pointer: coarse) {
     .method li p {
       font-size: 1.1875rem;
       line-height: 1.5;
     }
+  }
+  @media (min-width: 761px) and (max-width: 900px) {
     /* Lines end short of the Ingredients button in the corner. */
     .method[role='tabpanel'] li {
       grid-template-columns: 2.25rem minmax(0, 50ch);
