@@ -21,7 +21,8 @@ the UI built: `cd web && npm run build && cd .. && go run ./cmd/sous --port
    - URL is `/r/<id>`; title, cover image, ingredients and steps show.
    - On phones the photo is a small square beside the title, so the facts
      and Begin cooking show in the first screen.
-   - The colophon reads "Added by Sous …", never `_sous`.
+   - The colophon reads "A sample recipe that came with Sous.", never
+     `_sous`.
    - The notes hold the original text and the source citation.
    - On phones, past the header, Ingredients and Method are tabs that stick
      under the masthead; switching keeps each tab's place. The masthead
@@ -67,7 +68,7 @@ the UI built: `cd web && npm run build && cd .. && go run ./cmd/sous --port
 
 1. Open `/import`.
    - The link field, Fetch button and the "Send recipes from anywhere"
-     panel (bookmarklet, iOS Shortcut) show.
+     panel (a desktop-browser bookmark, iOS Shortcut) show.
 2. Fetch `http://127.0.0.1/` (a loopback link).
    - A clear refusal message, then the paste box. Nothing is saved.
 
