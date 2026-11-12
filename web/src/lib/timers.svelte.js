@@ -2,14 +2,18 @@
 // independently of which step is showing, and loud when they finish.
 
 const WORDS = { a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, fifteen: 15, twenty: 20, thirty: 30, forty: 40, 'forty-five': 45 };
-const NUM = String.raw`(\d+(?:\.\d+)?|\d+\s*½|½|a|an|one|two|three|four|five|six|seven|eight|nine|ten|fifteen|twenty|thirty|forty|forty-five)`;
+const NUM = String.raw`(\d+\s+\d\/\d|\d\/\d|\d+(?:\.\d+)?\s*[¼½¾]|[¼½¾]|\d+(?:\.\d+)?|a|an|one|two|three|four|five|six|seven|eight|nine|ten|fifteen|twenty|thirty|forty|forty-five)`;
 const RE = new RegExp(String.raw`\b${NUM}(?:\s*(?:to|-|–|or)\s*${NUM})?\s*(seconds?|secs?|minutes?|mins?|hours?|hrs?)\b`, 'gi');
 
 function num(s) {
   if (!s) return null;
   s = s.toLowerCase().trim();
   if (s in WORDS) return WORDS[s];
-  if (s.includes('½')) return (parseFloat(s) || 0) + 0.5;
+  // "2 1/2", "1/2", "2½": a whole number and a fraction.
+  const frac = s.match(/^(?:(\d+)\s+)?(\d)\/(\d)$/);
+  if (frac) return (Number(frac[1]) || 0) + frac[2] / frac[3];
+  const glyph = { '¼': 0.25, '½': 0.5, '¾': 0.75 }[s.at(-1)];
+  if (glyph) return (parseFloat(s) || 0) + glyph;
   return parseFloat(s);
 }
 

@@ -143,7 +143,10 @@
         sessionStorage.removeItem(KEY);
       } catch {}
     }
-    go(`/r/${id}`);
+    // Back on the recipe, the method opens at the step you left, unless the
+    // cook is done.
+    const at = Math.min(step + 1, total);
+    go(done || at < 2 ? `/r/${id}` : `/r/${id}?step=${at}`);
   }
 
   async function stay() {

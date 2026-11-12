@@ -58,9 +58,13 @@ include breaking changes, and they're called out here.
   button with the tabs hides while it's in view. Tap
   targets on the recipe page are at least 44px.
 - Begin cooking also closes the method, so you can start from where you read.
-- Partway down the method on a phone or tablet, the Cook button with the
-  tabs and the ingredient sheet offer "Cook from step 7": cook mode opens at
-  the step you were reading.
+- Partway down the method, the recipe offers "Cook from step 7": cook mode
+  opens at the step you were reading. On a phone or tablet it's the Cook
+  button with the tabs and the ingredient sheet; on a laptop or an iPad in
+  landscape, the foot of the ingredients column. The sheet names a step you
+  can still see above it, and its first words ("Step 6 · Bring to a
+  simmer…"), and C cooks from that step too. Leaving cook mode brings you
+  back to the method at the step you'd got to.
 - Reading the method on a phone, a small scroll back up to re-read a line
   no longer brings the masthead down over it.
 - A short recipe shows one Begin cooking, not a second one just below it,
@@ -125,6 +129,14 @@ include breaking changes, and they're called out here.
   the leave prompt there says Stay.
 
 ### Fixed
+- After the recipe page's list of keys (?) or the ingredient sheet was
+  closed, the page's keys stopped working until you clicked the page.
+- A cook mode timer for "2 1/2 to 3 hours" ran for 2 hours; written
+  fractions (1/2, 2 1/2, 1¼) now count.
+- Group headings that stay at the top of an ingredient list no longer show
+  the tops of the row passing under them.
+- Screen readers hear the description's and the notes' Show all apart, and
+  the tabs' names without a stray pause.
 - In cook mode, a new step opens at its top; it could open scrolled down
   from the last step, hiding its number.
 - A course in the library lists the recipes its count says it has: those

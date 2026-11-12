@@ -246,8 +246,10 @@
   function openSheet() {
     if (!sheet) return;
     sheetTall = false;
-    readingStep = stepNow();
     sheet.showModal();
+    // The step to cook from is one you can still see above the sheet, not
+    // the one at the reading line, which the sheet now covers.
+    readingStep = stepNow(innerHeight - sheet.offsetHeight - 24); // its first line in view
     // Open at the ingredients for the part of the method you're reading. A
     // last group can't reach the top; it shows whole at the foot instead.
     if (!sheetList) return;
@@ -265,6 +267,10 @@
     if (above) sheetList.scrollTo({ top: above.el === sheetList.querySelector('h3.sect') ? 0 : groupTop(above.el) + 3, behavior: still() ? 'auto' : 'smooth' });
   }
   const closeSheet = () => sheet?.close();
+  function sheetClosed() {
+    sheetTall = false;
+    readingStep = stepNow();
+  }
   // The pointer is captured only once the pull has begun, so a tap on a
   // button in the head (the handle, the group above) stays a tap.
   function dragStart(e) {
@@ -295,25 +301,29 @@
   }
 
   // The step at the reading line, a little under halfway down the screen,
-  // so "Cook from step 7" starts cook mode where you are.
+  // so "Cook from step 7" starts cook mode where you are: in the Method tab,
+  // and side by side, where the ingredients column offers it.
   let readingStep = $state(1);
-  function stepNow() {
+  const tracking = $derived((tabbed && tab === 'method') || (!narrow && !!recipe));
+  function stepNow(line = innerHeight * 0.45) {
     let n = 1;
     for (const [k, li] of [...(methodPanel?.querySelectorAll('ol > li') ?? [])].entries()) {
-      if (li.getBoundingClientRect().top > innerHeight * 0.45) break;
+      if (li.getBoundingClientRect().top > line) break;
       n = k + 1;
     }
     return n;
   }
   $effect(() => {
-    if (!tabbed || tab !== 'method') {
+    if (!tracking) {
       readingStep = 1;
       return;
     }
     let frame = 0;
     const read = () => {
       cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => (readingStep = stepNow()));
+      frame = requestAnimationFrame(() => {
+        if (!sheet?.open) readingStep = stepNow();
+      });
     };
     read();
     addEventListener('scroll', read, { passive: true });
@@ -323,6 +333,44 @@
     };
   });
   const cookFrom = (n) => (n > 1 ? `/r/${id}/cook?step=${n}` : `/r/${id}/cook`);
+  // A step's first words, to say which one "Cook from step 7" means.
+  function stepWords(n) {
+    const t = (recipe?.steps[n - 1]?.text ?? '').replace(/\[([^\]]*)\]\([^)]*\)/g, '$1').replace(/[*_`#>]/g, '').trim();
+    const clause = t.split(/[,.;:(]/)[0].trim();
+    const words = clause.split(/\s+/);
+    if (words.length <= 5) return clause;
+    const cut = words.slice(0, 5);
+    while (cut.length > 2 && /^(a|an|the|on|in|of|to|at|for|with|and|or|into|onto|over)$/i.test(cut.at(-1))) cut.pop();
+    return `${cut.join(' ')}…`;
+  }
+  // Side by side, once the header's Begin cooking has gone and before the
+  // one after the last step arrives, the ingredients column's foot offers
+  // the hand-off: the one red button in view.
+  const colCookShown = $derived(!narrow && !headInView && !endInView);
+
+  // Back from cook mode (?step=7), the method opens at the step you left,
+  // at the reading line. The address drops it, as cook mode's does.
+  let backTo = (() => {
+    const n = parseInt(new URLSearchParams(location.search).get('step') ?? '', 10);
+    if (!(n >= 1)) return null;
+    history.replaceState(history.state, '', location.pathname);
+    return n;
+  })();
+  $effect(() => {
+    if (!backTo || !recipe || !methodPanel || (narrow && fits === null)) return;
+    const n = backTo;
+    backTo = null;
+    (async () => {
+      if (tabbed) {
+        tab = 'method';
+        await tick();
+      }
+      const li = methodPanel.querySelectorAll('ol > li')[n - 1];
+      if (!li) return;
+      const under = stickTop() + (tabbed ? (tabs?.offsetHeight ?? 0) : 0) + 16;
+      scrollQuietly(li.getBoundingClientRect().top + scrollY - Math.max(under, innerHeight * 0.45 - 32));
+    })();
+  });
 
   // Reading the method on a phone, a nudge back up doesn't bring the
   // masthead down over the line you're on.
@@ -370,7 +418,9 @@
       return;
     }
     overflowing = ingPanel.scrollHeight > ingPanel.clientHeight + 1;
-    const edge = ingPanel.getBoundingClientRect().bottom - 8;
+    // Rows under the Cook band count as below too.
+    const band = ingPanel.querySelector('.col-cook.shown')?.offsetHeight ?? 0;
+    const edge = ingPanel.getBoundingClientRect().bottom - 8 - band;
     below = overflowing ? [...ingPanel.querySelectorAll('li')].filter((li) => li.getBoundingClientRect().top > edge - 24).length : 0;
   }
   $effect(() => {
@@ -379,6 +429,7 @@
       return;
     }
     asWritten;
+    colCookShown;
     measureBelow();
     const ro = new ResizeObserver(measureBelow);
     ro.observe(ingPanel);
@@ -418,7 +469,7 @@
   // Keys, as in the library and cook mode. ? lists them.
   let keysDialog = $state();
   const KEYS = $derived([
-    ['C', 'Begin cooking'],
+    ['C', tabbed || !narrow ? 'Cook, from the step you’re reading' : 'Begin cooking'],
     ['E', 'Edit the recipe'],
     ['F', 'Favorite, or not'],
     ['W', 'Want to cook, or not'],
@@ -429,9 +480,9 @@
   function onkey(e) {
     if (!recipe || session.asking || e.altKey || e.ctrlKey || e.metaKey) return;
     const el = e.target;
-    if (el.closest?.('input, textarea, select, [contenteditable], dialog')) return;
+    if (el.closest?.('input, textarea, select, [contenteditable], dialog[open]')) return;
     const k = e.key.toLowerCase();
-    if (k === 'c') go(`/r/${id}/cook`);
+    if (k === 'c') go(cookFrom(readingStep));
     else if (k === 'e') go(`/r/${id}/edit`);
     else if ((k === 'f' || k === 'w') && !isOffline()) toggle(k === 'f' ? 'favorite' : 'want_to_cook', true);
     else if (k === 'a') asWritten = !asWritten;
@@ -523,7 +574,7 @@
         {#if recipe.description}
           <div class="desc-wrap" class:clipped={descClipped && !descOpen}>
             <p class="desc" class:open={descOpen} class:fade-end={descClipped && !descOpen} id="desc" bind:this={descEl}><Markdown text={recipe.description} /></p>
-            {#if descLong}<button class="more" aria-expanded={descOpen} aria-controls="desc" onclick={() => (descOpen = !descOpen)}>{descOpen ? 'Show less' : 'Show all'}</button>{/if}
+            {#if descLong}<button class="more" aria-expanded={descOpen} aria-controls="desc" onclick={() => (descOpen = !descOpen)}>{descOpen ? 'Show less' : 'Show all'}<span class="visually-hidden">{' of the description'}</span></button>{/if}
           </div>
         {/if}
       </div>
@@ -535,25 +586,32 @@
         <div class="tabs-at" bind:this={tabsAt}></div>
         <div class="tabs" bind:this={tabs}>
           <div class="tablist" role="tablist" aria-label="Recipe">
-          <button role="tab" id="tab-ingredients" aria-selected={tab === 'ingredients'} aria-controls="panel-ingredients" tabindex={tab === 'ingredients' ? 0 : -1} onkeydown={tabKey} onclick={() => show('ingredients')}>
-            Ingredients<span class="count fig" aria-hidden="true">{recipe.ingredients.filter((i) => i.item).length}</span><span class="visually-hidden">{`, ${recipe.ingredients.filter((i) => i.item).length} items`}</span>
+          <button role="tab" id="tab-ingredients" aria-label="Ingredients, {recipe.ingredients.filter((i) => i.item).length} items" aria-selected={tab === 'ingredients'} aria-controls="panel-ingredients" tabindex={tab === 'ingredients' ? 0 : -1} onkeydown={tabKey} onclick={() => show('ingredients')}>
+            Ingredients<span class="count fig" aria-hidden="true">{recipe.ingredients.filter((i) => i.item).length}</span>
           </button>
-          <button role="tab" id="tab-method" aria-selected={tab === 'method'} aria-controls="panel-method" tabindex={tab === 'method' ? 0 : -1} onkeydown={tabKey} onclick={() => show('method')}>
-            Method<span class="count fig" aria-hidden="true">{recipe.steps.length}</span><span class="visually-hidden">{`, ${recipe.steps.length} ${recipe.steps.length === 1 ? 'step' : 'steps'}`}</span>
+          <button role="tab" id="tab-method" aria-label="Method, {recipe.steps.length} {recipe.steps.length === 1 ? 'step' : 'steps'}" aria-selected={tab === 'method'} aria-controls="panel-method" tabindex={tab === 'method' ? 0 : -1} onkeydown={tabKey} onclick={() => show('method')}>
+            Method<span class="count fig" aria-hidden="true">{recipe.steps.length}</span>
           </button>
           </div>
-          <a class="btn primary tab-cook" class:shown={tabCookShown} href={cookFrom(readingStep)} use:link aria-keyshortcuts="c" title={readingStep > 1 ? `Cook from step ${readingStep}` : 'Begin cooking (C)'}>{readingStep > 1 ? `Cook from ${readingStep}` : 'Cook'}</a>
+          <a class="btn primary tab-cook" class:shown={tabCookShown} href={cookFrom(readingStep)} use:link aria-keyshortcuts="c" title={readingStep > 1 ? `Cook from step ${readingStep} (C)` : 'Begin cooking (C)'}>{readingStep > 1 ? `Cook from ${readingStep}` : 'Cook'}</a>
         </div>
       {/if}
       <!-- Keys scroll the column from Show as written, or from its foot. -->
-      <section id="panel-ingredients" class="ingredients sheet" role={tabbed ? 'tabpanel' : undefined} aria-labelledby={tabbed ? 'tab-ingredients' : 'ing-h'} hidden={tabbed && tab !== 'ingredients'} bind:this={ingPanel}>
+      <section id="panel-ingredients" class="ingredients sheet" class:cooking={colCookShown} role={tabbed ? 'tabpanel' : undefined} aria-labelledby={tabbed ? 'tab-ingredients' : 'ing-h'} hidden={tabbed && tab !== 'ingredients'} bind:this={ingPanel}>
         <div class="col-head">
           <h2 id="ing-h" class="label">Ingredients{#if !tabbed}<span class="steps">{recipe.ingredients.filter((i) => i.item).length}</span>{/if}</h2>
           <button class="as-written" aria-keyshortcuts="a" title="Show as written or tidied (A)" onclick={() => (asWritten = !asWritten)}>{asWritten ? 'Show tidied' : 'Show as written'}</button>
         </div>
         {@render ingredientList()}
-        {#if below}
-          <div class="below"><button class="below-btn" onclick={moreBelow} aria-label="{below} more {below === 1 ? 'ingredient' : 'ingredients'} below; show them">{below} more<ArrowDown size={15} aria-hidden="true" /></button></div>
+        {#if below || !narrow}
+          <div class="below">
+            {#if below}<button class="below-btn" class:raised={colCookShown} onclick={moreBelow} aria-label="{below} more {below === 1 ? 'ingredient' : 'ingredients'} below; show them">{below} more<ArrowDown size={15} aria-hidden="true" /></button>{/if}
+            {#if !narrow}
+              <div class="col-cook" class:shown={colCookShown} inert={!colCookShown}>
+                <a class="btn primary" href={cookFrom(readingStep)} use:link aria-keyshortcuts="c" title="{readingStep > 1 ? `Cook from step ${readingStep}` : 'Begin cooking'} (C)">{readingStep > 1 ? `Cook from step ${readingStep}` : 'Begin cooking'}</a>
+              </div>
+            {/if}
+          </div>
         {/if}
       </section>
 
@@ -563,7 +621,7 @@
         {#if recipe.notes}
           <div class="col-head">
             <h2 class="label">Notes</h2>
-            {#if notesLong}<button class="as-written" aria-expanded={notesOpen} aria-controls="notes" onclick={() => (notesOpen = !notesOpen)}>{notesOpen ? 'Show less' : 'Show all'}</button>{/if}
+            {#if notesLong}<button class="as-written" aria-expanded={notesOpen} aria-controls="notes" onclick={() => (notesOpen = !notesOpen)}>{notesOpen ? 'Show less' : 'Show all'}<span class="visually-hidden">{' of the notes'}</span></button>{/if}
           </div>
           <div class="notes-block" id="notes">
             {#if notesOpen}
@@ -614,7 +672,7 @@
       </div>
     {/if}
     {#if tabbed}
-      <dialog class="ing-sheet" bind:this={sheet} aria-labelledby="sheet-h" class:tall={sheetTall} class:dragging style:transform={drag > 0 ? `translateY(${drag}px)` : null} style:max-height={drag < 0 ? `min(85dvh, ${dragBase - drag}px)` : null} onclick={(e) => e.target === sheet && closeSheet()} onclose={() => (sheetTall = false)}>
+      <dialog class="ing-sheet" bind:this={sheet} aria-labelledby="sheet-h" class:tall={sheetTall} class:dragging style:transform={drag > 0 ? `translateY(${drag}px)` : null} style:max-height={drag < 0 ? `min(85dvh, ${dragBase - drag}px)` : null} onclick={(e) => e.target === sheet && closeSheet()} onclose={sheetClosed}>
         <!-- Pull the head up for more of the list or down to close, as with
              any sheet; the handle is also a button, and Escape and Back to the
              method close it from the keyboard. -->
@@ -623,7 +681,7 @@
           <button class="handle" aria-label={sheetTall ? 'Show less of the list' : 'Show more of the list'} aria-expanded={sheetTall} onclick={() => (sheetTall = !sheetTall)}><span aria-hidden="true"></span></button>
           <div class="sheet-title">
             <h2 id="sheet-h" class="label">Ingredients</h2>
-            {#if above}<button class="as-written" onclick={toAbove}>{above.name}<ArrowUp size={14} aria-hidden="true" /></button>{/if}
+            {#if above}<button class="as-written" aria-label="Back up to {above.name}" onclick={toAbove}>{above.name}<ArrowUp size={14} aria-hidden="true" /></button>{/if}
           </div>
         </div>
         <div class="sheet-in" bind:this={sheetList} onscroll={sheetScrolled}>
@@ -633,9 +691,10 @@
              method without scrolling the list. Cook from the step you were
              reading hands over to cook mode. -->
         <div class="sheet-foot">
+          {#if readingStep > 1}<p class="sheet-at" id="sheet-at"><span class="fig">Step {readingStep}</span> · {stepWords(readingStep)}</p>{/if}
           <!-- svelte-ignore a11y_autofocus -->
           <button class="btn sheet-close" autofocus onclick={closeSheet}>Back to the method</button>
-          <a class="btn sheet-cook" href={cookFrom(readingStep)} use:link>{readingStep > 1 ? `Cook from step ${readingStep}` : 'Begin cooking'}</a>
+          <a class="btn sheet-cook" href={cookFrom(readingStep)} use:link aria-describedby={readingStep > 1 ? 'sheet-at' : undefined}>{readingStep > 1 ? `Cook from step ${readingStep}` : 'Begin cooking'}</a>
         </div>
       </dialog>
     {/if}
@@ -942,6 +1001,16 @@
       z-index: 1;
       background: var(--ticket);
     }
+    /* Paper under a stuck heading, as deep as a row's own top space, then a
+       short fade, so a row passing under it goes rather than being cut. */
+    .ingredients .sect::after {
+      content: '';
+      position: absolute;
+      inset: 100% 0 auto;
+      height: var(--space-3);
+      background: linear-gradient(var(--ticket) var(--space-2), transparent);
+      pointer-events: none;
+    }
     /* Without a photo the ticket is as wide as what's on it, not a band of
        empty paper; it hangs at the middle of the rail. */
     .top:not(.has-photo) {
@@ -1008,6 +1077,51 @@
   }
   .below-btn:hover {
     color: var(--red);
+  }
+  /* Side by side, mid-method, the foot offers the hand-off to cook mode on a
+     band of its own; the list makes room for it, and "N more" sits above. */
+  .ingredients {
+    --cook-band: 4.5rem;
+  }
+  /* The room is the foot's own margin, not the panel's padding: a sticky
+     foot can't sink into padding, so at the list's end the band would float
+     above the panel's edge. */
+  .ingredients.cooking {
+    padding-bottom: 0;
+  }
+  .ingredients.cooking .below {
+    margin-top: calc(var(--space-6) + var(--cook-band));
+    bottom: 0;
+  }
+  .below-btn.raised {
+    bottom: var(--cook-band);
+    border-bottom: 0;
+  }
+  .col-cook {
+    position: absolute;
+    bottom: 0;
+    left: calc(var(--space-5) * -1);
+    right: calc(var(--space-5) * -1);
+    height: var(--cook-band);
+    display: flex;
+    align-items: center;
+    padding: 0 var(--space-5);
+    border-top: 1px solid var(--perf);
+    background: var(--ticket);
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity 160ms var(--ease-out),
+      visibility 0s 160ms;
+  }
+  .col-cook.shown {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 160ms var(--ease-out);
+  }
+  .col-cook .btn {
+    flex: 1;
+    min-height: 48px;
   }
   .col-head {
     display: flex;
@@ -1293,6 +1407,14 @@
     z-index: 1;
     background: var(--ticket);
   }
+  .sheet-in .sect::after {
+    content: '';
+    position: absolute;
+    inset: 100% 0 auto;
+    height: var(--space-3);
+    background: linear-gradient(var(--ticket) var(--space-2), transparent);
+    pointer-events: none;
+  }
   .sheet-in > .sect:first-child {
     top: 0;
   }
@@ -1320,6 +1442,21 @@
   .sheet-cook {
     width: 100%;
     min-height: 52px;
+  }
+  /* Which step Cook from means, by its first words: the step itself may be
+     under the sheet's top edge. */
+  .sheet-at {
+    grid-column: 1 / -1;
+    margin: 0 0 var(--space-1);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: 0.9375rem;
+    color: var(--ink-2);
+  }
+  .sheet-at .fig {
+    font-weight: 700;
+    color: var(--ink);
   }
   @media (prefers-reduced-motion: reduce) {
     .peek,
