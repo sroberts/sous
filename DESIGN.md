@@ -73,6 +73,11 @@ typography:
     lineHeight: 1
     letterSpacing: "-0.03em"
     fontVariation: "\"wdth\" 112"
+  code:
+    fontFamily: "ui-monospace, SF Mono, Menlo, Consolas, monospace"
+    fontSize: "0.8125rem"
+    fontWeight: 400
+    lineHeight: 1.5
 rounded:
   ticket: "0px"
   badge: "2px"
@@ -220,6 +225,7 @@ A cool, near-monochrome kitchen palette (grey counter, white paper, black print)
 **Display Font:** Archivo Variable (with Archivo, system-ui)
 **Body Font:** Archivo Variable
 **Label/Mono Font:** Archivo Variable, as tracked capitals and as condensed figures
+**Code Font:** the system monospace (ui-monospace, SF Mono, Menlo, Consolas), only for set-up snippets that are copied as they stand (the assistant page's commands and config). It is never used for display or for figures.
 
 **Character:** One grotesque doing every job by width and weight: a ticket printer's heavy condensed numerals beside plain, sturdy reading text.
 
@@ -307,7 +313,9 @@ The recipe's figures read across the top of a ticket in fixed cells: label over 
 A 10px steel bar (`steel-hi` to `steel` to `steel-lo`) with tickets overlapping it by 4px, each held by a centred steel clip. Rail tickets show a big time figure and ingredient count, a perforation, then the title and source; on hover a ticket swings 1deg from its clip (240ms). In cook mode a new step fires onto the rail with a short slide and settle (420ms); queued steps hang beside it with their text in `ink-2`, then `ink-3`, so they recede without dropping below 4.5:1; timers hang in their own lane with a red clock (2.25rem, on a phone too), grey when paused, and turn solid red and swing when done. A timer's Pause and Cancel sit 12px apart, Cancel at the far edge.
 
 ### Import page
-`/import` is a plain page on paper, not a panel. With no link it holds one field and a primary Fetch button, with the "Send recipes from anywhere" section below: three closed ticket-white rows, each a one-time set-up (Desktop browser with the bookmarklet, iPhone and iPad with the Shortcut steps, Siri for saving without opening Sous). Each row reads its name at 800, a line of what it does in `ink-2` and an `ink-2` chevron that turns as it opens; open, a dashed perforation separates it from its steps. While a link is read it says "Reading <host>…" in a polite live region, and adds a slow-site note after 5 seconds. On success the banner sits above the ordinary editor; on failure it shows a ticket-voiced message for the error code, then the paste box.
+`/import` is a plain page on paper, not a panel. With no link it holds one field and a primary Fetch button, with the "Send recipes from anywhere" section below: three closed ticket-white rows, each a one-time set-up (Desktop browser with the bookmarklet, iPhone and iPad with the Shortcut steps, Siri for saving without opening Sous). Each row reads its name at 800, a line of what it does in `ink-2` and an `ink-2` chevron that turns as it opens; open, a dashed perforation separates it from its steps. While a link is read it says "Reading <host>…" in a polite live region, and adds a slow-site note after 5 seconds. On success the banner sits above the ordinary editor; on failure it shows a ticket-voiced message for the error code, then the paste box. A line under the set-ups points to connecting an AI assistant.
+
+`/assistants` (Connect an AI assistant, from the person menu and the Import page) is a plain page in the same build as `/import`. A ticket-white panel on a 3px `ink` rule holds the connection: the MCP address (this page's origin plus `/mcp`, or `http://127.0.0.1:<port>/mcp` under Outpost, where assistants connect on loopback) and the `X-Sous-Person` header naming who it acts for. Each has a quiet Copy button, which selects the text where the browser won't copy over plain http. Running on its own, an Acts for select picks anyone in the household. Below it, closed rows like the Import set-ups, one per client: Claude Code (one `claude mcp add` command), Claude Desktop (an `mcp-remote` bridge in its config file, since its Connectors reach servers from Anthropic's cloud), Crush (a `crush.json` entry), and ChatGPT, which says plainly that it can't reach Sous yet: it connects from OpenAI's servers and can't send the header. Each snippet sits on `pass` in the code font with its own Copy button, filled in with the real address and name.
 
 ### Import banner
 A thermal-white strip under a 3px black rule, above the editor. The headline reads "Read from <host>" with an external-link icon; beneath it, one line on how the page was read. Counts (ingredients, steps, sections) sit to the right as label-over-figure cells under 3px black rules, like Facts. Missing items and warnings follow a dashed perforation as icon rows (dashed circle for missing, triangle for warnings), 18px line icons in `ink-2`. A duplicate adds another perforated block: the existing recipe's title, then default buttons (Open it, Update it with this version, Save as new; Restore it if trashed), with chosen options `aria-pressed`. The recipe stays hidden until one is chosen. No colour is added; red stays with the primary action.

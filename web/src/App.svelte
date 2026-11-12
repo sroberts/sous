@@ -4,6 +4,7 @@
   import { registerWorker } from './lib/pwa.js';
   import Masthead from './components/Masthead.svelte';
   import WhoIsCooking from './components/WhoIsCooking.svelte';
+  import Assistants from './routes/Assistants.svelte';
   import Toast from './components/Toast.svelte';
   import Library from './routes/Library.svelte';
   import Recipe from './routes/Recipe.svelte';
@@ -60,6 +61,8 @@
 {:else if route.name === 'import'}
   <!-- A new ?url= is a new import, so the page starts over. -->
   {#key route.search.toString()}<Import />{/key}
+{:else if route.name === 'assistants'}
+  <Assistants />
 {/if}
 
 {#if session.asking}

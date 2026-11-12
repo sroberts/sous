@@ -3,6 +3,7 @@
   // a bookmarklet for desktop browsers and a Shortcut for the iOS Share sheet, and a Siri Shortcut that saves without opening Sous.
   import { Bookmark, ChevronDown } from '@lucide/svelte';
   import SaveToSous from './SaveToSous.svelte';
+  import { link } from '../lib/router.svelte.js';
 
   const origin = location.origin;
 
@@ -50,6 +51,7 @@
       <SaveToSous />
     </details>
   </div>
+  <p class="more">An AI assistant can import links too, and search and edit the library: <a href="/assistants" use:link>connect one</a>.</p>
 </section>
 
 <style>
@@ -124,6 +126,15 @@
   }
   .way p {
     max-width: 60ch;
+  }
+  .more {
+    margin-top: var(--space-4);
+    font-size: 0.9375rem;
+    color: var(--ink-2);
+  }
+  .more a {
+    font-weight: 700;
+    color: var(--ink);
   }
   .bookmarklet {
     cursor: grab;

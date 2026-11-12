@@ -172,6 +172,7 @@
             <li role="none" class="note label">Signed in with Outpost</li>
             <li role="none"><a role="menuitem" href="{session.portal}/account">Account and sign out<ExternalLink size={16} aria-hidden="true" /></a></li>
             <li role="none"><a role="menuitem" href="{session.portal}/">All apps<ExternalLink size={16} aria-hidden="true" /></a></li>
+            <li role="none"><a role="menuitem" href="/assistants" use:link onclick={() => (menuOpen = false)}>Connect an AI assistant</a></li>
           </ul>
         {/if}
       {:else}
@@ -201,6 +202,7 @@
             </li>
           {/each}
           <li role="none"><button role="menuitem" onclick={() => ((session.asking = true), (menuOpen = false))}>Someone else…</button></li>
+          <li role="none" class="sep"><a role="menuitem" href="/assistants" use:link onclick={() => (menuOpen = false)}>Connect an AI assistant</a></li>
         </ul>
       {/if}
     {/if}
@@ -363,6 +365,11 @@
     font-size: var(--ui);
     color: var(--ink);
     text-decoration: none;
+  }
+  .menu .sep {
+    margin-top: var(--space-1);
+    padding-top: var(--space-1);
+    border-top: 1px solid var(--perf);
   }
   .menu .note {
     padding: var(--space-2) var(--space-4) var(--space-1);

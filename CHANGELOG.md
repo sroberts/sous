@@ -7,6 +7,12 @@ include breaking changes, and they're called out here.
 
 ## [Unreleased]
 
+### Added
+- A Connect an AI assistant page, in the person menu, shows how to connect
+  Claude Code, Claude Desktop or Crush to the library over MCP, with the
+  address and your name filled in and each set-up ready to copy. It says why
+  ChatGPT can't connect yet.
+
 ### Changed
 - The recipe page starts the recipe sooner: on a laptop or an iPad in
   landscape the ingredients and method now show in the first screen. The
