@@ -221,13 +221,27 @@
   // scrolled away; on a short recipe both can be on screen at once.
   $effect(() => {
     if (!headCook) return;
-    // Under the masthead counts as scrolled away.
-    const bar = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bar')) || 56;
-    // Half under it is gone: the next red button takes over as this one goes,
-    // not after the last sliver of it has.
-    const io = new IntersectionObserver(([e]) => (headInView = e.intersectionRatio >= 0.5), { rootMargin: `-${bar}px 0px 0px 0px`, threshold: [0, 0.5, 1] });
-    io.observe(headCook);
-    return () => io.disconnect();
+    // Under the masthead counts as scrolled away, and half under it is gone:
+    // the next red button takes over as this one goes, not after the last
+    // sliver of it has. Judged against where the masthead is now, since on
+    // a phone it slides away as you scroll down.
+    let frame = 0;
+    const check = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const r = headCook.getBoundingClientRect();
+        const shown = Math.min(r.bottom, innerHeight) - Math.max(r.top, stickTop());
+        headInView = shown >= r.height / 2;
+      });
+    };
+    check();
+    addEventListener('scroll', check, { passive: true });
+    addEventListener('resize', check);
+    return () => {
+      cancelAnimationFrame(frame);
+      removeEventListener('scroll', check);
+      removeEventListener('resize', check);
+    };
   });
 
   // In the Method tab the quantities are a tab away, so a bar at the foot of
@@ -282,9 +296,14 @@
     if (above) sheetList.scrollTo({ top: above.el === sheetList.querySelector('h3.sect') ? 0 : groupTop(above.el) + 3, behavior: still() ? 'auto' : 'smooth' });
   }
   const closeSheet = () => sheet?.close();
-  // Closed, the step stays the one you were reading until you scroll on.
+  // Closed, the page goes back where it was before the lift, so the step at
+  // the reading line is the one you were reading and a nudge doesn't move
+  // Cook from step N on to the next.
+  let liftedFrom = null;
   function sheetClosed() {
     sheetTall = false;
+    if (liftedFrom !== null) scrollQuietly(liftedFrom);
+    liftedFrom = null;
   }
   function liftStep(n) {
     const li = methodPanel?.querySelectorAll('ol > li')[n - 1];
@@ -293,28 +312,40 @@
     const under = stickTop() + (tabs?.offsetHeight ?? 0) + 12;
     // Already in view above the sheet, with a couple of its lines showing.
     if (top >= under && top <= innerHeight - sheet.offsetHeight - 64) return;
+    liftedFrom = scrollY;
     scrollQuietly(top + scrollY - under);
   }
-  // The pointer is captured only once the pull has begun, so a tap on a
-  // button in the head (the handle, the group above) stays a tap.
+  // A pull is followed on the window, not the head, so a quick flick that
+  // leaves the head in one move still counts, and a mouse let go anywhere
+  // ends it. Nothing is captured, so a tap on a button in the head (the
+  // handle, the group above) stays a tap.
   function dragStart(e) {
+    if (e.button !== 0) return;
     dragFrom = e.clientY;
     dragBase = sheet.offsetHeight;
+    addEventListener('pointermove', dragMove);
+    addEventListener('pointerup', dragEnd);
+    addEventListener('pointercancel', dragEnd);
   }
   function dragMove(e) {
     if (dragFrom === null) return;
     const d = e.clientY - dragFrom;
-    if (!dragging && Math.abs(d) > 6) {
-      dragging = true;
-      try {
-        e.currentTarget.setPointerCapture(e.pointerId);
-      } catch {}
-    }
+    if (!dragging && Math.abs(d) > 6) dragging = true;
     if (dragging) drag = d;
   }
+  // The click that ends a pull isn't a tap on whatever it was let go over.
+  const swallow = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+  };
   function dragEnd() {
+    removeEventListener('pointermove', dragMove);
+    removeEventListener('pointerup', dragEnd);
+    removeEventListener('pointercancel', dragEnd);
     if (dragFrom === null) return;
     if (dragging) {
+      addEventListener('click', swallow, { capture: true, once: true });
+      setTimeout(() => removeEventListener('click', swallow, { capture: true }));
       if (drag < -40) sheetTall = true;
       else if (drag > 80 && sheetTall) sheetTall = false;
       else if (drag > 80) closeSheet();
@@ -479,14 +510,29 @@
   // The column at the ingredients for a part of the method, its heading just
   // under the column's own (which stays at the top).
   let colKey = null;
+  let colWant = null; // where the column was sent, if it couldn't get there
   function alignColumn(key, instant = false) {
     colKey = key;
     const first = ingPanel.querySelector('[data-sect]');
     const g = ingPanel.querySelector(`[data-sect="${key}"]`);
     const head = ingPanel.querySelector('.col-head')?.offsetHeight ?? 0;
-    scrollColumn(!g || g === first ? 0 : groupTop(g) - head + 3, instant);
+    colWant = !g || g === first ? 0 : groupTop(g) - head + 3;
+    scrollColumn(colWant, instant);
   }
-  const moreBelow = () => scrollColumn(ingPanel.scrollTop + ingPanel.clientHeight * 0.75);
+  // The Cook band arriving gives the list more room to scroll: a last group
+  // that was held short of where it was sent goes the rest of the way, so
+  // the column lands the same however the timing falls.
+  $effect(() => {
+    colCookShown;
+    if (narrow || !ingPanel || colWant === null) return;
+    tick().then(() => {
+      if (colWant !== null && ingPanel.scrollTop < colWant - 2) scrollColumn(colWant, true);
+    });
+  });
+  const moreBelow = () => {
+    colWant = null;
+    scrollColumn(ingPanel.scrollTop + ingPanel.clientHeight * 0.75);
+  };
   $effect(() => {
     if (narrow || !ingPanel || !methodPanel || !ingKeys.size) return;
     // Seeded with nothing, so the column lines up with wherever the page
@@ -508,13 +554,21 @@
     };
   });
   // Before the column sticks, its foot would sit below the fold, and with it
-  // the Cook band: so it ends at the foot of the window from the start.
+  // the Cook band: so it ends at the foot of the window from the start, and
+  // at the foot of the panels' row at the page's end.
   $effect(() => {
     if (narrow || !ingPanel) return;
     let frame = 0;
     const fit = () => {
       cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => ingPanel.style.setProperty('--col-room', `${Math.max(240, innerHeight - ingPanel.getBoundingClientRect().top - 8)}px`));
+      frame = requestAnimationFrame(() => {
+        // At the page's end the panels' row ends before the window does; the
+        // column ends with it, so it stays pinned under the masthead rather
+        // than being pushed up under it.
+        const top = ingPanel.getBoundingClientRect().top;
+        const end = ingPanel.parentElement.getBoundingClientRect().bottom - (parseFloat(getComputedStyle(ingPanel).top) || 0);
+        ingPanel.style.setProperty('--col-room', `${Math.max(240, Math.min(innerHeight - top - 8, end))}px`);
+      });
     };
     fit();
     addEventListener('scroll', fit, { passive: true });
@@ -658,7 +712,7 @@
         </div>
       {/if}
       <!-- Keys scroll the column from Show as written, or from its foot. -->
-      <section id="panel-ingredients" class="ingredients sheet" class:cooking={colCookShown} role={tabbed ? 'tabpanel' : undefined} aria-labelledby={tabbed ? 'tab-ingredients' : 'ing-h'} hidden={tabbed && tab !== 'ingredients'} bind:this={ingPanel}>
+      <section id="panel-ingredients" class="ingredients sheet" class:cooking={colCookShown} role={tabbed ? 'tabpanel' : undefined} aria-labelledby={tabbed ? 'tab-ingredients' : 'ing-h'} hidden={tabbed && tab !== 'ingredients'} bind:this={ingPanel} onwheel={() => (colWant = null)} ontouchstart={() => (colWant = null)} onkeydown={() => (colWant = null)}>
         <div class="col-head">
           <h2 id="ing-h" class="label">Ingredients{#if !tabbed}<span class="steps">{recipe.ingredients.filter((i) => i.item).length}</span>{/if}</h2>
           <button class="as-written" aria-keyshortcuts="a" title="Show as written or tidied (A)" onclick={() => (asWritten = !asWritten)}>{asWritten ? 'Show tidied' : 'Show as written'}</button>
@@ -738,7 +792,7 @@
              any sheet; the handle is also a button, and Escape and Back to the
              method close it from the keyboard. -->
         <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <div class="sheet-head" onpointerdown={dragStart} onpointermove={dragMove} onpointerup={dragEnd} onpointercancel={dragEnd}>
+        <div class="sheet-head" onpointerdown={dragStart}>
           <button class="handle" aria-label={sheetTall ? 'Show less of the list' : 'Show more of the list'} aria-expanded={sheetTall} onclick={() => (sheetTall = !sheetTall)}><span aria-hidden="true"></span></button>
           <div class="sheet-title">
             <h2 id="sheet-h" class="label">Ingredients</h2>
@@ -1076,14 +1130,15 @@
       padding-top: var(--space-4);
       background: var(--ticket);
     }
-    /* Paper under a heading once it has stuck, a line deep, then a short
-       fade, so a row passing under it goes rather than being cut. */
+    /* Under a heading once it has stuck, a fade, so a row passing under it
+       goes rather than being cut; shallow, so it doesn't read as an empty
+       row. */
     .ingredients .sect:global(.stuck)::after {
       content: '';
       position: absolute;
       inset: 100% 0 auto;
-      height: var(--space-5);
-      background: linear-gradient(var(--ticket) var(--space-4), transparent);
+      height: var(--space-4);
+      background: linear-gradient(var(--ticket) var(--space-1), transparent);
       pointer-events: none;
     }
     /* Without a photo the ticket is as wide as what's on it, not a band of
@@ -1487,8 +1542,8 @@
     content: '';
     position: absolute;
     inset: 100% 0 auto;
-    height: var(--space-5);
-    background: linear-gradient(var(--ticket) var(--space-4), transparent);
+    height: var(--space-4);
+    background: linear-gradient(var(--ticket) var(--space-1), transparent);
     pointer-events: none;
   }
   .sheet-in > .sect:first-child {
@@ -1743,6 +1798,30 @@
       font-size: 0.9375rem;
     }
   }
+  /* The narrowest phones: Begin cooking and the marks close up to fit the
+     row, and the title takes the width (a thumbnail would leave "Bourguignon"
+     136px); a word longer than the line still breaks rather than overflow. */
+  @media (max-width: 359px) {
+    .acts {
+      gap: var(--space-2);
+    }
+    .acts .mark {
+      width: 44px;
+    }
+    .acts .cook {
+      min-width: 0;
+      padding-inline: var(--space-2);
+    }
+    .top.has-photo {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .has-photo .photo {
+      display: none;
+    }
+    h1 {
+      overflow-wrap: break-word;
+    }
+  }
   /* The narrowest phones have room for Cook alone; the step is still in its
      name for a screen reader, and on the sheet. */
   @media (max-width: 359px) {
@@ -1755,16 +1834,24 @@
       white-space: nowrap;
     }
   }
-  /* An iPad held upright: the Ingredients bar is a button at the corner, not
-     a band across the screen. */
-  /* Wherever the pointer is a finger, the steps are set larger, for reading
-     at arm's length from the counter: a phone, an iPad either way up. */
+  /* Wherever the pointer is a finger, the steps and the ingredients are set
+     larger, for reading at arm's length from the counter: a phone, an iPad
+     either way up. Set on the row, so a step's 58ch measure grows with it. */
   @media (pointer: coarse) {
-    .method li p {
+    .method li {
       font-size: 1.1875rem;
+    }
+    .method li p {
       line-height: 1.5;
     }
+    .ingredients li,
+    .ing-sheet li {
+      font-size: 1.1875rem;
+      line-height: 1.45;
+    }
   }
+  /* An iPad held upright: the Ingredients bar is a button at the corner, not
+     a band across the screen. */
   @media (min-width: 761px) and (max-width: 900px) {
     /* Lines end short of the Ingredients button in the corner. */
     .method[role='tabpanel'] li {
