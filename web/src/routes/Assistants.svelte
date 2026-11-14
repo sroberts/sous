@@ -1,0 +1,463 @@
+<script>
+  // How to connect an AI assistant to the library over MCP (spec.md §9). The
+  // address and the header that names who it acts for are filled in from
+  // where this page was opened and who's cooking, so each set-up can be
+  // copied as it stands.
+  import { ChevronDown, Copy, Check } from '@lucide/svelte';
+  import { session } from '../lib/session.svelte.js';
+
+  const local = ['127.0.0.1', 'localhost', '[::1]', '::1'].includes(location.hostname);
+  // Under Outpost the gateway only lets in browser sign-ins, so assistants
+  // connect on loopback, on the machine running Sous (docs/agents.md).
+  const url = $derived(session.outpost ? 'http://127.0.0.1:<port>/mcp' : `${location.origin}/mcp`);
+
+  // Who the assistant acts for: whoever's cooking, or anyone in the
+  // household when Sous runs on its own.
+  let chosen = $state(null);
+  const username = $derived(session.outpost ? session.person?.username : (chosen ?? session.person?.username));
+  const who = $derived(username ?? '<username>');
+  const header = $derived(`X-Sous-Person: ${who}`);
+  const personName = $derived(session.people.find((p) => p.username === username)?.name ?? session.person?.name ?? username);
+
+  // mcp-remote refuses plain http except to localhost and 127.0.0.1 (not
+  // [::1]); the Outpost address is always 127.0.0.1.
+  const plainRemote = $derived(url.startsWith('http:') && !session.outpost && !['localhost', '127.0.0.1'].includes(location.hostname));
+
+  // Single-quoted for the shell, so a username from the Outpost login can't
+  // expand or end the argument when the command is pasted.
+  const sh = (s) => `'${s.replaceAll("'", `'\\''`)}'`;
+  // On two lines, so the header (and the name in it) starts its own line
+  // rather than breaking wherever the box ends.
+  const claudeCode = $derived(`claude mcp add --transport http sous ${sh(url)} \\\n  --header ${sh(header)}`);
+  const claudeDesktop = $derived(
+    JSON.stringify(
+      { mcpServers: { sous: { command: 'npx', args: ['-y', 'mcp-remote', url, '--header', `X-Sous-Person:${who}`, ...(plainRemote ? ['--allow-http'] : [])] } } },
+      null,
+      2,
+    ),
+  );
+  const crush = $derived(
+    JSON.stringify({ $schema: 'https://charm.land/crush.json', mcp: { sous: { type: 'http', url, headers: { 'X-Sous-Person': who } } } }, null, 2),
+  );
+
+  // Copy where the browser allows it (HTTPS or this machine); elsewhere,
+  // select the text so the keyboard's copy takes it.
+  const mac = /Mac|iPhone|iPad/.test(navigator.platform);
+  let copied = $state(null);
+  let said = $state('');
+  let timer;
+  async function copy(id, text) {
+    let message;
+    try {
+      await navigator.clipboard.writeText(text);
+      copied = id;
+      message = 'Copied.';
+    } catch {
+      const range = document.createRange();
+      range.selectNodeContents(document.getElementById(id));
+      getSelection().removeAllRanges();
+      getSelection().addRange(range);
+      copied = `sel:${id}`;
+      message = `Selected. Press ${mac ? 'Command' : 'Control'}-C to copy.`;
+    }
+    // Cleared first, so the same message is announced again.
+    said = '';
+    setTimeout(() => (said = message), 50);
+    clearTimeout(timer);
+    timer = setTimeout(() => (copied = null), 2500);
+  }
+</script>
+
+{#snippet copyBtn(id, text)}
+  <button type="button" class="btn copy" disabled={!username} onclick={() => copy(id, text)}>
+    {#if copied === id}<Check size={16} aria-hidden="true" />Copied{:else if copied === `sel:${id}`}Press {mac ? '⌘C' : 'Ctrl+C'}{:else}<Copy size={16} aria-hidden="true" />Copy{/if}
+  </button>
+{/snippet}
+
+{#snippet block(id, text, label)}
+  <div class="block" class:unready={!username}>
+    <!-- Kept as written, so a long line scrolls rather than breaking inside
+         an address; focusable so the keyboard can scroll it too. -->
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex (a scrolling region needs focus) -->
+    <pre id={id} tabindex="0" role="region" aria-label={label}>{text}</pre>
+    {@render copyBtn(id, text)}
+  </div>
+{/snippet}
+
+<main class="assistants" id="main">
+  <h1>Connect an AI assistant</h1>
+  <p class="lede">
+    An assistant on your own computer, like Claude Code or Crush, can search the library, read recipes, import links and make changes for one person in the household. Every change is signed with their name, and anything it deletes goes to the trash. Setting one up takes a terminal or a config file.
+  </p>
+
+  <!-- Until boot says whether Outpost is in front, the address could be the
+       gateway's, which assistants can't use. -->
+  {#if session.loaded}
+  <section class="panel conn" aria-labelledby="conn-h">
+    <h2 id="conn-h" class="label">Who it acts for</h2>
+    {#if !session.outpost && session.people.length}
+      <label class="fact">
+        <span class="k">Person</span>
+        <span class="pick">
+          <select value={username ?? ''} onchange={(e) => (chosen = e.currentTarget.value)}>
+            {#if !username}<option value="" disabled>Choose someone</option>{/if}
+            {#each session.people as p (p.username)}<option value={p.username}>{p.name}</option>{/each}
+          </select>
+          <ChevronDown size={18} aria-hidden="true" />
+        </span>
+      </label>
+      {#if !username}<p class="wait">Choose someone to fill in the set-ups below. Without a name, an assistant can only read.</p>{/if}
+      <p class="note">Only for this set-up; it doesn’t change who’s cooking here.</p>
+    {:else if username}
+      <p class="note">It acts for <b>{session.person.name}</b>, who’s signed in.</p>
+    {:else}
+      <p class="note">
+        An assistant acts for one person, and without a name it can only read.
+        {#if !session.people.length}<button type="button" class="text-btn" onclick={() => (session.asking = true)}>Add who’s cooking</button> to fill it in.{/if}
+      </p>
+    {/if}
+    {#if session.outpost}
+      <p class="note">
+        Under Outpost the login only lets in people with a browser, so an assistant connects on the machine running Sous. There, <code>outpost status sous</code> shows the port to use in place of <code>&lt;port&gt;</code>. If <code>SOUS_REQUIRE_GATEWAY</code> is set, this route is closed.
+      </p>
+    {:else if local}
+      <p class="note strong">These set-ups only work on this machine. For an assistant on another computer, open Sous at its tailnet address and copy them from there.</p>
+    {:else}
+      <p class="note">The assistant’s computer needs to be on your tailnet, the same as a browser.</p>
+    {/if}
+  </section>
+
+  <section class="setups" aria-labelledby="setups-h">
+    <h2 id="setups-h">Set up your assistant</h2>
+    <div class="ways">
+      <details class="way">
+        <summary><h3>Claude Code</h3><span class="what">One command in your terminal</span><ChevronDown class="chev" size={20} aria-hidden="true" /></summary>
+        <div class="inner">
+          <p>Run this, then type <code>/mcp</code> in Claude Code to see Sous connected.</p>
+          {@render block('cfg-claude-code', claudeCode, 'Claude Code command')}
+          <p class="hint">It’s added for the folder you run it in. Add <code>--scope user</code> to have Sous in every project.</p>
+        </div>
+      </details>
+
+      <details class="way">
+        <summary><h3>Claude Desktop</h3><span class="what">A bridge in its config file</span><ChevronDown class="chev" size={20} aria-hidden="true" /></summary>
+        <div class="inner">
+          <p>In Claude, open <b>Settings</b>, then <b>Developer</b>, then <b>Edit Config</b>. Put this in the file (merge it into <code>mcpServers</code> if you already have servers), save, and restart Claude.</p>
+          {@render block('cfg-claude-desktop', claudeDesktop, 'Claude Desktop config')}
+          <p class="hint">It needs Node.js installed. Claude’s Connectors setting reaches servers from Anthropic’s cloud, which can’t see your tailnet, so Sous goes in the config file instead.</p>
+        </div>
+      </details>
+
+      <details class="way">
+        <summary><h3>Crush</h3><span class="what">An entry in crush.json</span><ChevronDown class="chev" size={20} aria-hidden="true" /></summary>
+        <div class="inner">
+          <p>Add this to <code>crush.json</code> in your project, or to <code>~/.config/crush/crush.json</code> to have Sous everywhere. If the file already has an <code>mcp</code> section, add the <code>sous</code> entry to it.</p>
+          {@render block('cfg-crush', crush, 'Crush config')}
+        </div>
+      </details>
+
+      <details class="way">
+        <summary><h3>Another MCP client</h3><span class="what">The address and header</span><ChevronDown class="chev" size={20} aria-hidden="true" /></summary>
+        <div class="inner">
+          <p>Any client that can send a header works: give it these, with the Streamable HTTP transport.</p>
+          <div class="fact">
+            <span class="k">Address</span>
+            <code id="mcp-url">{url}</code>
+            {@render copyBtn('mcp-url', url)}
+          </div>
+          <div class="fact">
+            <span class="k">Header</span>
+            <code id="mcp-header">{header}</code>
+            {@render copyBtn('mcp-header', header)}
+          </div>
+        </div>
+      </details>
+
+      <details class="way">
+        <summary><h3>Check it works</h3><span class="what">A question to ask, and what goes wrong</span><ChevronDown class="chev" size={20} aria-hidden="true" /></summary>
+        <div class="inner">
+          <p>Once it’s set up, ask the assistant something only Sous knows, like <q>What’s on my want-to-cook list in Sous?</q> It should answer from the library and name the recipes{username ? ` ${personName} has marked` : ''}.</p>
+          <dl class="trouble">
+            <dt>It says Sous failed, or won’t connect</dt>
+            <dd>The assistant’s computer can’t reach the address. Open {session.outpost ? 'Sous on that machine' : 'this page'} in a browser there{session.outpost ? '; under Outpost, also check the port and that SOUS_REQUIRE_GATEWAY isn’t set' : ', and check the computer is on your tailnet'}.</dd>
+            <dt>It asks you to sign in or authenticate</dt>
+            <dd>The name in the header isn’t anyone in the household. Copy the set-up again from here.</dd>
+            <dt>It reads recipes but can’t save</dt>
+            <dd>The header is missing, so it’s connected as nobody. Check the set-up has the <code>X-Sous-Person</code> line.</dd>
+            <dt>Nothing changes after editing a config file</dt>
+            <dd>Quit the assistant fully and open it again; most only read their config at start.</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details class="way">
+        <summary><h3>ChatGPT</h3><span class="what">Can’t reach Sous</span><ChevronDown class="chev" size={20} aria-hidden="true" /></summary>
+        <div class="inner">
+          <p>ChatGPT connects to MCP servers from OpenAI’s servers, over the public internet, and can’t send the header that says who it acts for. Sous is only on your tailnet, so ChatGPT can’t reach it. The same goes for Claude on the web and on your phone.</p>
+          {#if session.outpost}
+            <p>Outpost’s login only lets in people with a browser, so they can’t get through it either. Use an assistant on the machine running Sous instead.</p>
+          {:else}
+            <p>Putting Sous on the public internet to let them in would let anyone read and change the library, since Sous has no passwords yet. Use an assistant on your own computer instead.</p>
+          {/if}
+        </div>
+      </details>
+    </div>
+  </section>
+  {/if}
+  <p class="visually-hidden" aria-live="polite">{said}</p>
+</main>
+
+<style>
+  .assistants {
+    max-width: 56rem;
+    margin: 0 auto;
+    padding: var(--space-6) var(--gutter) var(--space-8);
+  }
+  h1 {
+    font-size: var(--title-l);
+    font-weight: 800;
+  }
+  .lede {
+    margin-top: var(--space-2);
+    color: var(--ink-2);
+    max-width: 60ch;
+  }
+  .panel {
+    background: var(--ticket);
+    border-top: 3px solid var(--ink);
+    padding: var(--space-4) var(--space-5) var(--space-5);
+  }
+  .conn {
+    display: grid;
+    gap: var(--space-3);
+    margin-top: var(--space-5);
+  }
+  .conn h2 {
+    color: var(--ink-3);
+  }
+  .fact {
+    display: grid;
+    grid-template-columns: 5.5rem minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-3);
+    padding-bottom: var(--space-3);
+    border-bottom: 1.5px dashed var(--ticket-press);
+  }
+  .k {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--ink-2);
+  }
+  .fact code {
+    font-size: 1rem;
+    background: none;
+    padding: 0;
+  }
+  .wait {
+    font-weight: 700;
+  }
+  q {
+    font-weight: 700;
+    quotes: '“' '”';
+  }
+  .trouble {
+    display: grid;
+    gap: var(--space-1);
+    max-width: 62ch;
+  }
+  .trouble dt {
+    font-weight: 700;
+  }
+  .trouble dt:not(:first-child) {
+    margin-top: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: 1.5px dashed var(--ticket-press);
+  }
+  .trouble dd {
+    margin: 0;
+    text-wrap: pretty;
+    color: var(--ink-2);
+  }
+  .unready pre {
+    color: var(--ink-3);
+  }
+  .pick {
+    justify-self: start;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
+  /* Drawn like the other fields: a 2px ink stroke on ticket, with Sous's
+     own chevron in place of the browser's. */
+  .pick select {
+    appearance: none;
+    min-height: 44px;
+    min-width: 12rem;
+    padding: 0 calc(var(--space-3) + 24px) 0 var(--space-3);
+    border: 2px solid var(--ink);
+    border-radius: 3px;
+    background: var(--ticket);
+    cursor: pointer;
+  }
+  .pick :global(svg) {
+    position: absolute;
+    right: var(--space-3);
+    pointer-events: none;
+    color: var(--ink-2);
+  }
+  .note.strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .note {
+    max-width: 62ch;
+    font-size: 0.9375rem;
+    color: var(--ink-2);
+  }
+  .text-btn {
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-weight: 700;
+    color: var(--ink);
+    text-decoration: underline;
+    text-decoration-color: var(--perf);
+    text-underline-offset: 3px;
+  }
+  .copy {
+    background: var(--ticket);
+    min-height: 44px;
+    padding: 0 var(--space-3);
+    font-size: 0.875rem;
+    white-space: nowrap;
+  }
+
+  .setups {
+    margin-top: var(--space-7);
+  }
+  .setups h2 {
+    font-size: var(--title-m);
+    font-weight: 800;
+    padding-bottom: var(--space-2);
+    border-bottom: 3px solid var(--ink);
+  }
+  .ways {
+    display: grid;
+    gap: var(--space-2);
+    margin-top: var(--space-5);
+  }
+  .way {
+    background: var(--ticket);
+  }
+  summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-1) var(--space-3);
+    min-height: 56px;
+    padding: var(--space-3) calc(var(--space-5) + 28px) var(--space-3) var(--space-5);
+    position: relative;
+    cursor: pointer;
+    list-style: none;
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  @media (hover: hover) {
+    summary:hover {
+      background: var(--ticket-press);
+    }
+  }
+  summary h3 {
+    font-size: var(--ui);
+    font-weight: 800;
+  }
+  .what {
+    font-size: 0.9375rem;
+    color: var(--ink-2);
+  }
+  summary :global(.chev) {
+    position: absolute;
+    right: var(--space-4);
+    top: 50%;
+    margin-top: -10px;
+    color: var(--ink-2);
+    transition: transform 200ms var(--ease-out);
+  }
+  .way[open] summary :global(.chev) {
+    transform: rotate(180deg);
+  }
+  .way[open] summary {
+    border-bottom: 1.5px dashed var(--perf);
+  }
+  .inner {
+    display: grid;
+    gap: var(--space-3);
+    padding: var(--space-4) var(--space-5) var(--space-5);
+  }
+  .inner p {
+    max-width: 62ch;
+  }
+  .hint {
+    font-size: 0.875rem;
+    color: var(--ink-3);
+  }
+  b {
+    font-weight: 700;
+  }
+  code {
+    font: inherit;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+    background: var(--ticket-press);
+    padding: 1px 4px;
+    border-radius: 2px;
+  }
+  /* A set-up is copied as it stands, so it's set as code: the one place
+     Sous uses a monospace. */
+  .block {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: var(--space-2);
+    background: var(--pass);
+    padding: var(--space-3);
+  }
+  pre {
+    margin: 0;
+    font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    white-space: pre;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  @media (max-width: 560px) {
+    .fact {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+    .fact .k {
+      grid-column: 1 / -1;
+    }
+    /* The snippet gets the full width; its Copy sits above it. */
+    .block {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .block .copy {
+      grid-row: 1;
+      justify-self: end;
+    }
+    /* Every row's description on its own line, so the rows match. */
+    .what {
+      flex-basis: 100%;
+    }
+    .panel,
+    summary,
+    .inner {
+      padding-left: var(--space-4);
+    }
+  }
+</style>

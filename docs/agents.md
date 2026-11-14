@@ -2,6 +2,10 @@
 
 ## MCP
 
+The quickest way in is the **Connect an AI assistant** page (`/assistants`,
+in the person menu): it shows the address and header for this Sous, filled
+in, and set-ups to copy for Claude Code, Claude Desktop and Crush.
+
 MCP clients connect to `/mcp` on the same port, with the same tools as the
 REST API, including `import_recipe`. Every change is attributed to a person:
 
@@ -15,6 +19,10 @@ REST API, including `import_recipe`. Every change is attributed to a person:
   (`Authorization: Bearer opat_…`) and passes Sous the same signed identity as
   a login. Scripts and the Siri Shortcut use this to reach Sous from outside.
   MCP still connects on loopback, as above.
+
+Assistants that connect from their maker's cloud (ChatGPT, Claude on the web
+and phone) can't reach Sous: it's only on your tailnet, and they can't send
+the `X-Sous-Person` header. Use an assistant that runs on your own computer.
 
 The tools are listed in [`spec.md`](../spec.md) §9.
 

@@ -21,7 +21,8 @@ the UI built: `cd web && npm run build && cd .. && go run ./cmd/sous --port
    - URL is `/r/<id>`; title, cover image, ingredients and steps show.
    - On phones the photo is a small square beside the title, so the facts
      and Begin cooking show in the first screen.
-   - The colophon reads "Added by Sous …", never `_sous`.
+   - The colophon reads "A sample recipe that came with Sous.", never
+     `_sous`.
    - The notes hold the original text and the source citation.
    - On phones, past the header, Ingredients and Method are tabs that stick
      under the masthead; switching keeps each tab's place. The masthead
@@ -67,7 +68,7 @@ the UI built: `cd web && npm run build && cd .. && go run ./cmd/sous --port
 
 1. Open `/import`.
    - The link field, Fetch button and the "Send recipes from anywhere"
-     panel (bookmarklet, iOS Shortcut) show.
+     panel (a desktop-browser bookmark, iOS Shortcut) show.
 2. Fetch `http://127.0.0.1/` (a loopback link).
    - A clear refusal message, then the paste box. Nothing is saved.
 
@@ -82,3 +83,19 @@ the UI built: `cd web && npm run build && cd .. && go run ./cmd/sous --port
 
 1. In the editor, set a source to `javascript:alert(1)` and save.
    - "source_url must be an http or https link"; nothing is saved.
+
+## 10. Connect an AI assistant
+
+1. From the person menu, choose Connect an AI assistant (`/assistants`).
+   - The tab reads "Connect an AI assistant · Sous".
+   - The address is this Sous's origin plus `/mcp`; Copy copies it (or, on
+     plain http away from this machine, selects it and says to press the
+     copy key).
+2. Pick Ada under Acts for.
+   - The header reads `X-Sous-Person: ada`, and every set-up (Claude Code,
+     Claude Desktop, Crush) uses it. The Claude Code command single-quotes
+     the address and header.
+3. Open the ChatGPT row.
+   - It explains ChatGPT can't reach Sous and gives no public-exposure steps.
+4. Open the Check it works row.
+   - It gives a question to ask (naming Ada) and four symptoms with causes.

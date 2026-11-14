@@ -7,6 +7,7 @@ const ROUTES = [
   ['library', /^\/$/],
   ['new', /^\/new$/],
   ['import', /^\/import$/],
+  ['assistants', /^\/assistants$/],
   ['recipe', /^\/r\/([\w-]+)$/],
   ['cook', /^\/r\/([\w-]+)\/cook$/],
   ['edit', /^\/r\/([\w-]+)\/edit$/],
