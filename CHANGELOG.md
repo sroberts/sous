@@ -36,8 +36,8 @@ include breaking changes, and they're called out here.
 - Links in recipe text are easier to see, carry an external-link mark, and
   tell screen readers they open a new tab. Screen readers now hear each step's
   number ("Step 7").
-- On a touch screen (a phone, or an iPad either way up), method steps are
-  set larger for reading from the counter; on an iPad held upright they're
+- On a touch screen (a phone, or an iPad either way up), method steps and
+  ingredients are set larger for reading from the counter; on an iPad held upright they're
   also held to a readable line. A laptop keeps the usual size.
 - Ingredient notes keep asides where they belong: "cut into 2-inch (5 cm)
   chunks" now reads as written, instead of the "(5 cm)" being moved out
@@ -70,13 +70,14 @@ include breaking changes, and they're called out here.
   button with the tabs and the ingredient sheet; on a laptop or an iPad in
   landscape, the foot of the ingredients column. It's called "Cook from step
   7" wherever it's offered. Opening the ingredient sheet lifts the step
-  you're reading into view above it, so the number doesn't change, and the
-  sheet names it by its first words ("Step 7 · While the beef braises…"). C
+  you're reading into view above it, so the number doesn't change, and
+  closing it puts the page back where it was. The sheet names it by its first words ("Step 7 · While the beef braises…"). C
   cooks from that step too. Leaving cook mode brings you back to the method
   at the step you'd got to, with the ingredients column at its part of the
   list.
 - Side by side, the ingredients column's head stays at its top as the list
-  scrolls, so Show as written is always in reach.
+  scrolls, so Show as written is always in reach, down to the end of the
+  page.
 - Reading the method on a phone, a small scroll back up to re-read a line
   no longer brings the masthead down over it.
 - A short recipe shows one Begin cooking, not a second one just below it,
@@ -148,7 +149,12 @@ include breaking changes, and they're called out here.
 - Group headings that stay at the top of an ingredient list no longer show
   the tops of the row passing under them.
 - Pulling the ingredient sheet's head with a mouse no longer selects text or
-  closes the sheet when you meant to make it taller.
+  closes the sheet when you meant to make it taller, and a quick flick of the
+  head up or down is no longer missed.
+- On the narrowest phones (320px), a recipe page no longer scrolls sideways,
+  and a long title isn't squeezed beside the photo.
+- On a phone, a short recipe no longer shows its two Begin cooking buttons in
+  red at once while the masthead is out of the way.
 - On a wide screen, there's no longer a stretch just under the header with
   no Begin cooking or Cook button in view.
 - Screen readers hear the description's and the notes' Show all apart, and
