@@ -44,8 +44,13 @@ include breaking changes, and they're called out here.
   overlaps the first ingredient, and a group heading held at the top of the
   ingredient sheet keeps a little room under its rule.
 - The button after the last step cooks from the step you're reading ("Cook
-  from step 8"), like the others, instead of starting the recipe over. It's
-  always there, so a short recipe never ends without one.
+  from step 8"), like the others, instead of starting the recipe over, with a
+  Start from the top link beside it. It's always there, so a short recipe
+  never ends without one, and stays out of sight while the header's Begin
+  cooking is in view.
+- On a tall screen, such as an iPad held upright, Cook offers the last step
+  once you reach it, and back from cook mode it offers the step you left,
+  not the one before.
 - On a laptop, jumping back to the top of a recipe brings the ingredients
   column back to its first group.
 - On an upright iPad, Show ingredients sits at the end of the tab strip, with
