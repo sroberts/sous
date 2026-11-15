@@ -315,8 +315,10 @@
     const head = !li.previousElementSibling && li.parentElement.previousElementSibling?.matches('h3.sect') ? li.parentElement.previousElementSibling : null;
     const fits = head && li.getBoundingClientRect().bottom - head.getBoundingClientRect().top <= innerHeight - sheet.offsetHeight - under;
     const top = (fits ? head : li).getBoundingClientRect().top;
-    // Already in view above the sheet, with a couple of its lines showing.
-    if (top >= under && top <= innerHeight - sheet.offsetHeight - 64) return;
+    // Already in view above the sheet, whole (or, for a step taller than
+    // the room, from its top).
+    const room = innerHeight - sheet.offsetHeight;
+    if (top >= under && (li.getBoundingClientRect().bottom <= room || top <= under + 16)) return;
     liftedFrom = scrollY;
     // Near the end the page can't scroll that far, so it gets room under
     // the method while the sheet is open; closing takes it away again.
@@ -463,24 +465,6 @@
     return () => delete document.documentElement.dataset.steadyBar;
   });
 
-  // On a short recipe the Begin cooking after the last step is in view with
-  // the header's from the start: one is enough. Judged once, as it lands.
-  // A turn of the iPad or a narrower window judges it again, so there is
-  // never a stretch with no red button in view.
-  let endRedundant = $state(false);
-  let endJudged = '';
-  $effect(() => {
-    const layout = `${tabbed} ${narrow} ${corner}`;
-    if (endJudged === layout) return;
-    if (endRedundant) {
-      endJudged = layout;
-      endRedundant = false;
-      return;
-    }
-    if (!endCook) return;
-    endJudged = layout;
-    if (endCook.getBoundingClientRect().bottom + scrollY <= innerHeight) endRedundant = true;
-  });
 
   // Method sections and ingredient groups pair by name: "The garnish" and
   // "For the garnish" are one key, "garnish". A method section with no
@@ -611,7 +595,9 @@
         // A column scrolled to its end stays there as it shrinks, rather
         // than its last row being cut by the new foot. Only as it shrinks:
         // otherwise the column is left to glide where the method sends it.
-        const atEnd = room < lastRoom && ingPanel.scrollTop > 0 && ingPanel.scrollTop >= ingPanel.scrollHeight - ingPanel.clientHeight - 2;
+        // Nor when the method has just sent it back up (a jump to the top).
+        const sentUp = colWant !== null && colWant < ingPanel.scrollTop - 2;
+        const atEnd = !sentUp && room < lastRoom && ingPanel.scrollTop > 0 && ingPanel.scrollTop >= ingPanel.scrollHeight - ingPanel.clientHeight - 2;
         lastRoom = room;
         ingPanel.style.setProperty('--col-room', `${room}px`);
         if (atEnd) ingPanel.scrollTop = ingPanel.scrollHeight;
@@ -824,11 +810,12 @@
           </ol>
         {/each}
 
-        {#if !endRedundant}
-          <div class="method-end" bind:this={endCook}>
-            <a class="btn cook" class:primary={!headInView} href="/r/{id}/cook" use:link>Begin cooking</a>
-          </div>
-        {/if}
+        <!-- Past step 1 it cooks from the step being read, as the strip,
+             column and sheet do: at the end of the method you're mid-recipe,
+             not starting over. -->
+        <div class="method-end" bind:this={endCook}>
+          <a class="btn cook" class:primary={!headInView} href={cookFrom(readingStep)} use:link>{cookLabel}</a>
+        </div>
 
         {#if recipe.nutrition_text}
           <h2 class="label aside-h">Nutrition</h2>
@@ -2042,18 +2029,19 @@
       animation-timing-function: steps(1, end);
     }
   }
-  /* An iPad held upright opens the sheet from the tab strip, beside Cook,
-     so nothing sits over the steps and they keep their full measure. */
+  /* An iPad held upright opens the sheet from the tab strip, so nothing
+     sits over the steps and they keep their full measure. Show ingredients
+     takes the strip's far end and Cook keeps one width before it, whether
+     it reads Begin cooking or Cook from step 12, or is hidden: neither
+     moves, and before Cook arrives its slot reads as the strip's own room. */
   .strip-ing {
+    order: 1;
     align-self: center;
     margin-block: var(--space-1);
-    margin-left: auto;
+    margin-left: var(--space-3);
     padding-inline: var(--space-3) var(--space-4);
   }
-  /* Cook keeps one width whether it reads Begin cooking or Cook from step
-     12, or is hidden, so Show ingredients beside it never moves. */
   .strip-ing + .tab-cook {
     min-width: 11.5rem;
-    margin-left: var(--space-3);
   }
 </style>

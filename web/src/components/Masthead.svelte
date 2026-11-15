@@ -67,6 +67,7 @@
   // is how much of it is showing, for anything that sticks below it.
   let bar;
   let hidden = $state(false);
+  let instant = $state(false);
   let height = $state(0);
   $effect(() => {
     const phone = matchMedia('(max-width: 760px)');
@@ -76,6 +77,9 @@
       // The page sent the masthead away as it moved (a recipe, back from
       // cook mode at a step): as if the reader had scrolled down to it.
       if ('barAway' in document.documentElement.dataset && phone.matches && y >= height) {
+        // Gone at once, not sliding over the page as it lands.
+        instant = true;
+        requestAnimationFrame(() => requestAnimationFrame(() => (instant = false)));
         hidden = true;
         last = y;
         return;
@@ -135,7 +139,7 @@
 
 <svelte:window onkeydown={onkey} {onpointerdown} />
 
-<header class="bar" class:hidden bind:this={bar} onfocusin={() => (hidden = false)}>
+<header class="bar" class:hidden class:instant bind:this={bar} onfocusin={() => (hidden = false)}>
   <a class="mark" href="/" use:link aria-label="Sous, the library">Sous</a>
   <nav aria-label="Library">
     <a href="/" use:link class:on={route.name === 'library' && !show} aria-current={route.name === 'library' && !show ? 'page' : undefined}>Library</a>
@@ -458,6 +462,9 @@
     }
     .bar.hidden {
       transform: translateY(-100%);
+    }
+    .bar.instant {
+      transition: none;
     }
     .add-menu {
       margin-left: auto;

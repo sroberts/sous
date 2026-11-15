@@ -43,8 +43,15 @@ include breaking changes, and they're called out here.
   rows behind it showing through. On a phone, Show as written no longer
   overlaps the first ingredient, and a group heading held at the top of the
   ingredient sheet keeps a little room under its rule.
-- On a short recipe, turning the iPad or narrowing the window brings back the
-  Begin cooking after the last step, so there's always one in view.
+- The button after the last step cooks from the step you're reading ("Cook
+  from step 8"), like the others, instead of starting the recipe over. It's
+  always there, so a short recipe never ends without one.
+- On a laptop, jumping back to the top of a recipe brings the ingredients
+  column back to its first group.
+- On an upright iPad, Show ingredients sits at the end of the tab strip, with
+  Cook beside it. On a phone, opening the ingredients lifts the whole step
+  above them, and coming back from cook mode no longer shows the masthead
+  sliding away.
 - On a laptop, the ingredients column no longer cuts off its last row at the
   bottom of the page, and a row cut in half counts towards "N more".
 - Back from cook mode on a phone, the site's masthead is out of the way, so
