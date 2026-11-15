@@ -30,7 +30,8 @@
 <style>
   .region {
     position: fixed;
-    left: 50%;
+    /* A page can centre it over part of itself (--toast-x). */
+    left: var(--toast-x, 50%);
     bottom: calc(max(var(--space-5), env(safe-area-inset-bottom)) + var(--toast-lift, 0px));
     transform: translateX(-50%);
     z-index: 20;

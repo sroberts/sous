@@ -31,8 +31,9 @@ include breaking changes, and they're called out here.
   ingredient sheet opens at the part of the method you're reading.
 - A recipe without a photo gives its header the full width instead of a grey
   placeholder.
-- On an iPad held upright, steps no longer run under the Ingredients button
-  in the corner when they're set large for a touch screen.
+- On an iPad held upright, the ingredients open from a Show ingredients
+  button in the tab strip, beside Cook, instead of a button in the corner, so
+  the steps use the full width of the screen.
 - On a laptop, the ingredients column no longer cuts off its last row at the
   bottom of the page, and a row cut in half counts towards "N more".
 - Back from cook mode on a phone, the site's masthead is out of the way, so
@@ -43,6 +44,19 @@ include breaking changes, and they're called out here.
 - With tabs, the Ingredients panel no longer repeats its tab's name. A recipe
   without a photo lines its header up with the panels under it, and a stuck
   ingredient heading keeps the room under the column's rule it has at rest.
+- Ingredient group headings stay at the top of the list only while their own
+  rows are passing under them, so a heading no longer sits over an empty
+  group at the end of the list.
+- Quantities take less room on an iPad or a phone, and the ingredients column
+  is a little wider on an iPad in landscape, so items wrap less.
+- With tabs, Show as written sits on the first group heading's line instead
+  of over a rule of its own.
+- On a laptop, a toast (Added to your favorites) rises over the method, not
+  over the ingredients column's Cook button.
+- Opening the ingredient sheet brings the step's section heading up with it
+  when the step starts a section; the sheet's handle is a larger target; a row
+  hidden under "N more" counts towards it; and coming back from cook mode,
+  a screen reader starts at the step you left.
 - Section headings ("For the sauce") are set at reading size on a heavy rule.
 - "Show as written" says "Show tidied" while the original lines are showing.
 - Links in recipe text are easier to see, carry an external-link mark, and
