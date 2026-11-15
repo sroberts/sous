@@ -373,13 +373,30 @@
   let readingStep = $state(1);
   const tracking = $derived((tabbed && tab === 'method') || (!narrow && !!recipe));
   function stepNow(line = innerHeight * 0.45) {
+    const steps = [...(methodPanel?.querySelectorAll('ol > li') ?? [])];
     let n = 1;
-    for (const [k, li] of [...(methodPanel?.querySelectorAll('ol > li') ?? [])].entries()) {
+    for (const [k, li] of steps.entries()) {
       if (li.getBoundingClientRect().top > line) break;
       n = k + 1;
     }
+    // On a tall screen the last steps can't scroll up to the line: at the
+    // foot of the page with the last step whole in view, it is the one read.
+    const last = steps.at(-1);
+    if (last && scrollY >= document.documentElement.scrollHeight - innerHeight - 2 && last.getBoundingClientRect().bottom <= innerHeight) n = steps.length;
     return n;
   }
+  // Back from cook mode at a step, that step is the one offered until the
+  // reader moves the page themselves, even where the page can't scroll it to
+  // the line.
+  let held = null;
+  const release = () => (held = null);
+  $effect(() => {
+    const opts = { passive: true, capture: true };
+    for (const t of ['wheel', 'touchmove', 'keydown', 'pointerdown']) addEventListener(t, release, opts);
+    return () => {
+      for (const t of ['wheel', 'touchmove', 'keydown', 'pointerdown']) removeEventListener(t, release, opts);
+    };
+  });
   $effect(() => {
     if (!tracking) {
       readingStep = 1;
@@ -389,7 +406,7 @@
     const read = () => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
-        if (!sheet?.open) readingStep = stepNow();
+        if (!sheet?.open) readingStep = held ?? stepNow();
       });
     };
     read();
@@ -430,6 +447,8 @@
     if (!backTo || !recipe || !methodPanel || (narrow && fits === null)) return;
     const n = backTo;
     backTo = null;
+    held = n;
+    readingStep = n;
     (async () => {
       if (tabbed) {
         tab = 'method';
@@ -761,8 +780,8 @@
             Method<span class="count fig" aria-hidden="true">{recipe.steps.length}</span>
           </button>
           </div>
+          <a class="btn primary tab-cook" class:shown={tabCookShown} href={cookFrom(readingStep)} use:link aria-label={cookLabel} aria-keyshortcuts="c" title="{cookLabel} (C)">{#if readingStep > 1}Cook<span class="cook-from">{`\u00a0from step ${readingStep}`}</span>{:else}{cookLabel}{/if}</a>
           {#if corner && tab === 'method'}<button class="btn strip-ing" aria-haspopup="dialog" onclick={openSheet}><ChevronUp size={18} aria-hidden="true" />Show ingredients</button>{/if}
-          <a class="btn primary tab-cook" class:shown={tabCookShown} href={cookFrom(readingStep)} use:link aria-keyshortcuts="c" title="{cookLabel} (C)">{#if readingStep > 1}Cook<span class="cook-from">{`\u00a0from step ${readingStep}`}</span>{:else}{cookLabel}{/if}</a>
         </div>
       {/if}
       <!-- Keys scroll the column from Show as written, or from its foot. -->
@@ -813,8 +832,11 @@
         <!-- Past step 1 it cooks from the step being read, as the strip,
              column and sheet do: at the end of the method you're mid-recipe,
              not starting over. -->
-        <div class="method-end" bind:this={endCook}>
+        <!-- While the header's Begin cooking is in view (a short recipe) this
+             one would only repeat it, so it keeps its place unseen. -->
+        <div class="method-end" class:repeat={headInView} bind:this={endCook}>
           <a class="btn cook" class:primary={!headInView} href={cookFrom(readingStep)} use:link>{cookLabel}</a>
+          {#if readingStep > 1}<a class="more from-top" href={cookFrom(1)} use:link>Start from the top</a>{/if}
         </div>
 
         {#if recipe.nutrition_text}
@@ -1485,7 +1507,21 @@
     margin-top: var(--space-6);
   }
   .method-end {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3) var(--space-5);
     margin-top: var(--space-6);
+  }
+  .method-end.repeat {
+    visibility: hidden;
+  }
+  /* Read through to the end at a desk, the cook may want step 1, not the
+     step at the reading line: a quiet link, not a second red button. */
+  .from-top {
+    display: inline-flex;
+    align-items: center;
+    margin: 0;
   }
   .nutrition {
     display: flex;
@@ -2035,13 +2071,12 @@
      it reads Begin cooking or Cook from step 12, or is hidden: neither
      moves, and before Cook arrives its slot reads as the strip's own room. */
   .strip-ing {
-    order: 1;
     align-self: center;
     margin-block: var(--space-1);
     margin-left: var(--space-3);
     padding-inline: var(--space-3) var(--space-4);
   }
-  .strip-ing + .tab-cook {
+  .tab-cook:has(+ .strip-ing) {
     min-width: 11.5rem;
   }
 </style>
