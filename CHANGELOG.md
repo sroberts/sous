@@ -34,6 +34,17 @@ include breaking changes, and they're called out here.
 - On an iPad held upright, the ingredients open from a Show ingredients
   button in the tab strip, beside Cook, instead of a button in the corner, so
   the steps use the full width of the screen.
+- Opening the ingredients near the end of the method keeps the step you're
+  on in view above them, instead of hiding it under the sheet. The Show
+  ingredients button on an upright iPad stays put as Cook changes beside it.
+- Back from cook mode, a rule beside the step you left marks it for a few
+  seconds. On a phone the Method tab says how many steps there are.
+- On a laptop, the ingredients column's Cook button fades in without the
+  rows behind it showing through. On a phone, Show as written no longer
+  overlaps the first ingredient, and a group heading held at the top of the
+  ingredient sheet keeps a little room under its rule.
+- On a short recipe, turning the iPad or narrowing the window brings back the
+  Begin cooking after the last step, so there's always one in view.
 - On a laptop, the ingredients column no longer cuts off its last row at the
   bottom of the page, and a row cut in half counts towards "N more".
 - Back from cook mode on a phone, the site's masthead is out of the way, so

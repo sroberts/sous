@@ -304,6 +304,7 @@
     sheetTall = false;
     if (liftedFrom !== null) scrollQuietly(liftedFrom);
     liftedFrom = null;
+    document.body.style.removeProperty('padding-bottom');
   }
   function liftStep(n) {
     const li = methodPanel?.querySelectorAll('ol > li')[n - 1];
@@ -317,7 +318,12 @@
     // Already in view above the sheet, with a couple of its lines showing.
     if (top >= under && top <= innerHeight - sheet.offsetHeight - 64) return;
     liftedFrom = scrollY;
-    scrollQuietly(top + scrollY - under);
+    // Near the end the page can't scroll that far, so it gets room under
+    // the method while the sheet is open; closing takes it away again.
+    const to = top + scrollY - under;
+    const short = to - (document.documentElement.scrollHeight - innerHeight);
+    if (short > 0) document.body.style.paddingBottom = `${Math.ceil(short)}px`;
+    scrollQuietly(to);
   }
   // A pull is followed on the window, not the head, so a quick flick that
   // leaves the head in one move still counts, and a mouse let go anywhere
@@ -440,6 +446,9 @@
       // Focus goes to the step, not the heading far above it.
       li.setAttribute('tabindex', '-1');
       li.focus({ preventScroll: true });
+      // Marked for a moment, so the eye finds the step you left.
+      li.dataset.back = '';
+      li.addEventListener('animationend', () => delete li.dataset.back, { once: true });
       // Side by side, the column comes back at that part of the list too, at
       // once rather than gliding there.
       if (!narrow) requestAnimationFrame(() => requestAnimationFrame(() => alignColumn(sectionNow(), true)));
@@ -456,11 +465,20 @@
 
   // On a short recipe the Begin cooking after the last step is in view with
   // the header's from the start: one is enough. Judged once, as it lands.
+  // A turn of the iPad or a narrower window judges it again, so there is
+  // never a stretch with no red button in view.
   let endRedundant = $state(false);
-  let endJudged = false;
+  let endJudged = '';
   $effect(() => {
-    if (!endCook || endJudged) return;
-    endJudged = true;
+    const layout = `${tabbed} ${narrow} ${corner}`;
+    if (endJudged === layout) return;
+    if (endRedundant) {
+      endJudged = layout;
+      endRedundant = false;
+      return;
+    }
+    if (!endCook) return;
+    endJudged = layout;
     if (endCook.getBoundingClientRect().bottom + scrollY <= innerHeight) endRedundant = true;
   });
 
@@ -796,7 +814,7 @@
             {/if}
           </div>
         {/if}
-        <div class="col-head" class:after-notes={recipe.notes}><h2 id="method-h" class="label">Method</h2>{#if !tabbed}<span class="label steps">{recipe.steps.length} {recipe.steps.length === 1 ? 'step' : 'steps'}</span>{/if}</div>
+        <div class="col-head" class:after-notes={recipe.notes}><h2 id="method-h" class="label">Method</h2>{#if !tabbed || !corner}<span class="label steps" class:phone-only={tabbed}>{recipe.steps.length} {recipe.steps.length === 1 ? 'step' : 'steps'}</span>{/if}</div>
         {#each groups(recipe.steps) as g}
           {#if g.section}<h3 class="sect" data-sect={sectKey(g.section)}>{g.section}</h3>{/if}
           <ol role="list">
@@ -1035,6 +1053,12 @@
   .desc.open {
     max-height: none;
   }
+  /* Open, Show less sits at the right, as the notes' does. */
+  .desc.open + .more {
+    display: block;
+    margin-left: auto;
+    margin-right: calc(var(--space-3) * -1);
+  }
   /* Collapsed, Show all sits at the end of the last line, where the text has
      faded out, rather than on a line of its own. */
   .desc-wrap.clipped {
@@ -1208,7 +1232,7 @@
       position: absolute;
       inset: 100% 0 auto;
       height: var(--space-4);
-      background: linear-gradient(var(--ticket) var(--space-1), transparent);
+      background: linear-gradient(var(--ticket) 45%, transparent);
       pointer-events: none;
     }
     /* Stuck, a heading keeps the room under the column's rule it has at
@@ -1318,20 +1342,23 @@
     padding: 0 var(--space-5);
     border-top: 1px solid var(--perf);
     background: var(--ticket);
-    opacity: 0;
     visibility: hidden;
-    transition:
-      opacity 160ms var(--ease-out),
-      visibility 0s 160ms;
+    transition: visibility 0s 160ms;
   }
+  /* The band's paper is there at once, so no row shows through it; only
+     the button fades. */
   .col-cook.shown {
-    opacity: 1;
     visibility: visible;
-    transition: opacity 160ms var(--ease-out);
+    transition: none;
   }
   .col-cook .btn {
     flex: 1;
     min-height: 48px;
+    opacity: 0;
+    transition: opacity 160ms var(--ease-out);
+  }
+  .col-cook.shown .btn {
+    opacity: 1;
   }
   .col-head {
     display: flex;
@@ -1418,8 +1445,11 @@
     margin: 0;
   }
   .ingredients[role='tabpanel'] .col-head + .group > .sect {
+    display: flex;
+    align-items: center;
+    min-height: calc(44px + 3px + var(--space-1));
     margin-top: 0;
-    padding-top: var(--space-2);
+    padding-block: 3px 0;
     padding-right: 8rem;
     border-top: 3px solid var(--ink);
   }
@@ -1657,11 +1687,21 @@
     position: absolute;
     inset: 100% 0 auto;
     height: var(--space-4);
-    background: linear-gradient(var(--ticket) var(--space-1), transparent);
+    background: linear-gradient(var(--ticket) 45%, transparent);
     pointer-events: none;
   }
   .sheet-in > .group:first-child > .sect {
     top: 0;
+  }
+  /* Stuck, a heading keeps 12px under the sheet's rule, as in the side
+     column; the padding it gains, its margin gives back. */
+  .sheet-in > .group:first-child > .sect:global(.stuck) {
+    padding-top: var(--space-3);
+    margin-top: var(--space-1);
+  }
+  .sheet-in > .group:not(:first-child) > .sect:global(.stuck) {
+    padding-top: var(--space-3);
+    margin-top: calc(var(--space-6) - var(--space-3) + var(--space-2));
   }
   .sheet-foot {
     display: grid;
@@ -1889,9 +1929,15 @@
   /* A phone: the strip holds both tabs and "Cook from step 12", so the tabs
      drop their counts (the Ingredients bar and the tab's name still give
      them) and sit a little closer. */
+  .phone-only {
+    display: none;
+  }
   @media (max-width: 480px) {
     .tabs .count {
       display: none;
+    }
+    .phone-only {
+      display: inline;
     }
     .tablist {
       gap: var(--space-5);
@@ -1969,6 +2015,33 @@
   .method :global(li[tabindex='-1']:focus) {
     outline: none;
   }
+  /* Back from cook mode, the step you left carries an ink rule in the
+     margin beside it for a few seconds, then lets it go. */
+  .method :global(li[data-back]) {
+    position: relative;
+  }
+  .method :global(li[data-back])::before {
+    content: '';
+    position: absolute;
+    inset: var(--space-4) auto var(--space-4) calc(var(--space-3) * -1);
+    width: 3px;
+    background: var(--ink);
+    animation: back-mark 4s var(--ease-out) forwards;
+  }
+  @keyframes back-mark {
+    0%,
+    70% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .method :global(li[data-back])::before {
+      animation-timing-function: steps(1, end);
+    }
+  }
   /* An iPad held upright opens the sheet from the tab strip, beside Cook,
      so nothing sits over the steps and they keep their full measure. */
   .strip-ing {
@@ -1977,7 +2050,10 @@
     margin-left: auto;
     padding-inline: var(--space-3) var(--space-4);
   }
+  /* Cook keeps one width whether it reads Begin cooking or Cook from step
+     12, or is hidden, so Show ingredients beside it never moves. */
   .strip-ing + .tab-cook {
+    min-width: 11.5rem;
     margin-left: var(--space-3);
   }
 </style>
