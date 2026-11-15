@@ -425,8 +425,14 @@
       }
       const li = methodPanel.querySelectorAll('ol > li')[n - 1];
       if (!li) return;
-      const under = stickTop() + (tabbed ? (tabs?.offsetHeight ?? 0) : 0) + 16;
+      // On a phone the masthead goes, as it would have scrolling down to the
+      // step: back mid-cook, the screen is for the method.
+      const root = document.documentElement;
+      const away = tabbed && matchMedia('(max-width: 760px)').matches;
+      if (away) root.dataset.barAway = '';
+      const under = (away ? 0 : stickTop()) + (tabbed ? (tabs?.offsetHeight ?? 0) : 0) + 16;
       scrollQuietly(li.getBoundingClientRect().top + scrollY - Math.max(under, innerHeight * 0.45 - 32));
+      requestAnimationFrame(() => requestAnimationFrame(() => delete root.dataset.barAway));
       // Side by side, the column comes back at that part of the list too, at
       // once rather than gliding there.
       if (!narrow) requestAnimationFrame(() => requestAnimationFrame(() => alignColumn(sectionNow(), true)));
@@ -485,7 +491,13 @@
     // Rows under the Cook band count as below too.
     const band = ingPanel.querySelector('.col-cook.shown')?.offsetHeight ?? 0;
     const edge = ingPanel.getBoundingClientRect().bottom - 8 - band;
-    below = overflowing ? [...ingPanel.querySelectorAll('li')].filter((li) => li.getBoundingClientRect().top > edge - 24).length : 0;
+    // A row more than half under the edge counts too: it can't be read.
+    below = overflowing
+      ? [...ingPanel.querySelectorAll('li')].filter((li) => {
+          const r = li.getBoundingClientRect();
+          return r.top > edge - 24 || r.bottom - edge > r.height / 2;
+        }).length
+      : 0;
   }
   $effect(() => {
     if (!ingPanel || narrow) {
@@ -567,7 +579,11 @@
         // than being pushed up under it.
         const top = ingPanel.getBoundingClientRect().top;
         const end = ingPanel.parentElement.getBoundingClientRect().bottom - (parseFloat(getComputedStyle(ingPanel).top) || 0);
+        // A column scrolled to its end stays there as it shrinks, rather
+        // than its last row being cut by the new foot.
+        const atEnd = ingPanel.scrollTop > 0 && ingPanel.scrollTop >= ingPanel.scrollHeight - ingPanel.clientHeight - 2;
         ingPanel.style.setProperty('--col-room', `${Math.max(240, Math.min(innerHeight - top - 8, end))}px`);
+        if (atEnd) ingPanel.scrollTop = ingPanel.scrollHeight;
       });
     };
     fit();
@@ -658,7 +674,10 @@
     {/if}
     <div class="crumbs">
       <a class="back" href="/" use:link><ArrowLeft size={16} aria-hidden="true" />Library</a>
-      <a class="back" href="/r/{id}/edit" use:link aria-keyshortcuts="e" title="Edit recipe (E)"><Pencil size={16} aria-hidden="true" />Edit recipe</a>
+      <span class="crumbs-end">
+        <button class="back" aria-haspopup="dialog" aria-keyshortcuts="?" title="Keys on a recipe (?)" onclick={() => keysDialog?.showModal()}><kbd aria-hidden="true">?</kbd>Keys</button>
+        <a class="back" href="/r/{id}/edit" use:link aria-keyshortcuts="e" title="Edit recipe (E)"><Pencil size={16} aria-hidden="true" />Edit recipe</a>
+      </span>
     </div>
 
     <div class="rail" aria-hidden="true"></div>
@@ -712,9 +731,9 @@
         </div>
       {/if}
       <!-- Keys scroll the column from Show as written, or from its foot. -->
-      <section id="panel-ingredients" class="ingredients sheet" class:cooking={colCookShown} role={tabbed ? 'tabpanel' : undefined} aria-labelledby={tabbed ? 'tab-ingredients' : 'ing-h'} hidden={tabbed && tab !== 'ingredients'} bind:this={ingPanel} onwheel={() => (colWant = null)} ontouchstart={() => (colWant = null)} onkeydown={() => (colWant = null)}>
+      <section id="panel-ingredients" class="ingredients sheet" class:cooking={colCookShown} role={tabbed ? 'tabpanel' : undefined} aria-labelledby={tabbed ? 'tab-ingredients' : 'ing-h'} hidden={tabbed && tab !== 'ingredients'} tabindex={!narrow && overflowing ? 0 : undefined} bind:this={ingPanel} onwheel={() => (colWant = null)} ontouchstart={() => (colWant = null)} onkeydown={() => (colWant = null)}>
         <div class="col-head">
-          <h2 id="ing-h" class="label">Ingredients{#if !tabbed}<span class="steps">{recipe.ingredients.filter((i) => i.item).length}</span>{/if}</h2>
+          <h2 id="ing-h" class="label" class:visually-hidden={tabbed}>Ingredients{#if !tabbed}<span class="steps">{recipe.ingredients.filter((i) => i.item).length}</span>{/if}</h2>
           <button class="as-written" aria-keyshortcuts="a" title="Show as written or tidied (A)" onclick={() => (asWritten = !asWritten)}>{asWritten ? 'Show tidied' : 'Show as written'}</button>
         </div>
         {@render ingredientList()}
@@ -856,11 +875,20 @@
     justify-content: space-between;
     margin-bottom: var(--space-3);
   }
+  .crumbs-end {
+    display: flex;
+    gap: var(--space-5);
+  }
+  .back kbd {
+    min-width: 1.5rem;
+    font-size: 0.8125rem;
+    line-height: 1.3;
+  }
   .back {
     display: inline-flex;
     align-items: center;
     gap: var(--space-2);
-    min-height: 40px;
+    min-height: 44px;
     font-size: var(--ui);
     font-weight: 600;
     text-decoration: none;
@@ -868,6 +896,13 @@
   }
   .back:hover {
     color: var(--red);
+  }
+  button.back {
+    padding: 0;
+    border: 0;
+    background: none;
+    font-family: inherit;
+    cursor: pointer;
   }
 
   .page > .rail {
@@ -1141,11 +1176,21 @@
       background: linear-gradient(var(--ticket) var(--space-1), transparent);
       pointer-events: none;
     }
+    /* Stuck, a heading keeps the room under the column's rule it has at
+       rest: the padding it gains, its margin gives back, so the rows under
+       it don't move. */
+    .ingredients .col-head + .sect:global(.stuck) {
+      padding-top: var(--space-3);
+      margin-top: var(--space-1);
+    }
+    .ingredients .sect:global(.stuck):not(.col-head + .sect) {
+      padding-top: calc(var(--space-3) + 3px);
+      margin-top: calc(var(--space-6) + var(--space-2) - var(--space-3) - 3px);
+    }
     /* Without a photo the ticket is as wide as what's on it, not a band of
-       empty paper; it hangs at the middle of the rail. */
+       empty paper; it starts where the panels under it do. */
     .top:not(.has-photo) {
       max-width: 52rem;
-      margin-inline: auto;
     }
   }
   /* A laptop or an iPad in landscape: a shorter header so the recipe starts
@@ -1265,6 +1310,7 @@
     color: var(--ink-3);
   }
   .as-written {
+    margin-left: auto;
     min-height: 44px;
     margin: calc(var(--space-2) * -1) 0;
     border: 0;
@@ -1836,7 +1882,8 @@
   }
   /* Wherever the pointer is a finger, the steps and the ingredients are set
      larger, for reading at arm's length from the counter: a phone, an iPad
-     either way up. Set on the row, so a step's 58ch measure grows with it. */
+     either way up. Set on the row, so a step's 58ch measure grows with it
+     (an iPad upright holds its lines clear of the corner button in rem). */
   @media (pointer: coarse) {
     .method li {
       font-size: 1.1875rem;
@@ -1853,12 +1900,14 @@
   /* An iPad held upright: the Ingredients bar is a button at the corner, not
      a band across the screen. */
   @media (min-width: 761px) and (max-width: 900px) {
-    /* Lines end short of the Ingredients button in the corner. */
+    /* Lines end short of the Ingredients button in the corner (about
+       12.25rem wide), however large the steps are set. */
     .method[role='tabpanel'] li {
       grid-template-columns: 2.25rem minmax(0, 50ch);
+      padding-right: calc(12.25rem + var(--space-4));
     }
     .method[role='tabpanel'] .notes {
-      max-width: 50ch;
+      max-width: min(50ch, 100% - 12.25rem - var(--space-4));
     }
     .peek {
       left: auto;
