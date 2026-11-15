@@ -31,6 +31,18 @@ include breaking changes, and they're called out here.
   ingredient sheet opens at the part of the method you're reading.
 - A recipe without a photo gives its header the full width instead of a grey
   placeholder.
+- On an iPad held upright, steps no longer run under the Ingredients button
+  in the corner when they're set large for a touch screen.
+- On a laptop, the ingredients column no longer cuts off its last row at the
+  bottom of the page, and a row cut in half counts towards "N more".
+- Back from cook mode on a phone, the site's masthead is out of the way, so
+  the screen is the method.
+- A Keys button beside Edit recipe lists the recipe's keyboard shortcuts, and
+  the ingredients column can be reached with Tab and scrolled with the arrow
+  keys.
+- With tabs, the Ingredients panel no longer repeats its tab's name. A recipe
+  without a photo lines its header up with the panels under it, and a stuck
+  ingredient heading keeps the room under the column's rule it has at rest.
 - Section headings ("For the sauce") are set at reading size on a heavy rule.
 - "Show as written" says "Show tidied" while the original lines are showing.
 - Links in recipe text are easier to see, carry an external-link mark, and

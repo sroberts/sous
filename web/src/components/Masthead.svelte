@@ -62,7 +62,8 @@
   // On a phone the masthead takes a fifth of the screen, so it slides away
   // while you scroll down and comes back as soon as you scroll up (120px up
   // while a page sets data-steady-bar), at the top of the page, or when focus
-  // or the person menu is in it. --bar-shown
+  // or the person menu is in it. A page moving itself can send it away
+  // (data-bar-away). --bar-shown
   // is how much of it is showing, for anything that sticks below it.
   let bar;
   let hidden = $state(false);
@@ -72,6 +73,13 @@
     let last = scrollY;
     const onscroll = () => {
       const y = scrollY;
+      // The page sent the masthead away as it moved (a recipe, back from
+      // cook mode at a step): as if the reader had scrolled down to it.
+      if ('barAway' in document.documentElement.dataset && phone.matches && y >= height) {
+        hidden = true;
+        last = y;
+        return;
+      }
       // The page moved itself (scrollQuietly): not the reader scrolling.
       if ('quietScroll' in document.documentElement.dataset) {
         last = y;
