@@ -1,7 +1,7 @@
 <script>
   import { flushSync } from 'svelte';
   import { Search, Plus, Link2, ChevronDown, Check, ExternalLink, CloudOff } from '@lucide/svelte';
-  import { route, go, link } from '../lib/router.svelte.js';
+  import { route, go, link, stage, commit } from '../lib/router.svelte.js';
   import { session, choosePerson } from '../lib/session.svelte.js';
   import { net, isOffline } from '../lib/net.svelte.js';
 
@@ -22,8 +22,11 @@
 
   // Typing refines the library in place; from elsewhere it opens the library.
   // In the library the search waits for a pause in typing, so a fast typist
-  // isn't made to wait on a search (and a history entry) per keystroke. It
-  // reads the field when it runs, so nothing typed meanwhile is lost.
+  // isn't made to wait on a search per keystroke. It reads the field when it
+  // runs, so nothing typed meanwhile is lost, and it leaves the URL until the
+  // field is left (router stage()): on an iPhone home-screen app, changing
+  // the URL under the field after the first letter stopped the keyboard
+  // reaching it.
   let pending = null;
   function search() {
     clearTimeout(pending);
@@ -37,7 +40,10 @@
     const params = new URLSearchParams(route.name === 'library' ? route.search : '');
     const value = field.value;
     value ? params.set('q', value) : params.delete('q');
-    go(`/${params.size ? `?${params}` : ''}`, { replace: route.name === 'library' });
+    if (route.name === 'library') {
+      own = true;
+      stage(params);
+    } else go(`/${params.size ? `?${params}` : ''}`);
   }
 
   // Enter and the up and down arrows act on the results, so a search still
@@ -52,10 +58,14 @@
 
   // A search still waiting belongs to the page it was typed on: going
   // anywhere else (a link, Back, Clear search) drops it and the field shows
-  // that page's search. Nor does a timer outlive the masthead.
+  // that page's search. Nor does a timer outlive the masthead. A search the
+  // field just made is left alone: it came from the field, and writing it
+  // back under the keyboard is what upsets a phone.
+  let own = false;
   $effect(() => {
     route.search;
-    if (field) field.value = q;
+    if (field && !own) field.value = q;
+    own = false;
     return () => clearTimeout(pending);
   });
 
@@ -149,7 +159,7 @@
   <label class="search">
     <Search size={17} aria-hidden="true" />
     <span class="visually-hidden">Search recipes</span>
-    <input bind:this={field} type="search" placeholder="Search recipes, tags, ingredients" value={q} oninput={search} onkeydown={flush} autocomplete="off" />
+    <input bind:this={field} type="search" placeholder="Search recipes, tags, ingredients" oninput={search} onkeydown={flush} onblur={commit} autocomplete="off" />
     <kbd>⌘K</kbd>
   </label>
   <div class="add">

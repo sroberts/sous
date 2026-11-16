@@ -104,6 +104,30 @@ let pos = history.state?.pos ?? 0;
 history.replaceState({ ...history.state, pos }, '');
 let quiet = null; // 'undo' or 'pass': the next popstate is the router's own
 
+// A search being typed changes the page's query without touching history:
+// on an iPhone home-screen app, changing the URL (or anything else) under the
+// focused field as each letter lands left the keyboard typing into nothing.
+// The URL catches up once, when the field is left or the page is.
+let staged = null;
+
+export function stage(search) {
+  staged = `${location.pathname}${search.size ? `?${search}` : ''}`;
+  route.search = search;
+  // New results start at the top, as a new page would; at the top already
+  // (where the search box is, on a phone) nothing moves.
+  if (scrollY > 0) window.scrollTo({ top: 0 });
+}
+
+export function commit() {
+  if (staged === null) return;
+  const path = staged;
+  staged = null;
+  if (path !== location.pathname + location.search) history.replaceState(history.state, '', path);
+}
+
+addEventListener('pagehide', commit);
+document.addEventListener('visibilitychange', () => document.visibilityState === 'hidden' && commit());
+
 function leave(path, replace) {
   if (!replace) pos += 1;
   history[replace ? 'replaceState' : 'pushState']({ pos }, '', path);
@@ -112,12 +136,14 @@ function leave(path, replace) {
 }
 
 export function go(path, { replace = false } = {}) {
+  commit();
   if (path === location.pathname + location.search) return;
   if (guard && !guard(() => leave(path, replace))) return;
   leave(path, replace);
 }
 
 addEventListener('popstate', (e) => {
+  staged = null; // the entry it was for is no longer the current one
   const to = e.state?.pos ?? null;
   const mode = quiet;
   quiet = null;
