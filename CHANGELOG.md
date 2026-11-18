@@ -191,6 +191,11 @@ include breaking changes, and they're called out here.
   the leave prompt there says Stay.
 
 ### Fixed
+- Searching the library in Sous added to an iPhone's Home Screen stopped
+  after the first letter: the next letters never reached the search box. The
+  search no longer changes the page's address or rewrites the box while you
+  type; the address catches up when you leave the box or open a recipe, so
+  Back still returns to your search.
 - After the recipe page's list of keys (?) or the ingredient sheet was
   closed, the page's keys stopped working until you clicked the page.
 - A cook mode timer for "2 1/2 to 3 hours" ran for 2 hours; written
