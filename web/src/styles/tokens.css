@@ -38,7 +38,8 @@
   --space-7: 48px;
   --space-8: 64px;
 
-  --gutter: clamp(16px, 2.5vw, 32px);
+  /* Wide enough to clear a phone's notch and rounded corners on its side. */
+  --gutter: max(clamp(16px, 2.5vw, 32px), env(safe-area-inset-left), env(safe-area-inset-right));
   --bar: 56px;
   --tear: 7px; /* depth of a ticket's torn edge */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);

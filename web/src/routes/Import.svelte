@@ -252,7 +252,7 @@
       <form class="fetch panel" onsubmit={fetchLink} novalidate>
         <label class="label" for="import-url">Recipe link</label>
         <div class="row">
-          <input id="import-url" type="url" inputmode="url" autocomplete="url" bind:value={linkDraft} oninput={() => (linkError = '')} aria-invalid={!!linkError} placeholder="https://" />
+          <input id="import-url" type="url" inputmode="url" enterkeyhint="go" autocomplete="url" bind:value={linkDraft} oninput={() => (linkError = '')} aria-invalid={!!linkError} placeholder="https://" />
           <button class="btn primary" disabled={isOffline()}>Fetch</button>
         </div>
         {#if isOffline()}<p class="offline" role="status">{OFFLINE_READ}</p>{/if}

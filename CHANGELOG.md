@@ -191,6 +191,11 @@ include breaking changes, and they're called out here.
   the leave prompt there says Stay.
 
 ### Fixed
+- On a phone, Sous feels more like an app and less like a web page. Tapping
+  the search box or the Using field no longer zooms the page in. A double tap
+  on a button doesn't zoom. The page doesn't bounce or pull to refresh at
+  its ends. Turned on its side, a phone's notch no longer covers the edge of
+  the page or of cook mode. Pinch zoom still works everywhere.
 - Searching the library in Sous added to an iPhone's Home Screen stopped
   after the first letter: the next letters never reached the search box. The
   search no longer changes the page's address or rewrites the box while you

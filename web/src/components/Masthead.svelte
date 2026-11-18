@@ -301,6 +301,12 @@
     outline: none;
     text-overflow: ellipsis; /* a narrow box ends its hint with …, not mid-word */
   }
+  /* iOS zooms the page into any field set under 16px when it takes focus. */
+  @media (pointer: coarse) {
+    .search input {
+      font-size: max(16px, var(--ui));
+    }
+  }
   .search input::-webkit-search-cancel-button {
     display: none;
   }
