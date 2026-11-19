@@ -7,6 +7,8 @@ include breaking changes, and they're called out here.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-19
+
 ### Added
 - `GET /v1/images/{hash}?w=320`, `640` or `1280` returns a photo scaled to
   that width, upright and with its colours kept. Copies are made the first
@@ -20,14 +22,6 @@ include breaking changes, and they're called out here.
   megapixels. The library downloads about a quarter as much, and Safari no
   longer stalls drawing new results while you search. Photos kept for offline
   before this release still show offline.
-
-### Fixed
-- Typing a search in the library no longer lags behind the keys in Safari,
-  on a Mac or an iPhone. Each letter was held up while the tickets slid to
-  their new places, which took Safari about a tenth of a second on a Mac
-  and longer on a phone. Results now take their places at once.
-
-### Changed
 - Moving between pages fades from one to the next, as an app's screens do,
   with the masthead holding still. It doesn't happen under reduced motion,
   while you're typing, or after an iPhone swipe back.
@@ -37,6 +31,12 @@ include breaking changes, and they're called out here.
 - Tapping a recipe ticket or a course shows a press instead of a grey
   flash, and number runs in recipes ("350-400") are no longer turned into
   phone-number links on iPhone.
+
+### Fixed
+- Typing a search in the library no longer lags behind the keys in Safari,
+  on a Mac or an iPhone. Each letter was held up while the tickets slid to
+  their new places, which took Safari about a tenth of a second on a Mac
+  and longer on a phone. Results now take their places at once.
 
 ## [0.4.0] - 2026-11-18
 
@@ -380,7 +380,8 @@ First release.
 - Running under Outpost, with its login gateway.
 - A script to import a Mela export.
 
-[Unreleased]: https://github.com/sroberts/sous/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/sroberts/sous/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/sroberts/sous/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/sroberts/sous/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/sroberts/sous/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/sroberts/sous/compare/v0.1.0...v0.2.0
