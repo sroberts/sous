@@ -7,9 +7,21 @@ include breaking changes, and they're called out here.
 
 ## [Unreleased]
 
-## [0.5.0] - 2026-11-18
+## [0.5.0] - 2026-11-19
+
+### Added
+- `GET /v1/images/{hash}?w=320`, `640` or `1280` returns a photo scaled to
+  that width, upright and with its colours kept. Copies are made the first
+  time they're asked for and kept in a `thumbs` folder in the storage
+  directory, which can be deleted at any time. WebP and HEIC photos, and any
+  already that small, come as they are.
 
 ### Changed
+- The library, preview and recipe pages show photos as smaller copies sized
+  for the screen, rather than the originals, some of which are tens of
+  megapixels. The library downloads about a quarter as much, and Safari no
+  longer stalls drawing new results while you search. Photos kept for offline
+  before this release still show offline.
 - Moving between pages fades from one to the next, as an app's screens do,
   with the masthead holding still. It doesn't happen under reduced motion,
   while you're typing, or after an iPhone swipe back.
@@ -19,6 +31,12 @@ include breaking changes, and they're called out here.
 - Tapping a recipe ticket or a course shows a press instead of a grey
   flash, and number runs in recipes ("350-400") are no longer turned into
   phone-number links on iPhone.
+
+### Fixed
+- Typing a search in the library no longer lags behind the keys in Safari,
+  on a Mac or an iPhone. Each letter was held up while the tickets slid to
+  their new places, which took Safari about a tenth of a second on a Mac
+  and longer on a phone. Results now take their places at once.
 
 ## [0.4.0] - 2026-11-18
 

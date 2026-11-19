@@ -765,7 +765,7 @@
           </div>
         {/if}
       </div>
-      <div class="photo" class:none={!recipe.images[0]}><Plate hash={recipe.images[0]} title={recipe.title} eager /></div>
+      <div class="photo" class:none={!recipe.images[0]}><Plate hash={recipe.images[0]} title={recipe.title} eager sizes="(max-width: 900px) 112px, 42vw" /></div>
     </header>
 
     <div class="body">

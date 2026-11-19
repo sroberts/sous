@@ -114,4 +114,7 @@ export const api = {
   importPreview: (body) => request('POST', '/v1/recipes/import/preview', { body }),
 };
 
-export const imageUrl = (hash) => `/v1/images/${hash}`;
+// The widths Sous scales a photo to (GET /v1/images/{hash}?w=). Without w,
+// the original, which can be tens of megapixels.
+export const IMAGE_WIDTHS = [320, 640, 1280];
+export const imageUrl = (hash, w) => `/v1/images/${hash}${w ? `?w=${w}` : ''}`;

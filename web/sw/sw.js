@@ -77,7 +77,8 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
   if (IMAGE.test(url.pathname)) {
-    const got = image(req, url.pathname);
+    // Each width is its own photo (?w=), so the query is part of the key.
+    const got = image(req, url.pathname + url.search);
     e.respondWith(got.then((g) => g.res));
     e.waitUntil(got.then((g) => g.kept));
     return;
@@ -113,8 +114,10 @@ async function shell() {
 
 // Photos are immutable, so a stored one is always right. A new one is kept
 // if it is an image of 10 MB or less, and the oldest go once the store
-// passes its budget. Without a connection an unseen photo fails, and the
-// page shows the dish's initial in its place.
+// passes its budget. Without a connection a scaled copy (?w=) not yet kept
+// falls back to the original if that was (a photo seen before scaled copies
+// existed); an unseen photo fails, and the page shows the dish's initial in
+// its place.
 async function image(req, key) {
   const cache = await caches.open(IMAGES);
   const hit = await cache.match(key, { ignoreVary: true });
@@ -123,7 +126,8 @@ async function image(req, key) {
   try {
     res = await fetch(req);
   } catch {
-    return { res: Response.error(), kept: null };
+    const original = key.includes('?') ? await cache.match(key.slice(0, key.indexOf('?')), { ignoreVary: true }) : null;
+    return { res: original ?? Response.error(), kept: null };
   }
   const type = res.headers.get('content-type') ?? '';
   if (!res.ok || res.type !== 'basic' || !type.startsWith('image/')) return { res, kept: null };
