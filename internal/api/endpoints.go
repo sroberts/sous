@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"reflect"
 	"slices"
+	"strconv"
 	"time"
 
 	"github.com/sroberts/sous/internal/identity"
@@ -130,8 +131,8 @@ func (a *api) endpoints() []endpoint {
 			Body:    imagePayload, Resp: jsonOf[recipes.ImageRef](), Status: http.StatusCreated,
 			Errors: []int{415}, Write: true, Limit: imageLimit, Handle: a.uploadImage},
 		{Method: "GET", Path: "/v1/images/{hash}", OpID: "getImage",
-			Summary: "An uploaded image. Its content never changes under a hash",
-			Resp:    imagePayload, Errors: []int{404}, Handle: a.getImage},
+			Summary: "An uploaded image, or a copy scaled to a width. Its content never changes under a hash",
+			Query:   reflect.TypeFor[recipes.ImageQuery](), Resp: imagePayload, Errors: []int{400, 404}, Handle: a.getImage},
 		{Method: "GET", Path: "/v1/changes", OpID: "listChanges",
 			Summary: "The change log, newest first",
 			Query:   reflect.TypeFor[recipes.ChangeQuery](), Resp: jsonOf[recipes.ChangePage](), Handle: a.listChanges},
@@ -429,7 +430,11 @@ func (a *api) uploadImage(w http.ResponseWriter, r *http.Request, c identity.Cal
 }
 
 func (a *api) getImage(w http.ResponseWriter, r *http.Request, c identity.Caller) error {
-	f, meta, err := a.svc().Image(r.Context(), c, r.PathValue("hash"))
+	var q recipes.ImageQuery
+	if err := decodeQuery(r.URL.Query(), &q); err != nil {
+		return err
+	}
+	f, meta, err := a.svc().ImageAt(r.Context(), c, r.PathValue("hash"), q.W)
 	if err != nil {
 		return err
 	}
@@ -437,7 +442,12 @@ func (a *api) getImage(w http.ResponseWriter, r *http.Request, c identity.Caller
 	h := w.Header()
 	h.Set("Content-Type", meta.ContentType)
 	h.Set("Cache-Control", "public, max-age=31536000, immutable")
-	h.Set("ETag", `"`+meta.Hash+`"`)
+	// Each width is its own immutable resource.
+	tag := meta.Hash
+	if q.W != 0 {
+		tag += "-" + strconv.Itoa(q.W)
+	}
+	h.Set("ETag", `"`+tag+`"`)
 	h.Set("X-Content-Type-Options", "nosniff")
 	http.ServeContent(w, r, "", time.Time{}, f)
 	return nil

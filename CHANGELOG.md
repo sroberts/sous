@@ -7,6 +7,20 @@ include breaking changes, and they're called out here.
 
 ## [Unreleased]
 
+### Added
+- `GET /v1/images/{hash}?w=320`, `640` or `1280` returns a photo scaled to
+  that width, upright and with its colours kept. Copies are made the first
+  time they're asked for and kept in a `thumbs` folder in the storage
+  directory, which can be deleted at any time. WebP and HEIC photos, and any
+  already that small, come as they are.
+
+### Changed
+- The library, preview and recipe pages show photos as smaller copies sized
+  for the screen, rather than the originals, some of which are tens of
+  megapixels. The library downloads about a quarter as much, and Safari no
+  longer stalls drawing new results while you search. Photos kept for offline
+  before this release still show offline.
+
 ### Fixed
 - Typing a search in the library no longer lags behind the keys in Safari,
   on a Mac or an iPhone. Each letter was held up while the tickets slid to

@@ -1,16 +1,19 @@
 <script>
   // A recipe's photograph, shown as shot. Without one, the photo slot prints
   // the dish's initial on the pass, so a missing photo reads as deliberate.
-  import { imageUrl } from '../lib/api.js';
+  import { imageUrl, IMAGE_WIDTHS } from '../lib/api.js';
 
-  let { hash = null, title = '', ratio = '4 / 3', size = 'l', eager = false } = $props();
+  // sizes says how wide the photo is shown, so the browser fetches a copy
+  // scaled to fit (at the screen's density) rather than the original.
+  let { hash = null, title = '', ratio = '4 / 3', size = 'l', eager = false, sizes = '100vw' } = $props();
+  const srcset = $derived(hash ? IMAGE_WIDTHS.map((w) => `${imageUrl(hash, w)} ${w}w`).join(', ') : '');
   let failed = $state(false);
   const initial = $derived((title.match(/[A-Za-z]/)?.[0] ?? '·').toUpperCase());
 </script>
 
 <figure class="plate {size}" style:aspect-ratio={ratio}>
   {#if hash && !failed}
-    <img src={imageUrl(hash)} alt="" loading={eager ? 'eager' : 'lazy'} fetchpriority={eager ? 'high' : undefined} decoding="async" onerror={() => (failed = true)} />
+    <img src={imageUrl(hash, 640)} {srcset} {sizes} alt="" loading={eager ? 'eager' : 'lazy'} fetchpriority={eager ? 'high' : undefined} decoding="async" onerror={() => (failed = true)} />
   {:else}
     <span class="initial fig" aria-hidden="true">{initial}</span>
   {/if}
