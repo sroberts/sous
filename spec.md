@@ -120,7 +120,9 @@ the binary.
   sous.db-shm
   images/
     ab/abcdef….jpg   originals, content-addressed by SHA-256 of the bytes
-  tmp/               staging for uploads; emptied at every start
+  thumbs/
+    ab/abcdef…-640.v1.jpg   scaled copies, made from the original on first ask
+  tmp/               staging for uploads and thumbnails; emptied at every start
 ```
 
 - **The schema version lives only inside the database**, as
@@ -155,6 +157,16 @@ the binary.
 - **Images** are written to `tmp/`, fsynced, then renamed into `images/`. Same
   filesystem, so the rename is atomic and a crash never leaves half an image
   under its final name. Identical bytes deduplicate for free.
+- **Thumbnails** (`GET /v1/images/{hash}?w=`) are made from the original the
+  first time a width is asked for: decoded, turned upright by its EXIF
+  orientation, box-filtered down to the width, and written as JPEG (keeping
+  the original's ICC profile) or, with transparency, PNG. They are staged in
+  `tmp/` and renamed into `thumbs/`, and are a cache: derived from a
+  content-addressed original, so a restore never makes one wrong, and the
+  folder can be deleted at any time. The version in the name (`v1`) changes
+  when the way they are made does. An original no wider than the width, one
+  that is WebP or HEIC (no decoder in the standard library), or one over 100
+  megapixels is served as it is. One decode runs at a time.
 - **Orphaned images** (no recipe references them) are left alone in the
   basics. A sweep can come later; it is not needed for correctness.
 - **Imported photos** (§14) take the normal image path: fetched, written to
@@ -416,7 +428,7 @@ JSON in and out. Errors are always
 | `POST /v1/images` | Upload raw bytes (`image/jpeg`, `png`, `webp`, `heic`); returns `{hash}` |
 | `POST /v1/recipes/import/preview` | Read a recipe from a link (`url`) or pasted text (`text`, optional `title`) into a draft, without saving it. Exactly one of `url` or `text`. Needs a person, because it stores photos (§14) |
 | `POST /v1/recipes/import` | Read a recipe from a link (`url`) and save it in one step, or return the copy already saved. Needs a person. Always 200 on success, with a `summary` to speak (§14) |
-| `GET /v1/images/{hash}` | The image. `Cache-Control: immutable`, since the content never changes under a hash |
+| `GET /v1/images/{hash}` | The image. `Cache-Control: immutable`, since the content never changes under a hash. `?w=320`, `640` or `1280` returns a copy scaled to that width (§3), never enlarged, with its own `ETag` (`"{hash}-{w}"`); any other `w` is 400. The UI asks for these through `srcset`, so a ticket isn't drawn from a 40-megapixel original |
 | `GET /v1/changes` | The change log, newest first, filterable by `entity_id`, `person`, `via` |
 
 - **Concurrency.** Recipes carry `version`, returned as an `ETag`. `PATCH` and

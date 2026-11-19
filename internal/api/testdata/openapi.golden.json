@@ -220,7 +220,7 @@
     "/v1/images/{hash}": {
       "get": {
         "operationId": "getImage",
-        "summary": "An uploaded image. Its content never changes under a hash",
+        "summary": "An uploaded image, or a copy scaled to a width. Its content never changes under a hash",
         "parameters": [
           {
             "$ref": "#/components/parameters/Person"
@@ -236,6 +236,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "w",
+            "in": "query",
+            "description": "scale to this width in pixels: 320, 640 or 1280. The photo keeps its proportions and is never enlarged, so a smaller one comes as it is. Omitted, the original",
+            "schema": {
+              "type": "integer"
+            }
           }
         ],
         "responses": {
@@ -246,6 +254,16 @@
               "image/jpeg": {},
               "image/png": {},
               "image/webp": {}
+            }
+          },
+          "400": {
+            "description": "invalid, invalid_cursor or unknown_image; the message says what is wrong",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
             }
           },
           "401": {

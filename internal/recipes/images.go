@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"slices"
 
 	"github.com/sroberts/sous/internal/identity"
 	"github.com/sroberts/sous/internal/storage"
@@ -63,6 +64,35 @@ func (s *Service) Image(ctx context.Context, c identity.Caller, hash string) (*o
 	})
 	if err != nil {
 		f.Close()
+		return nil, storage.ImageMeta{}, err
+	}
+	return f, meta, nil
+}
+
+// ImageWidths are the widths a photo can be asked for scaled to: a ticket
+// on a phone or a laptop, a preview, and a recipe's header at 2x.
+var ImageWidths = []int{320, 640, 1280}
+
+// ImageQuery is the query of GET /v1/images/{hash}.
+type ImageQuery struct {
+	W int `query:"w" json:"w,omitempty" jsonschema:"scale to this width in pixels: 320, 640 or 1280. The photo keeps its proportions and is never enlarged, so a smaller one comes as it is. Omitted, the original"`
+}
+
+// ImageAt opens the stored image for hash, scaled to width pixels wide (one
+// of ImageWidths), or the original when width is 0. Any other width is
+// CodeInvalid. A photo no wider than width, or one that can't be scaled
+// (WebP, HEIC), comes as it is. The caller closes the file.
+func (s *Service) ImageAt(ctx context.Context, c identity.Caller, hash string, width int) (*os.File, storage.ImageMeta, error) {
+	if width == 0 {
+		return s.Image(ctx, c, hash)
+	}
+	if !slices.Contains(ImageWidths, width) {
+		return nil, storage.ImageMeta{}, Errorf(CodeInvalid, "w must be 320, 640 or 1280")
+	}
+	f, meta, err := s.st.OpenThumb(hash, width)
+	if errors.Is(err, storage.ErrImageNotFound) {
+		return nil, storage.ImageMeta{}, Errorf(CodeNotFound, "no such image")
+	} else if err != nil {
 		return nil, storage.ImageMeta{}, err
 	}
 	return f, meta, nil

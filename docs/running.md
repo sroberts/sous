@@ -38,7 +38,8 @@ picks who's cooking.
   unit, or `tmux`.
 - **Backups.** Stop Sous and copy the `--data` directory. While it runs,
   `sqlite3 sous.db ".backup sous-backup.db"` copies the database safely; copy
-  the `images` folder alongside it.
+  the `images` folder alongside it. The `thumbs` folder (smaller copies of
+  the photos) can be left out: Sous makes them again as they're needed.
 - **Updating.** Replace the binary and restart. Sous upgrades its database
   on start.
 

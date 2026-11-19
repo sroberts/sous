@@ -474,7 +474,7 @@
 
       <aside class="side panel" use:stickIfFits={84}>
         <div class="photo">
-          <Plate hash={form.images[0]} title={form.title} />
+          <Plate hash={form.images[0]} title={form.title} sizes="(max-width: 760px) 100vw, 40vw" />
           <label class="btn photo-btn" class:off={isOffline()}>
             <ImagePlus aria-hidden="true" />{uploading ? 'Uploading…' : form.images.length ? 'Replace photo' : 'Add a photo'}
             <input type="file" accept="image/*" class="visually-hidden" disabled={isOffline()} onchange={addPhoto} />

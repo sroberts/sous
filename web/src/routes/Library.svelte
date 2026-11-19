@@ -432,7 +432,7 @@
               onfocus={(e) => e.currentTarget.matches(':focus-visible') && (selectedId = r.id)}
               aria-current={sel ? 'true' : undefined}
             >
-              <Plate hash={r.cover} title={r.title} size="s" />
+              <Plate hash={r.cover} title={r.title} size="s" sizes="(max-width: 480px) 50vw, 260px" />
               <span class="body">
                 <span class="title">
                   {r.title}

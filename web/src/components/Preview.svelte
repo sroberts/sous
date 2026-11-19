@@ -35,7 +35,7 @@
 </script>
 
 <article class="pv">
-  <Plate hash={summary.cover} title={summary.title} ratio="16 / 10" />
+  <Plate hash={summary.cover} title={summary.title} ratio="16 / 10" sizes="30vw" />
   <div class="body">
     <h2>{summary.title}</h2>
     {#if summary.source_host}<p class="src">{summary.source_host}</p>{/if}
