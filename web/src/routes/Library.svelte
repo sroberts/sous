@@ -10,7 +10,6 @@
 
 <script>
   import { tick, untrack } from 'svelte';
-  import { flip } from 'svelte/animate';
   import { X, Heart, Bookmark, Plus } from '@lucide/svelte';
   import { route, go, link } from '../lib/router.svelte.js';
   import { session } from '../lib/session.svelte.js';
@@ -279,17 +278,20 @@
       return open(selectedId);
     }
 
-    const items = grid?.children ?? [];
-    let cols = 1;
-    while (cols < items.length && items[cols].offsetTop === items[0].offsetTop) cols++;
-    const step = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: cols, ArrowUp: -cols }[e.key];
     // End goes to the last ticket drawn, and the next page draws as it comes
     // into view, rather than drawing the whole library at once.
     const edge = { Home: 0, End: drawn.length - 1 }[e.key];
-    if (step === undefined && edge === undefined) return;
+    const arrow = ['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(e.key);
+    if (!arrow && edge === undefined) return;
     // In the search box, left, right, Home and End move the caret, up is
     // left alone, and down steps into the grid at the selected ticket.
     if (inSearch && e.key !== 'ArrowDown') return;
+    // Counting the columns reads the layout, so only for a key that moves:
+    // a letter typed in the search box doesn't wait on it.
+    const items = grid?.children ?? [];
+    let cols = 1;
+    if (arrow) while (cols < items.length && items[cols].offsetTop === items[0].offsetTop) cols++;
+    const step = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: cols, ArrowUp: -cols }[e.key];
     e.preventDefault();
     if (inSearch) {
       const li = document.getElementById(`t-${tabId}`);
@@ -310,10 +312,6 @@
   }
 
   const selected = $derived(session.recipes.find((r) => r.id === selectedId));
-  const ease = (t) => 1 - Math.pow(2, -10 * t);
-  // animate:flip runs as a Web Animation, which the stylesheet's
-  // reduced-motion rule doesn't reach.
-  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
 </script>
 
 <svelte:window onkeydown={onkey} />
@@ -419,7 +417,11 @@
         {#each drawn as { r, matched, why: reason } (r.id)}
           {@const t = ticketTime(r.total_minutes, r.time_text)}
           {@const sel = wide && r.id === selectedId}
-          <li id="t-{r.id}" animate:flip={{ duration: ranked && !still ? 360 : 0, easing: ease }}>
+          <!-- Results take their places at once. Sliding tickets to their new
+               places (animate:flip) made Safari repaint every ticket, photo
+               and all, on each letter typed: 100ms on a Mac, more on a phone,
+               long enough to hold up the next letter. -->
+          <li id="t-{r.id}">
             <a
               class="ticket card"
               class:sel
