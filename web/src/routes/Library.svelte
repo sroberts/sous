@@ -488,6 +488,13 @@
     padding: var(--space-4) 0 var(--space-6);
     border-right: 1px solid var(--perf);
   }
+  /* Tickets and courses show their own press (:active), not the browser's
+     grey flash. */
+  .courses a,
+  .card,
+  .hang {
+    -webkit-tap-highlight-color: transparent;
+  }
   .courses a {
     display: flex;
     justify-content: space-between;
@@ -504,7 +511,8 @@
     color: var(--ink);
     margin-bottom: var(--space-2);
   }
-  .courses a:hover {
+  .courses a:hover,
+  .courses a:active {
     background: var(--pass-deep);
     color: var(--ink);
   }
@@ -571,7 +579,8 @@
     transform-origin: top center;
     transition: transform 240ms var(--ease-out);
   }
-  .hang:hover {
+  .hang:hover,
+  .hang:active {
     transform: rotate(-1deg);
   }
   .clip {
@@ -738,7 +747,8 @@
     border-top: 3px solid var(--ticket);
     transition: background-color 120ms;
   }
-  .card:hover {
+  .card:hover,
+  .card:active {
     background: var(--ticket-press);
     border-top-color: var(--ticket-press);
   }
@@ -875,6 +885,9 @@
     }
     .courses a.on {
       box-shadow: inset 0 -3px 0 var(--red);
+    }
+    .courses a:active {
+      background: var(--ticket-press);
     }
     .pass {
       padding-top: var(--space-4);

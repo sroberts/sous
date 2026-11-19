@@ -109,4 +109,4 @@ per-person ratings, notes, and cook history.
 
 ## Accessibility & Inclusion
 
-WCAG 2.2 AA. No household-specific needs beyond that.
+WCAG 2.2 AA. No household-specific needs beyond that. One chosen exception: pinch zoom is turned off so the installed app feels like an app (no bounce, no stray zoom). Reading text stays at 17px or more, and the system's own Zoom still works.
