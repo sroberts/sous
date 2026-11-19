@@ -7,6 +7,8 @@ include breaking changes, and they're called out here.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-18
+
 ### Changed
 - Moving between pages fades from one to the next, as an app's screens do,
   with the masthead holding still. It doesn't happen under reduced motion,
@@ -360,7 +362,8 @@ First release.
 - Running under Outpost, with its login gateway.
 - A script to import a Mela export.
 
-[Unreleased]: https://github.com/sroberts/sous/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/sroberts/sous/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/sroberts/sous/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/sroberts/sous/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/sroberts/sous/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/sroberts/sous/compare/v0.1.0...v0.2.0
