@@ -7,6 +7,12 @@ include breaking changes, and they're called out here.
 
 ## [Unreleased]
 
+### Fixed
+- Typing a search in the library no longer lags behind the keys in Safari,
+  on a Mac or an iPhone. Each letter was held up while the tickets slid to
+  their new places, which took Safari about a tenth of a second on a Mac
+  and longer on a phone. Results now take their places at once.
+
 ### Changed
 - Moving between pages fades from one to the next, as an app's screens do,
   with the masthead holding still. It doesn't happen under reduced motion,
