@@ -243,6 +243,8 @@
     padding: 0 var(--gutter);
     background: var(--ticket);
     border-bottom: 1px solid var(--perf);
+    /* Stays put while the page under it changes (lib/router.svelte.js). */
+    view-transition-name: masthead;
   }
   .mark {
     font-size: 1.5rem;

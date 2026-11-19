@@ -1,7 +1,7 @@
 // A small history router. The Go service serves index.html for unknown
 // paths (spec.md §4), so every route here is a real URL.
 
-import { tick } from 'svelte';
+import { flushSync, tick } from 'svelte';
 
 const ROUTES = [
   ['library', /^\/$/],
@@ -25,10 +25,35 @@ function match(pathname) {
 // put back where the reader was (the library's scroll, its selection).
 export const route = $state({ ...match(location.pathname), search: new URLSearchParams(location.search), back: false });
 
-function sync(back = false) {
-  const was = route.name + route.id;
-  Object.assign(route, match(location.pathname), { search: new URLSearchParams(location.search), back });
-  if (route.name + route.id !== was) land();
+// `then` runs once the new page is drawn (the scroll to its top, say).
+function sync(back = false, { then, animate = true } = {}) {
+  const next = { ...match(location.pathname), search: new URLSearchParams(location.search), back };
+  const page = next.name + next.id !== route.name + route.id;
+  const update = () => {
+    Object.assign(route, next);
+    if (page) land();
+    then?.();
+  };
+  if (!page || !animate || !crossfade()) return update();
+  // The old page fades into the new one, as an app's screens change. The
+  // page is drawn and scrolled inside the update, so the fade is between
+  // finished screens, and the library's own scroll is put back before the
+  // new picture is taken.
+  document.startViewTransition(async () => {
+    update();
+    flushSync();
+    await tick();
+  });
+}
+
+// Not under reduced motion, and never while someone types: the fade shows a
+// picture of the page, so letters typed during it would appear only after.
+function crossfade() {
+  return (
+    !!document.startViewTransition &&
+    !matchMedia('(prefers-reduced-motion: reduce)').matches &&
+    !document.activeElement?.matches('input, textarea, select, [contenteditable]')
+  );
 }
 
 // Arriving on another page in the app moves focus to its heading, as a page
@@ -131,8 +156,7 @@ document.addEventListener('visibilitychange', () => document.visibilityState ===
 function leave(path, replace) {
   if (!replace) pos += 1;
   history[replace ? 'replaceState' : 'pushState']({ pos }, '', path);
-  sync();
-  window.scrollTo({ top: 0 });
+  sync(false, { then: () => window.scrollTo({ top: 0 }) });
 }
 
 export function go(path, { replace = false } = {}) {
@@ -161,7 +185,8 @@ addEventListener('popstate', (e) => {
     }
   }
   if (to !== null) pos = to;
-  sync(true);
+  // A swipe back on iOS has already animated the change; don't do it twice.
+  sync(true, { animate: !e.hasUAVisualTransition });
 });
 
 /** Use on <a href> so links work as links and navigate in place. */

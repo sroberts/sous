@@ -294,6 +294,7 @@ Ticket-printed and square-shouldered.
 ### Cards / Containers
 - **Library ticket:** thermal white, square corners, torn bottom edge, photo inset 8px at 4:3, title and source, a perforation, then the foot: time figure left, ingredient count right. A 3px top edge in paper colour sits ready for selection.
 - **Selected ticket:** the top edge turns red and the time figure turns red. Nothing else changes.
+- **Pressed ticket:** under a finger a ticket fills `ticket-press` as it does on hover, in place of the browser's grey tap flash.
 - **Panel:** thermal white, straight edges, 16 to 24px padding, opened by a 3px black rule under its label header.
 - **Shadow Strategy:** none (see Elevation & Depth).
 
@@ -303,8 +304,10 @@ Ticket-printed and square-shouldered.
 - **Error:** red underline and red 0.875rem/600 message beneath.
 
 ### Navigation
+- **Changing page:** the page cross-fades to the next in 160ms (ease-out) while the masthead holds still. No fade under reduced motion, while typing in a field, or after an iOS swipe back, which animates on its own.
+- **Zoom:** the installed app doesn't pinch- or double-tap-zoom, as an app doesn't. Reading text is 17px (larger under a finger and in cook mode), and fields are never under 16px.
 - **Masthead:** 56px ticket-white bar with a `perf` bottom hairline: wordmark, text nav (600, `ink-2`; hover `ticket-press`; current item on a `pass` fill), search, Import and New recipe as default buttons, and the cook's name with a black initial avatar. At 1080px and below, Import and New recipe fold into one default Add button with a two-item menu (New recipe, Import from a link); on a phone it sits in the top row beside the cook's name. Menus close on Esc or a click elsewhere, and their icons are `ink-2`. From 761 to 1080px the bar stays one 56px row: the ⌘K hint goes, the gaps close up (tighter again below 860px, where search may narrow to 8rem with its hint ending in …), and the connection note keeps only its icon. Below 760px the bar wraps to three rows and hides on scroll down (see Layout).
-- **Course list:** UI text with figure counts in `ink-3`; hover on `pass-deep`; the active course sits on thermal white in bold with its count in red.
+- **Course list:** UI text with figure counts in `ink-3`; hover and press on `pass-deep`; the active course sits on thermal white in bold with its count in red.
 
 ### Facts
 The recipe's figures read across the top of a ticket in fixed cells: label over figure with a small unit, between a 3px black top rule and a dashed perforation below. Wordy values (a yield like "4 to 6 servings") set in body weight.

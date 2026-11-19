@@ -7,6 +7,17 @@ include breaking changes, and they're called out here.
 
 ## [Unreleased]
 
+### Changed
+- Moving between pages fades from one to the next, as an app's screens do,
+  with the masthead holding still. It doesn't happen under reduced motion,
+  while you're typing, or after an iPhone swipe back.
+- The phone app no longer pinch-zooms or double-tap-zooms, so it can't be
+  left half-zoomed by a stray touch. Recipe text stays at 17px or larger,
+  and the phone's own Zoom accessibility setting still works.
+- Tapping a recipe ticket or a course shows a press instead of a grey
+  flash, and number runs in recipes ("350-400") are no longer turned into
+  phone-number links on iPhone.
+
 ## [0.4.0] - 2026-11-18
 
 ### Added

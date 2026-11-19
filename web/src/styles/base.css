@@ -10,9 +10,15 @@ html {
   -webkit-text-size-adjust: 100%;
   scrollbar-color: var(--steel) transparent;
   /* The page doesn't bounce at its ends or pull to refresh, as an app's
-     screens don't. Pinch zoom stays: people read recipes from across a
-     kitchen. */
+     screens don't. */
   overscroll-behavior-y: none;
+}
+
+/* Nor does it pinch-zoom: it scrolls, as an app does (main.js stops
+   WebKit's own pinch). Reading text is 17px, and cook mode's larger. */
+html,
+body {
+  touch-action: pan-x pan-y;
 }
 
 /* A double tap on a control is two taps, not a zoom. */
@@ -248,6 +254,18 @@ img {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+/* Changing page: a short cross-fade, as an app's screens change
+   (lib/router.svelte.js starts it). The masthead holds still above it. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 160ms;
+  animation-timing-function: var(--ease-out);
+}
+::view-transition-group(masthead) {
+  animation-duration: 160ms;
+  animation-timing-function: var(--ease-out);
 }
 
 @media (prefers-reduced-motion: reduce) {
