@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-label="Sous: a recipe library your whole household shares, on a computer you own.">
+  <title>Sous</title>
+  <desc>A recipe library your whole household shares, on a computer you own.</desc>
+  <!-- The counter: cool grey pass behind every ticket -->
+  <rect width="1280" height="640" fill="#dfe3e6"/>
+
+  <!-- Linear guide: faint rule across the counter -->
+  <line x1="0" y1="216" x2="1280" y2="216" stroke="#d0d6da" stroke-width="2"/>
+
+  <!-- The steel rail: three-stop gradient, clipped top and bottom -->
+  <defs>
+    <linearGradient id="railGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d2d6d9"/>
+      <stop offset="0.5" stop-color="#959ba0"/>
+      <stop offset="1" stop-color="#5d6368"/>
+    </linearGradient>
+    <linearGradient id="clipGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#959ba0"/>
+      <stop offset="1" stop-color="#5d6368"/>
+    </linearGradient>
+    <linearGradient id="tornTicket" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fafbfc"/>
+      <stop offset="1" stop-color="#f2f4f6"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="40" y="100" width="1200" height="24" rx="5" fill="url(#railGrad)"/>
+  <rect x="40" y="121" width="1200" height="6" rx="3" fill="#4f555a"/>
+
+  <!-- Clip holding the ticket -->
+  <rect x="572" y="96" width="136" height="34" rx="3" fill="url(#clipGrad)"/>
+  <rect x="572" y="96" width="136" height="8" rx="3" fill="#c9ced2"/>
+
+  <!-- Thermal ticket: white paper, straight top, torn bottom edge (perforation tear) -->
+  <path d="M 120 118 L 1160 118 L 1160 502
+           L 1153 508 L 1146 502 L 1139 508 L 1132 502 L 1125 508 L 1118 502
+           L 1111 508 L 1104 502 L 1097 508 L 1090 502 L 1083 508 L 1076 502
+           L 1069 508 L 1062 502 L 1055 508 L 1048 502 L 1041 508 L 1034 502
+           L 1027 508 L 1020 502 L 1013 508 L 1006 502 L 999 508 L 992 502
+           L 985 508 L 978 502 L 971 508 L 964 502 L 957 508 L 950 502
+           L 943 508 L 936 502 L 929 508 L 922 502 L 915 508 L 908 502
+           L 901 508 L 894 502 L 887 508 L 880 502 L 873 508 L 866 502
+           L 859 508 L 852 502 L 845 508 L 838 502 L 831 508 L 824 502
+           L 817 508 L 810 502 L 803 508 L 796 502 L 789 508 L 782 502
+           L 775 508 L 768 502 L 761 508 L 754 502 L 747 508 L 740 502
+           L 733 508 L 726 502 L 719 508 L 712 502 L 705 508 L 698 502
+           L 691 508 L 684 502 L 677 508 L 670 502 L 663 508 L 656 502
+           L 649 508 L 642 502 L 635 508 L 628 502 L 621 508 L 614 502
+           L 607 508 L 600 502 L 593 508 L 586 502 L 579 508 L 572 502
+           L 565 508 L 558 502 L 551 508 L 544 502 L 537 508 L 530 502
+           L 523 508 L 516 502 L 509 508 L 502 502 L 495 508 L 488 502
+           L 481 508 L 474 502 L 467 508 L 460 502 L 453 508 L 446 502
+           L 439 508 L 432 502 L 425 508 L 418 502 L 411 508 L 404 502
+           L 397 508 L 390 502 L 383 508 L 376 502 L 369 508 L 362 502
+           L 355 508 L 348 502 L 341 508 L 334 502 L 327 508 L 320 502
+           L 313 508 L 306 502 L 299 508 L 292 502 L 285 508 L 278 502
+           L 271 508 L 264 502 L 257 508 L 250 502 L 243 508 L 236 502
+           L 229 508 L 222 502 L 215 508 L 208 502 L 201 508 L 194 502
+           L 187 508 L 180 502 L 173 508 L 166 502 L 159 508 L 152 502
+           L 145 508 L 138 502 L 131 508 L 124 502 L 120 508 Z"
+        fill="url(#tornTicket)"/>
+
+  <!-- Dashed perforation between ticket head and body -->
+  <line x1="176" y1="206" x2="1104" y2="206" stroke="#adb4ba" stroke-width="2" stroke-dasharray="8 6"/>
+
+  <!-- Ticket head: wordmark + tracked label -->
+  <text x="176" y="168" font-family="Archivo Variable, Archivo, system-ui, sans-serif" font-size="64" font-weight="850" letter-spacing="-0.03em" fill="#141516">Sous</text>
+
+  <!-- Red spent only on what is live: the running timer figure in the head -->
+  <text x="1104" y="172" font-family="Archivo Variable, Archivo, system-ui, sans-serif" font-size="60" font-weight="800" font-variant="tabular-nums" text-anchor="end" fill="#bb1c14">12:30</text>
+
+  <!-- Body: one line saying what it is -->
+  <text x="176" y="292" font-family="Archivo Variable, Archivo, system-ui, sans-serif" font-size="44" font-weight="700" fill="#141516">A recipe library your whole household shares,</text>
+  <text x="176" y="352" font-family="Archivo Variable, Archivo, system-ui, sans-serif" font-size="44" font-weight="700" fill="#141516">on a computer you own.</text>
+
+  <!-- Footer line: quiet, secondary -->
+  <text x="176" y="440" font-family="Archivo Variable, Archivo, system-ui, sans-serif" font-size="24" font-weight="600" letter-spacing="0.12em" fill="#5f6367">IMPORT FROM A LINK · COOK WITH TIMERS · AGENTS OVER MCP</text>
+
+  <!-- Menu dots: four small tickets hinting the rail below -->
+  <rect x="176" y="532" width="12" height="12" fill="#959ba0"/>
+  <rect x="200" y="532" width="12" height="12" fill="#959ba0"/>
+  <rect x="224" y="532" width="12" height="12" fill="#959ba0"/>
+  <rect x="248" y="532" width="12" height="12" fill="#959ba0"/>
+</svg>
