@@ -703,6 +703,12 @@
     font-size: var(--ui);
     padding: var(--space-2) 0;
   }
+  /* iOS zooms the page into any field set under 16px when it takes focus. */
+  @media (pointer: coarse) {
+    .using input {
+      font-size: max(16px, var(--ui));
+    }
+  }
   .clear {
     border: 0;
     background: none;

@@ -9,6 +9,22 @@ html {
   color: var(--ink);
   -webkit-text-size-adjust: 100%;
   scrollbar-color: var(--steel) transparent;
+  /* The page doesn't bounce at its ends or pull to refresh, as an app's
+     screens don't. Pinch zoom stays: people read recipes from across a
+     kitchen. */
+  overscroll-behavior-y: none;
+}
+
+/* A double tap on a control is two taps, not a zoom. */
+a,
+button,
+input,
+select,
+textarea,
+label,
+summary,
+[role='button'] {
+  touch-action: manipulation;
 }
 
 body {
@@ -164,6 +180,11 @@ img {
   text-decoration: none;
   white-space: nowrap;
   transition: background-color 120ms, color 120ms, border-color 120ms;
+  /* Its own :active shows the press, so no grey browser flash, and a long
+     press doesn't select its label. */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 /* Hover only where there is one: on touch a tapped button would keep it. */

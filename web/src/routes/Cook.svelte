@@ -375,6 +375,9 @@
     flex-direction: column;
     background: var(--pass);
     overflow: hidden;
+    /* A phone propped on its side: clear the notch. */
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
   .bar {
     display: flex;
