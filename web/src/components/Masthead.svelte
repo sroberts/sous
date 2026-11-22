@@ -19,6 +19,7 @@
 
   const q = $derived(route.name === 'library' ? route.search.get('q') ?? '' : '');
   const show = $derived(route.name === 'library' ? route.search.get('show') : null);
+  const meals = $derived(['meals', 'meal', 'kitchen'].includes(route.name));
 
   // Typing refines the library in place; from elsewhere it opens the library.
   // In the library the search waits for a pause in typing, so a fast typist
@@ -155,6 +156,7 @@
     <a href="/" use:link class:on={route.name === 'library' && !show} aria-current={route.name === 'library' && !show ? 'page' : undefined}>Library</a>
     <a href="/?show=want" use:link class:on={show === 'want'} aria-current={show === 'want' ? 'page' : undefined}>Want to cook</a>
     <a href="/?show=fav" use:link class:on={show === 'fav'} aria-current={show === 'fav' ? 'page' : undefined}>Favorites</a>
+    <a href="/meals" use:link class:on={meals} aria-current={route.name === 'meals' ? 'page' : undefined}>Meals</a>
   </nav>
   <label class="search">
     <Search size={17} aria-hidden="true" />
@@ -491,6 +493,9 @@
       order: 3;
       width: 100%;
       margin: 0 calc(var(--space-3) * -1);
+      /* Four links can outrun a small phone; they scroll rather than wrap. */
+      overflow-x: auto;
+      scrollbar-width: none;
     }
     .search {
       order: 4;

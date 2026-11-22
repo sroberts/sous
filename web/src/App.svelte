@@ -11,6 +11,10 @@
   import Cook from './routes/Cook.svelte';
   import Editor from './routes/Editor.svelte';
   import Import from './routes/Import.svelte';
+  import Meals from './routes/Meals.svelte';
+  import Meal from './routes/Meal.svelte';
+  import MealCook from './routes/MealCook.svelte';
+  import Kitchen from './routes/Kitchen.svelte';
 
   boot();
   registerWorker();
@@ -25,13 +29,20 @@
     to.focus();
   }
 
-  const titles = { library: 'Sous', new: 'New recipe · Sous', import: 'Import a recipe · Sous', assistants: 'Connect an AI assistant · Sous' };
+  const titles = {
+    library: 'Sous',
+    new: 'New recipe · Sous',
+    import: 'Import a recipe · Sous',
+    assistants: 'Connect an AI assistant · Sous',
+    meals: 'Meals · Sous',
+    kitchen: 'Your kitchen · Sous',
+  };
   $effect(() => {
     if (titles[route.name]) document.title = titles[route.name];
   });
 </script>
 
-{#if route.name !== 'cook'}
+{#if route.name !== 'cook' && route.name !== 'mealcook'}
   <a class="skip btn" href="#main" onclick={skip}>{route.name === 'library' ? 'Skip to recipes' : 'Skip to content'}</a>
   <Masthead />
 {/if}
@@ -63,6 +74,14 @@
   {#key route.search.toString()}<Import />{/key}
 {:else if route.name === 'assistants'}
   <Assistants />
+{:else if route.name === 'meals'}
+  <Meals />
+{:else if route.name === 'kitchen'}
+  <Kitchen />
+{:else if route.name === 'meal'}
+  {#key route.id}<Meal id={route.id} />{/key}
+{:else if route.name === 'mealcook'}
+  {#key route.id}<MealCook id={route.id} />{/key}
 {/if}
 
 {#if session.asking}

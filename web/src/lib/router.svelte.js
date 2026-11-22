@@ -11,6 +11,10 @@ const ROUTES = [
   ['recipe', /^\/r\/([\w-]+)$/],
   ['cook', /^\/r\/([\w-]+)\/cook$/],
   ['edit', /^\/r\/([\w-]+)\/edit$/],
+  ['meals', /^\/meals$/],
+  ['kitchen', /^\/kitchen$/],
+  ['meal', /^\/m\/([\w-]+)$/],
+  ['mealcook', /^\/m\/([\w-]+)\/cook$/],
 ];
 
 function match(pathname) {
