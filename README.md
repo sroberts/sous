@@ -21,6 +21,11 @@ it keeps lives in one folder you can back up.
   ingredient, or find recipes that use what you have.
 - **Cook mode.** One step at a time in large type, with ingredients to tick
   off, timers that start from the step's own wording, and the screen kept on.
+- **Holiday meals.** Plan several recipes for one sitting. Sous lays every
+  step out around your ovens (one temperature at a time), burners and hands,
+  moves make-ahead work into the days before, checks each dish has a serving
+  dish, and on the day runs the meal as a live checklist that re-plans when
+  you fall behind.
 - **Shared, but personal.** One library for the household; favorites and
   want-to-cook are each person's own, every change records who made it, and
   deleted recipes can be restored.
@@ -96,6 +101,8 @@ bookmarklet, the iOS Shortcut and moving from Mela.
   a phone.
 - [Getting recipes in](docs/importing.md): links, the bookmarklet, the iOS
   Shortcut, and moving from Mela.
+- [Holiday meals](docs/meals.md): planning a meal of several recipes,
+  describing your kitchen, step timing, and cooking it on the day.
 - [AI agents and the API](docs/agents.md): connecting MCP clients, and the
   REST API.
 - [Developing Sous](docs/development.md): building from source, the web UI,

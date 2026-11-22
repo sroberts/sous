@@ -24,7 +24,13 @@ Assistants that connect from their maker's cloud (ChatGPT, Claude on the web
 and phone) can't reach Sous: it's only on your tailnet, and they can't send
 the `X-Sous-Person` header. Use an assistant that runs on your own computer.
 
-The tools are listed in [`spec.md`](../spec.md) §9.
+The tools are listed in [`spec.md`](../spec.md) §9, and the meal-planning
+tools (`get_kitchen`, `update_kitchen`, `list_meals`, `get_meal`,
+`create_meal`, `update_meal`, `delete_meal`, `restore_meal`, `plan_meal`,
+`update_meal_task`) in §15. An assistant can plan a whole meal: "Plan
+Thanksgiving for 5pm Thursday with the turkey, stuffing, pie and cranberry
+sauce, and tell me when the turkey goes in." `plan_meal` answers in UTC;
+assistants should give times in the meal's timezone.
 
 ## REST API
 

@@ -7,6 +7,28 @@ include breaking changes, and they're called out here.
 
 ## [Unreleased]
 
+### Added
+- Meals: plan several recipes for one sitting, such as a holiday dinner.
+  Sous lays out every step around your ovens (one temperature at a time,
+  as many dishes as racks), burners, appliances and the number of cooks,
+  works back from when each dish is served, moves make-ahead work into the
+  days before, adds preheats, and checks every dish has a serving dish.
+  On the day, Cook the meal runs it as a live checklist that counts down
+  what's started and re-plans when you fall behind. Find it under Meals.
+- Your kitchen (from Meals): ovens and racks, burners, other appliances,
+  serving dishes and the hours of your cooking day.
+- Recipe steps can carry timing for meal plans (minutes, hands-on, oven
+  temperature, make-ahead), set in the editor, which offers what it reads
+  in the step's words. Steps without it are guessed.
+- REST: `/v1/kitchen`, `/v1/meals`, `/v1/meals/{id}/plan`,
+  `/v1/meals/{id}/tasks/{task}`, `/v1/steps/suggest`, and `step_timing` on
+  recipes. MCP: ten meal-planning tools.
+
+### Changed
+- Upgrading runs database migration 3, which adds the meal tables and a
+  `timing` column on recipe steps. As with any migration, take a backup
+  first; an older Sous will refuse to open the upgraded library.
+
 ## [0.5.0] - 2026-11-19
 
 ### Added

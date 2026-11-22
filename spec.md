@@ -627,7 +627,8 @@ Each builds on the model and API above without changing what this spec defines.
 - **Cook mode:** step view, wake lock, ingredient check-offs, step timers.
 - **Scaling and units:** servings-based scaling, US ↔ metric conversion.
 - **Meal plan and shopping list:** a weekly plan, and a combined, de-duplicated
-  list grouped by aisle.
+  list grouped by aisle. (Planning one meal of several recipes in time is
+  built: §15.)
 - **Import from URL:** specified in §14.
 - **Collections:** hand-ordered groups of recipes.
 - **Ratings, personal notes, cook history:** per person, keyed like
@@ -919,3 +920,109 @@ parameters are what one would send.
 - **Re-import.** There is no "refresh from source". Updating a duplicate with
   a fresh read (above) is the whole of it.
 - Importing tags, collections or ratings from a page.
+
+---
+
+## 15. Meals: several recipes, one sitting
+
+A meal is a menu of recipes served together at one time (a holiday dinner),
+planned around the household's kitchen and cooked from a live checklist.
+
+### Step timing
+
+Each recipe step may carry timing (`recipe_steps.timing`, JSON,
+`recipes.StepTiming`): `minutes`; `hands_on` (unset is true); `equipment`
+(`oven`, `stovetop`, or an appliance name such as `slow cooker`);
+`oven_temp` (°F); `space` (racks, burners or units, unset is 1); and
+make-ahead: `hold_minutes` (the dish can stop after this step and wait that
+long), `hold_in` (`fridge`, `counter`, `warm`), `reheat_minutes` and
+`reheat_temp`. All optional; unset fields are left out of the JSON, and a
+step with none has no `timing` key at all, so recipes never planned read as
+before.
+
+`POST`/`PATCH /v1/recipes` take `step_timing`, one entry (or null) per step,
+headings not counted. `PATCH` with `steps` but no `step_timing` keeps the
+timing of each step whose text is unchanged. Editing only timing is logged
+as "Edited X: timing". `POST /v1/steps/suggest` guesses timing from step
+words (durations, top of a range; °F or °C; "preheat" temperatures carried
+to later oven steps; equipment from verbs; "up to 2 days ahead" as a hold),
+and the planner uses the same guesses for any field a step leaves unset,
+marking the task `estimated`.
+
+### The kitchen
+
+One row (`kitchen`, `GET`/`PUT /v1/kitchen`, `If-Match`): ovens with racks,
+burners, appliances with counts, serving dishes with counts, and the day's
+hours (`day_start`, `day_end`, local). Migration 0003 creates it as one oven
+with two racks and four burners, 08:00 to 22:00.
+
+### Meals
+
+`meals` (title, `serve_at` UTC, IANA `timezone`, `cooks` 1–8, `prep_days`
+0–7, notes, version, soft delete) and `meal_items` (a stable `id`, the
+recipe, `serve_offset_minutes` 0–720, serving `dish`). `/v1/meals` CRUD
+follows recipes: `If-Match`, 412 with `current`, soft delete and restore,
+changes logged as entity `meal`. Items keep their id when passed back, so
+progress stays with a dish when the menu is reordered; a dish taken off the
+menu takes its progress with it.
+
+### The plan
+
+`GET /v1/meals/{id}/plan` is computed on every read from the meal, its
+recipes, the kitchen and the time (`?now=` overrides it); nothing about it
+is stored but progress. The scheduler (`internal/recipes/plan.go`):
+
+1. Splits each dish at its last step with a hold: steps up to it are
+   **make-ahead**; a reheat task (when the hold says so) and the rest are
+   **day-of**. A dish without a hold is all day-of.
+2. Places tasks already done, started or pinned where they are.
+3. Places day-of tasks **backwards** from each dish's serving time, the task
+   that must finish latest first, each as late as it fits.
+4. Places make-ahead chains **forwards** from the prep window (`prep_days`
+   before the meal at `day_start`), no earlier than their hold allows, each
+   finished before its day-of part starts.
+5. Once the meal is live (from a day before the prep window to six hours
+   after the last dish), moves every task that should have started, and
+   everything waiting on one, to the earliest time it fits from now; they
+   are `late`, and `on_time`/`behind_minutes` say how the meal stands.
+6. Adds a 15-minute preheat before each oven task that finds its oven cold
+   or at another temperature.
+
+A task fits when the cooks' hands, each oven (one temperature within 25°F,
+including the preheat before it, and no more dishes than racks), the burners
+and each appliance have room, on a five-minute grid. Hands-on work tries the
+kitchen's day first. Limits the kitchen can't meet at all (no oven listed,
+an unknown appliance) are warned about and ignored. Warnings also cover
+guessed timings, cooked steps left waiting over 30 minutes, work that must
+start before the prep window, and serving dishes that are missing, unknown
+or used more times than the kitchen has.
+
+Progress is `meal_tasks` (pinned start, started, done, by whom), set with
+`PUT /v1/meals/{id}/tasks/{task}` and cleared, keeping pins, by
+`POST /v1/meals/{id}/reset`; both answer with the new plan. Progress is not
+in the change log.
+
+### MCP
+
+`get_kitchen`, `update_kitchen`, `list_meals`, `get_meal`, `create_meal`,
+`update_meal`, `delete_meal`, `restore_meal`, `plan_meal` and
+`update_meal_task`, over the same service; `update_recipe` and
+`create_recipe` take `step_timing`.
+
+### UI
+
+`/meals` lists meals and plans a new one; `/kitchen` edits the kitchen;
+`/m/{id}` edits the menu and shows the plan by day, each oven's day and the
+serving dishes; `/m/{id}/cook` is the run of show (what's due on the rail
+with Start and Done, countdowns for started tasks, up next, the ovens, and
+what's done), fetching the plan each minute and keeping the screen awake.
+The recipe editor sets step timing. Meals need a connection; they aren't
+kept for offline use.
+
+### Not yet
+
+Fridge space and warm holds that occupy an oven; parallel steps inside one
+recipe (a recipe's steps run in order); moving a task by dragging (pinning
+keeps it where the plan put it); scaling a recipe for the meal's size;
+sounds when a task's time is up.
+
