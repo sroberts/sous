@@ -9,7 +9,7 @@ const (
 	CodeWhoAreYou            = "who_are_you"            // 401: a write from nobody
 	CodeNotFound             = "not_found"              // 404
 	CodeExists               = "exists"                 // 409: username already taken
-	CodeDeleted              = "deleted"                // 409: PATCH or DELETE on a recipe in the trash
+	CodeDeleted              = "deleted"                // 409: PATCH or DELETE on a recipe or meal in the trash
 	CodeStale                = "stale"                  // 412: version mismatch; Current is set
 	CodeVersionRequired      = "version_required"       // 428: no If-Match
 	CodeUnsupportedMediaType = "unsupported_media_type" // 415: not jpeg, png, webp or heic
@@ -20,8 +20,12 @@ const (
 type Error struct {
 	Code    string
 	Message string
-	// Current is the recipe as it now stands, set only with CodeStale.
-	Current *Recipe
+	// Current is the recipe as it now stands, set only with CodeStale on a
+	// recipe; CurrentMeal and CurrentKitchen are the same for a meal and the
+	// kitchen.
+	Current        *Recipe
+	CurrentMeal    *Meal
+	CurrentKitchen *Kitchen
 }
 
 func (e *Error) Error() string { return e.Code + ": " + e.Message }

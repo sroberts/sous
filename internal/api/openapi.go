@@ -33,10 +33,13 @@ var (
 
 // componentNames names the API's own types in components/schemas.
 var componentNames = map[reflect.Type]string{
-	reflect.TypeFor[errorBody]():       "Error",
-	reflect.TypeFor[errorDetail]():     "ErrorDetail",
-	reflect.TypeFor[staleBody]():       "StaleError",
-	reflect.TypeFor[importErrorBody](): "ImportError",
+	reflect.TypeFor[errorBody]():        "Error",
+	reflect.TypeFor[errorDetail]():      "ErrorDetail",
+	reflect.TypeFor[staleBody]():        "StaleError",
+	reflect.TypeFor[importErrorBody]():  "ImportError",
+	reflect.TypeFor[staleMealBody]():    "StaleMealError",
+	reflect.TypeFor[staleKitchenBody](): "StaleKitchenError",
+	reflect.TypeFor[suggestRequest]():   "SuggestRequest",
 }
 
 const docDescription = `Sous is a household recipe manager. Every response is JSON except images.
@@ -48,8 +51,9 @@ Identity: behind the Outpost gateway, the caller comes from its signed token. Ot
 name yourself with the X-Sous-Person header (a username from GET /v1/people). Reads need
 no person; writes from nobody get 401 who_are_you.
 
-Concurrency: recipes carry a version, returned as the ETag. PATCH and DELETE need
-If-Match with that version; a stale one gets 412 with the current recipe.
+Concurrency: recipes, meals and the kitchen carry a version, returned as the ETag. PATCH,
+DELETE and PUT /v1/kitchen need If-Match with that version; a stale one gets 412 with
+what now stands.
 
 Lists page by opaque cursor: pass next_cursor back as cursor until it is null.`
 
@@ -130,6 +134,7 @@ var pathParam = regexp.MustCompile(`\{(\w+)\}`)
 var pathParamDocs = map[string]string{
 	"id":   "recipe ID",
 	"hash": "image hash, the lower-case hex SHA-256 of its bytes",
+	"task": "a task's key from the meal's plan, such as <item id>:2",
 }
 
 func ref(name string) *jsonschema.Schema {
@@ -166,12 +171,23 @@ func buildDocument(eps []endpoint, version string) *document {
 			Responses:   map[string]*response{},
 		}
 		for _, m := range pathParam.FindAllStringSubmatch(ep.Path, -1) {
+			doc := pathParamDocs[m[1]]
+			if m[1] == "id" && strings.HasPrefix(ep.Path, "/v1/meals/") {
+				doc = "meal ID"
+			}
 			op.Parameters = append(op.Parameters, &parameter{Name: m[1], In: "path", Required: true,
-				Description: pathParamDocs[m[1]], Schema: &jsonschema.Schema{Type: "string"}})
+				Description: doc, Schema: &jsonschema.Schema{Type: "string"}})
 		}
-		if ep.Method == "PATCH" || ep.Method == "DELETE" {
+		if ep.Method == "PATCH" || ep.Method == "DELETE" || ep.IfMatch {
+			what := "recipe"
+			switch {
+			case strings.HasPrefix(ep.Path, "/v1/meals"):
+				what = "meal"
+			case strings.HasPrefix(ep.Path, "/v1/kitchen"):
+				what = "kitchen"
+			}
 			op.Parameters = append(op.Parameters, &parameter{Name: "If-Match", In: "header", Required: true,
-				Description: `the recipe version being changed, e.g. "3"`, Schema: &jsonschema.Schema{Type: "string"}})
+				Description: `the ` + what + ` version being changed, e.g. "3"`, Schema: &jsonschema.Schema{Type: "string"}})
 		}
 		if ep.Query != nil {
 			for _, f := range queryFields(ep.Query) {
@@ -213,6 +229,9 @@ func buildDocument(eps []endpoint, version string) *document {
 			switch code {
 			case http.StatusPreconditionFailed:
 				s = staleRef
+				if ep.Stale != nil {
+					s = b.component(ep.Stale)
+				}
 			case http.StatusUnprocessableEntity:
 				s = importErrRef
 			}

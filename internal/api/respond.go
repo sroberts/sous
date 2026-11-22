@@ -122,11 +122,25 @@ func (a *api) fail(w http.ResponseWriter, r *http.Request, err error, spoken boo
 		if !ok {
 			break
 		}
-		if re.Code == recipes.CodeStale && re.Current != nil {
-			w.Header().Set("Cache-Control", "no-store")
-			w.Header().Set("ETag", etag(re.Current.Version))
-			writeJSON(w, status, staleBody{errorDetail{re.Code, re.Message}, *re.Current})
-			return
+		if re.Code == recipes.CodeStale {
+			detail := errorDetail{re.Code, re.Message}
+			var body any
+			switch {
+			case re.Current != nil:
+				w.Header().Set("ETag", etag(re.Current.Version))
+				body = staleBody{detail, *re.Current}
+			case re.CurrentMeal != nil:
+				w.Header().Set("ETag", etag(re.CurrentMeal.Version))
+				body = staleMealBody{detail, *re.CurrentMeal}
+			case re.CurrentKitchen != nil:
+				w.Header().Set("ETag", etag(re.CurrentKitchen.Version))
+				body = staleKitchenBody{detail, *re.CurrentKitchen}
+			}
+			if body != nil {
+				w.Header().Set("Cache-Control", "no-store")
+				writeJSON(w, status, body)
+				return
+			}
 		}
 		writeErrorFor(w, spoken, status, re.Code, re.Message)
 		return
@@ -148,7 +162,7 @@ func ifMatch(r *http.Request) (int, error) {
 	v = strings.Trim(strings.TrimPrefix(v, "W/"), `"`)
 	n, err := strconv.Atoi(v)
 	if err != nil || n < 1 {
-		return 0, recipes.Errorf(recipes.CodeInvalid, `If-Match must be a recipe version such as "3"`)
+		return 0, recipes.Errorf(recipes.CodeInvalid, `If-Match must be a version such as "3"`)
 	}
 	return n, nil
 }

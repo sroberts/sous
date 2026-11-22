@@ -25,7 +25,8 @@ const HeaderCaller = identity.CallerHeader
 const instructions = `Sous is a household's shared recipe collection. You can search, read, create, edit, delete and restore recipes, and set your own favourite and want-to-cook flags.
 Every write is attributed to the person this connection names (the X-Sous-Person header, or the Outpost login) and is recorded in the change log as made via MCP.
 To edit or delete a recipe, first call get_recipe and pass its version back; if someone changed it since, you get a stale error with the current recipe to retry against.
-Deletes are soft: a deleted recipe goes to the trash and restore_recipe brings it back.`
+Deletes are soft: a deleted recipe goes to the trash and restore_recipe brings it back.
+To plan a meal of several recipes (a holiday dinner), describe the kitchen with get_kitchen and update_kitchen, set step timing on the recipes with update_recipe's step_timing, create the meal with create_meal, then read its timeline with plan_meal.`
 
 const importInstructions = `
 To add a recipe from a web page, call import_recipe with its link; check the draft it returns, then save it with create_recipe, or pass save=true to save it as read.`
@@ -61,6 +62,7 @@ func New(svc *recipes.Service, log *slog.Logger, version string, opts ...Option)
 	})
 	t := &tools{svc: svc, log: log, importer: o.importer}
 	register(server, t)
+	registerMeals(server, t)
 	if t.importer != nil {
 		registerImport(server, t)
 	}
@@ -138,6 +140,14 @@ func (t *tools) toolError(tool string, err error) error {
 			`Add a header naming your Sous username to this MCP server in your client's config, ` +
 			`for example "headers": {"X-Sous-Person": "alice"}, or connect through the Outpost login gateway.`)
 	case recipes.CodeStale:
+		if cur := staleCurrent(e); cur != nil {
+			b, err := json.Marshal(cur)
+			if err != nil {
+				return t.toolError(tool, err)
+			}
+			return fmt.Errorf("%s: %s\nAs it stands now follows; reapply your change to it and retry with its version.\n%s",
+				e.Code, e.Message, b)
+		}
 		if e.Current != nil {
 			cur, err := json.Marshal(e.Current)
 			if err != nil {
@@ -148,6 +158,17 @@ func (t *tools) toolError(tool string, err error) error {
 		}
 	}
 	return errors.New(e.Code + ": " + e.Message)
+}
+
+// staleCurrent is a meal's or the kitchen's current state on a stale error.
+func staleCurrent(e *recipes.Error) any {
+	switch {
+	case e.CurrentMeal != nil:
+		return e.CurrentMeal
+	case e.CurrentKitchen != nil:
+		return e.CurrentKitchen
+	}
+	return nil
 }
 
 // add registers a tool whose input and output schemas come from

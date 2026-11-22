@@ -155,7 +155,9 @@ func TestListTools(t *testing.T) {
 		tools[tool.Name] = tool
 	}
 	want := []string{"search_recipes", "get_recipe", "create_recipe", "update_recipe", "delete_recipe",
-		"restore_recipe", "set_my_recipe_flags", "list_tags", "recent_changes"}
+		"restore_recipe", "set_my_recipe_flags", "list_tags", "recent_changes",
+		"get_kitchen", "update_kitchen", "list_meals", "get_meal", "create_meal", "update_meal", "delete_meal",
+		"restore_meal", "plan_meal", "update_meal_task"}
 	if len(tools) != len(want) {
 		t.Errorf("got %d tools, want %d", len(tools), len(want))
 	}

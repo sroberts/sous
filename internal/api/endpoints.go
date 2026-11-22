@@ -52,6 +52,8 @@ type endpoint struct {
 	Write   bool         // nobody gets 401 who_are_you
 	Spoken  bool         // errors carry a summary to read aloud
 	Limit   int64        // the request body limit; 0 when no body is read
+	IfMatch bool         // needs If-Match although not a PATCH or DELETE
+	Stale   *payload     // the 412 body, when it isn't a recipe's
 	Handle  func(w http.ResponseWriter, r *http.Request, c identity.Caller) error
 }
 
@@ -63,7 +65,7 @@ type api struct {
 func (a *api) svc() *recipes.Service { return a.d.Service }
 
 func (a *api) endpoints() []endpoint {
-	return []endpoint{
+	return append([]endpoint{
 		{Method: "GET", Path: "/v1/status", OpID: "getStatus",
 			Summary: "System status: version, schema version, auth mode, recipe count, storage size and gateway key health",
 			Resp:    jsonOf[recipes.Status](), Handle: a.status},
@@ -139,7 +141,7 @@ func (a *api) endpoints() []endpoint {
 		{Method: "GET", Path: "/v1/openapi.json", OpID: "getOpenAPI",
 			Summary: "This document",
 			Resp:    openapiPayload, Handle: a.openapi},
-	}
+	}, a.mealEndpoints()...)
 }
 
 // New returns the handler for every /v1 route, registered from the route

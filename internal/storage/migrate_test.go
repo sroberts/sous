@@ -115,10 +115,10 @@ func TestMigrateV1ToV2(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	s = openTest(t, dir)
+	s = openAt(t, dir, migrations[:2])
 	defer s.Close()
-	if s.SchemaVersion() != 2 || LatestVersion() != 2 {
-		t.Fatalf("SchemaVersion = %d, LatestVersion = %d, want 2", s.SchemaVersion(), LatestVersion())
+	if s.SchemaVersion() != 2 {
+		t.Fatalf("SchemaVersion = %d, want 2", s.SchemaVersion())
 	}
 	after := dump(t, s)
 	for table, rows := range before {
@@ -384,4 +384,63 @@ func TestMigrateWithDanglingRow(t *testing.T) {
 			t.Errorf("recipe_steps = %d, want 1: the bad migration was not rolled back", n)
 		}
 	})
+}
+
+// TestMigrateV2ToV3 checks that adding meal planning keeps every row, adds
+// a null timing to existing steps, and starts the kitchen as a plain one.
+func TestMigrateV2ToV3(t *testing.T) {
+	dir := t.TempDir()
+	s := openAt(t, dir, migrations[:2])
+	const now = "2026-01-01T00:00:00.000Z"
+	exec(t, s, `INSERT INTO people VALUES ('ann','Ann',NULL,'local',?,?)`, now, now)
+	exec(t, s, `INSERT INTO recipes (id, title, created_at, created_by, updated_at, updated_by) VALUES ('r1', 'Pie', ?, 'ann', ?, 'ann')`, now, now)
+	exec(t, s, `INSERT INTO recipe_steps (recipe_id, position, text) VALUES ('r1', 0, 'Bake.'), ('r1', 1, 'Cool.')`)
+	before := dump(t, s)
+	if err := s.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	s = openAt(t, dir, migrations[:3])
+	defer s.Close()
+	if s.SchemaVersion() != 3 {
+		t.Fatalf("SchemaVersion = %d, want 3", s.SchemaVersion())
+	}
+	after := dump(t, s)
+	for table, rows := range before {
+		want := rows
+		if table == "recipe_steps" {
+			want = nil
+			for _, r := range rows {
+				want = append(want, r+"|<nil>")
+			}
+		}
+		if !slices.Equal(want, after[table]) {
+			t.Errorf("%s:\n before %q\n after  %q", table, want, after[table])
+		}
+	}
+	var profile string
+	var version int
+	if err := s.R.QueryRow(`SELECT profile, version FROM kitchen WHERE id = 1`).Scan(&profile, &version); err != nil {
+		t.Fatal(err)
+	}
+	if version != 1 || !strings.Contains(profile, `"racks":2`) || !strings.Contains(profile, `"burners":4`) {
+		t.Errorf("kitchen = %s (version %d)", profile, version)
+	}
+	// Timing must be JSON, and a meal's items must name real recipes.
+	err := s.Write(context.Background(), func(tx *sql.Tx) error {
+		_, err := tx.Exec(`UPDATE recipe_steps SET timing = 'not json' WHERE recipe_id = 'r1'`)
+		return err
+	})
+	if err == nil {
+		t.Error("timing accepted text that isn't JSON")
+	}
+	exec(t, s, `INSERT INTO meals (id, title, serve_at, timezone, created_at, created_by, updated_at, updated_by)
+		VALUES ('m1', 'Dinner', ?, 'UTC', ?, 'ann', ?, 'ann')`, now, now, now)
+	err = s.Write(context.Background(), func(tx *sql.Tx) error {
+		_, err := tx.Exec(`INSERT INTO meal_items (meal_id, id, position, recipe_id) VALUES ('m1', 'i1', 0, 'nope')`)
+		return err
+	})
+	if err == nil {
+		t.Error("a meal item named a recipe that doesn't exist")
+	}
 }
