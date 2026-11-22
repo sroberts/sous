@@ -272,6 +272,10 @@ func TestPlanFallingBehind(t *testing.T) {
 	if roast.Status != StatusLate || at(t, roast.Start).Before(in.now) {
 		t.Errorf("roast = %s from %s, want late and not before now", roast.Status, roast.Start)
 	}
+	// The carving moved only because the roast did; it isn't late.
+	if carve := taskByKey(t, p, "iturkey:3"); carve.Status != StatusPending {
+		t.Errorf("carve = %s, want pending", carve.Status)
+	}
 	found := false
 	for _, w := range p.Warnings {
 		found = found || w.Code == "behind"

@@ -720,6 +720,9 @@ func (p *planner) catchUp(tasks []*ptask, nowMin int) {
 		if t.start >= ef {
 			continue
 		}
+		// Late means it should have started by now; a task that only moves
+		// because the one before it did is just later.
+		t.late = t.start < nowMin
 		p.unplace(t)
 		s := ef
 		for ; ; s += gridMin {
@@ -732,7 +735,6 @@ func (p *planner) catchUp(tasks []*ptask, nowMin int) {
 				break
 			}
 		}
-		t.late = true
 	}
 }
 
