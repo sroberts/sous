@@ -63,13 +63,18 @@ oven, the stovetop and your hands are doing hour by hour, with solid bars
 for hands-on work and hatched ones for things that look after themselves.
 
 If the meal is running late, the header says when it now lands, which dish
-is holding it up, and why. The first fix is **Move dinner to…**: every dish
-moves with it, so nothing is rushed. Below are that dish's own fixes (start
-its make-ahead now, mark it already made, or serve it later), and any other
-late dishes, which don't change when the meal lands, are folded away. Every
-fix can be undone from the message that follows. **To the table** shows
-when each dish will really be ready, and the Meals list shows how late
-today's meal is.
+is holding it up, and what's in its way ("the oven is busy with the pie at
+400°F until 12:20 AM"). Sous works out what would help, planning each in
+full: another cook, the meal without that dish, or the meal served later
+(every dish moves with it, so nothing is rushed). The one that brings the
+meal in soonest comes first, and only options that gain real time are
+offered. A later time past your kitchen's hours says so. If that dish's
+make-ahead didn't happen, you can start it now or mark it already made.
+Serving it on its own later, and any other late dishes (which don't change
+when the meal lands), are under **Other fixes**. Every fix can be undone
+from the message that follows. **To the table** shows when each dish will
+really be ready, and the Meals list shows how late today's meal is. On the
+day the page keeps itself up to date.
 
 Warnings say what else to check: a dish that would sit waiting because the
 kitchen is busy, work that has to start before your prep window, or a
@@ -79,16 +84,21 @@ plan moves around it. Changing the meal's time, cooks or prep says how many
 steps moved, with Undo.
 
 At a keyboard, **C** cooks the meal and **D** adds a dish (the arrow keys
-pick from the matches). In the lanes, Tab reaches the chart once and the
-arrow keys move between its bars.
+pick from the matches); **?** lists the keys. In the lanes, Tab reaches the
+chart once and the arrow keys move between its bars.
 
 ## 4. Cook it
 
 On the day, open the meal and press **Cook the meal**. The screen stays on.
 
 - What to do now hangs from the rail: one ticket per cook, the most urgent
-  first. **Start** begins a task's countdown; **Done** ticks it off. A
-  dish's next step only comes up once the one before it is done.
+  first. **Start** begins a task's countdown; **Done** ticks it off, and
+  the message it leaves has Undo. Before a task starts, **Already done**
+  ticks it off without the countdown. A dish's next step only comes up once
+  the one before it is done.
+- Sous doesn't assume an oven is on. When one needs heating, a ticket says
+  **Turn the oven on to 350°F**; press **It's on** and it counts down until
+  it's hot.
 - Things that look after themselves (a roast, an oven heating) count down
   in a lane beside it, and turn red when they're due out.
 - **Up next** shows what's coming and when, led by anything due that's
@@ -101,7 +111,8 @@ On the day, open the meal and press **Cook the meal**. The screen stays on.
   now lands. Tap it for the same fixes as the meal's page. A step moved
   later says "Starts in 4 min" until its time, then "Start now · was 7:40".
 - When another cook ticks something off on their device, a message says
-  who and what.
+  who and what. Coming back to the screen after a while, a message says
+  what came up while you were away.
 - **The recipe at step N** jumps into that recipe's own cook mode.
 - **Done** keeps what you've finished, with Undo. **Start over** forgets the
   progress (pins stay) to cook the meal again.

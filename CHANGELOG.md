@@ -24,9 +24,24 @@ include breaking changes, and they're called out here.
   screen replans from now, giving the oven and your hands to the dish in
   most trouble first. Make-ahead work that didn't happen is listed apart,
   to start now or mark made.
+- When a meal is late, the planner works out what would help (another
+  cook, the meal without the dish holding it up, or the meal served later)
+  and leads with the one that brings it in soonest, offering only those that
+  gain real time. It names what's in the way ("the oven is busy with Pumpkin
+  pie at 400°F until 12:20 AM"), says when a later time is past the
+  kitchen's hours, and points out dishes that would be ready long before.
+  REST and MCP plans carry these as `options`.
 - On the cook screen, a step that hasn't come up yet says when it starts
   ("Starts in 4 min") rather than that it's late, Start is the button to
-  press until a step is under way, and another cook's ticks are announced.
+  press until a step is under way (Done before then is a quieter "Already
+  done"), every tick can be undone from the message it leaves, and another
+  cook's ticks, and what came up while you were away, are announced.
+- Ovens aren't assumed to be on: a due preheat is a "Turn the oven on" ticket
+  with It's on, and only then counts down.
+- A meal's page refreshes itself on the day, leads with when the meal now
+  lands when it's late, and lists its keys under ? (C cooks, D adds a dish).
+  Pin is always shown, reordering the menu can be undone, and the lanes say
+  which day midnight starts.
 - A meal's page: C cooks the meal, D adds a dish (arrow keys pick from the
   matches), the menu stays in view beside a long plan, settings changes say
   how many steps moved and can be undone, and a meal is called breakfast,
