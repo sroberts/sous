@@ -994,6 +994,9 @@ is stored but progress. The scheduler (`internal/recipes/plan.go`):
    state is `missed`. `on_time`, `behind_minutes` and `late_dishes` (each
    late dish, latest first, with when it will be ready, the task most to
    blame and a cause: `missed`, `late_start` or `busy`) say how it stands.
+   A moved task carries `planned_for`, where the plan had it before the
+   clock moved it, so it can say "moved from 9:40 PM" rather than call a
+   task in the future late.
 6. Adds a 15-minute preheat before each oven task that finds its oven cold
    or at another temperature.
 
@@ -1024,17 +1027,20 @@ in the change log.
 ### UI
 
 `/meals` lists meals and plans a new one; `/kitchen` edits the kitchen;
-`/m/{id}` edits the menu and shows how late the meal is running, why, and
-one-tap fixes (serve that dish later, move the meal, call missed make-ahead
-done); warnings that lead to the dish or task they name; the meal's day as
+`/m/{id}` edits the menu (a summary line per dish that opens to labelled
+fields and its moves) and, when late, leads with when dinner now lands and
+lists every late dish with its own fix (serve it later, call its missed
+make-ahead done) beside one to move dinner; warnings that lead to the dish or task they name; the meal's day as
 lanes (each oven, the stovetop, appliances, the cooks' hands); the plan by
 day with a now rule; each oven's day; and the serving dishes.
 `/m/{id}/cook` is the run of show: missed make-ahead in a strip above the
-rail (Do it now, It's done); on the rail one ticket per cook (hands-on work
-under way, then what starts within five minutes, a dish's later step never
-before its earlier one), beside a lane of hands-off work and heating ovens
-counting down; then up next (due work waiting for hands first), the ovens,
-and what's done. It fetches the plan every 20 seconds and keeps the screen
+rail, one row that opens (Start it now, It's already done); on the rail
+one hands-on ticket per cook (work under way, then what starts within five
+minutes, a dish's later step never before its earlier one), plus any due
+hands-off work, beside a lane of hands-off work and heating ovens counting
+down; then up next (due work waiting for free hands first, each with
+Start), the ovens, and what's done. Its bar leads with when dinner now
+lands and opens the same lateness fixes as the planner. It fetches the plan every 20 seconds and keeps the screen
 awake.
 The recipe editor sets step timing. Meals need a connection; they aren't
 kept for offline use.

@@ -15,8 +15,9 @@ include breaking changes, and they're called out here.
   days before, adds preheats, and checks every dish has a serving dish.
   On the day, Cook the meal runs it as a live checklist that counts down
   what's started and re-plans when you fall behind. Find it under Meals.
-- When a meal is running late, its page says which dish, by how much and
-  why, with one-tap fixes, and the cook screen replans from now, giving the
+- When a meal is running late, both its page and the cook screen lead
+  with when dinner now lands, list every late dish and why with a fix for
+  each, and offer to move dinner; moved steps say where they were planned, and the cook screen replans from now, giving the
   oven and your hands to the dish in most trouble first. Make-ahead work
   that didn't happen is listed apart, to do now or mark done.
 - A meal's page shows its day as lanes (ovens, stovetop, hands), with a
