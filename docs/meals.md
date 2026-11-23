@@ -62,13 +62,25 @@ At the top, a strip of lanes shows the meal's day at a glance: what each
 oven, the stovetop and your hands are doing hour by hour, with solid bars
 for hands-on work and hatched ones for things that look after themselves.
 
-If the meal is running late, the header says by how much, which dish, and
-why, with one-tap fixes: serve that dish later, move the meal, or (for
-make-ahead work you did after all) mark it done. Warnings say what else to
-check: a dish that would sit waiting because the kitchen is busy, work that
-has to start before your prep window, or a serving dish planned for two
-things at once. Tap one to jump to the dish or step it's about. **Pin** a
-task to keep it where it is while the rest of the plan moves around it.
+If the meal is running late, the header says when it now lands, which dish
+is holding it up, and why. The first fix is **Move dinner to…**: every dish
+moves with it, so nothing is rushed. Below are that dish's own fixes (start
+its make-ahead now, mark it already made, or serve it later), and any other
+late dishes, which don't change when the meal lands, are folded away. Every
+fix can be undone from the message that follows. **To the table** shows
+when each dish will really be ready, and the Meals list shows how late
+today's meal is.
+
+Warnings say what else to check: a dish that would sit waiting because the
+kitchen is busy, work that has to start before your prep window, or a
+serving dish planned for two things at once. Tap one to jump to the dish or
+step it's about. **Pin** a task to keep it where it is while the rest of the
+plan moves around it. Changing the meal's time, cooks or prep says how many
+steps moved, with Undo.
+
+At a keyboard, **C** cooks the meal and **D** adds a dish (the arrow keys
+pick from the matches). In the lanes, Tab reaches the chart once and the
+arrow keys move between its bars.
 
 ## 4. Cook it
 
@@ -82,12 +94,15 @@ On the day, open the meal and press **Cook the meal**. The screen stays on.
 - **Up next** shows what's coming and when, led by anything due that's
   waiting for free hands. **Ovens** shows what each oven is doing.
 - If make-ahead work didn't happen (the pie meant for yesterday), it's
-  listed above the rail: **Do it now** puts it on the rail, **It's done**
-  ticks it off.
+  listed above the rail: **Start it now** puts it on the rail, **It's
+  already made** ticks it off.
 - If you fall behind, Sous replans from now, giving the oven and your
-  hands to the dish in most trouble first, and the bar says how late the
-  meal will be.
-- **Open the recipe at step N** jumps into that recipe's own cook mode.
+  hands to the dish in most trouble first, and the bar says when the meal
+  now lands. Tap it for the same fixes as the meal's page. A step moved
+  later says "Starts in 4 min" until its time, then "Start now · was 7:40".
+- When another cook ticks something off on their device, a message says
+  who and what.
+- **The recipe at step N** jumps into that recipe's own cook mode.
 - **Done** keeps what you've finished, with Undo. **Start over** forgets the
   progress (pins stay) to cook the meal again.
 

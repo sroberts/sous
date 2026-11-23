@@ -15,11 +15,22 @@ include breaking changes, and they're called out here.
   days before, adds preheats, and checks every dish has a serving dish.
   On the day, Cook the meal runs it as a live checklist that counts down
   what's started and re-plans when you fall behind. Find it under Meals.
-- When a meal is running late, both its page and the cook screen lead
-  with when dinner now lands, list every late dish and why with a fix for
-  each, and offer to move dinner; moved steps say where they were planned, and the cook screen replans from now, giving the
-  oven and your hands to the dish in most trouble first. Make-ahead work
-  that didn't happen is listed apart, to do now or mark done.
+- When a meal is running late, both its page and the cook screen say
+  which dish is holding it up and why, and lead with one fix: move the
+  meal so nothing is rushed. Other late dishes fold away, and every fix can
+  be undone. The old serving time steps back to "Planned for", To the table
+  shows when each dish will really be ready, and Meals shows how late
+  today's meal is. Moved steps say where they were planned, and the cook
+  screen replans from now, giving the oven and your hands to the dish in
+  most trouble first. Make-ahead work that didn't happen is listed apart,
+  to start now or mark made.
+- On the cook screen, a step that hasn't come up yet says when it starts
+  ("Starts in 4 min") rather than that it's late, Start is the button to
+  press until a step is under way, and another cook's ticks are announced.
+- A meal's page: C cooks the meal, D adds a dish (arrow keys pick from the
+  matches), the menu stays in view beside a long plan, settings changes say
+  how many steps moved and can be undone, and a meal is called breakfast,
+  lunch or dinner by when it's served.
 - A meal's page shows its day as lanes (ovens, stovetop, hands), with a
   now line in the timeline; dishes can be served before the meal.
 - Your kitchen (from Meals): ovens and racks, burners, other appliances,
