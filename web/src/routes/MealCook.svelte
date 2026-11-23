@@ -1,11 +1,11 @@
 <script>
   import { onDestroy } from 'svelte';
-  import { X, Check, Play, Undo2, ChefHat } from '@lucide/svelte';
+  import { X, Check, Play, Undo2, BookOpen, Flame } from '@lucide/svelte';
   import { api } from '../lib/api.js';
-  import { go, link } from '../lib/router.svelte.js';
+  import { link } from '../lib/router.svelte.js';
   import { asPerson } from '../lib/session.svelte.js';
   import { clock } from '../lib/timers.svelte.js';
-  import { clockAt, whenAt, span, runOfShow, remaining } from '../lib/meals.js';
+  import { clockAt, whenAt, span, runOfShow, remaining, cookedMinutes, holdPlace } from '../lib/meals.js';
 
   let { id } = $props();
 
@@ -29,10 +29,11 @@
   }
   refresh();
 
-  // The clock ticks every second for the countdowns; the plan is fetched
-  // again each minute, and as soon as the screen comes back.
+  // The clock ticks every second for the countdowns. The plan is fetched
+  // every 20 seconds, so a second cook's taps show up quickly, and as soon
+  // as the screen comes back.
   const tick = setInterval(() => (now = Date.now()), 1000);
-  const poll = setInterval(refresh, 60_000);
+  const poll = setInterval(() => document.visibilityState === 'visible' && refresh(), 20_000);
   const onVisible = () => document.visibilityState === 'visible' && (refresh(), keepAwake());
   document.addEventListener('visibilitychange', onVisible);
 
@@ -54,16 +55,18 @@
     lock?.release?.().catch(() => {});
   });
 
-  async function change(t, body) {
-    pending = new Set([...pending, t.key]);
+  async function change(tasks, body) {
+    const keys = tasks.map((t) => t.key);
+    pending = new Set([...pending, ...keys]);
     try {
-      const p = await asPerson(() => api.updateTask(id, t.key, body));
+      let p = null;
+      for (const t of tasks) p = await asPerson(() => api.updateTask(id, t.key, body));
       if (p) plan = p;
       problem = '';
     } catch (err) {
       problem = err.code === 'offline' ? 'That didn’t reach Sous. Check the connection and try again.' : err.message;
     } finally {
-      pending = new Set([...pending].filter((k) => k !== t.key));
+      pending = new Set([...pending].filter((k) => !keys.includes(k)));
     }
   }
 
@@ -75,47 +78,58 @@
   }
 
   const tz = $derived(meal?.timezone ?? 'UTC');
-  const show = $derived(plan ? runOfShow(plan, now) : { live: [], next: [], done: [] });
-  // The rail always holds something: what's on now, or else the next task.
-  const hanging = $derived(show.live.length ? show.live : show.next.slice(0, 1));
-  const upNext = $derived(show.live.length ? show.next.slice(0, 6) : show.next.slice(1, 7));
-  const firstActionable = $derived(hanging.find((t) => t.kind !== 'preheat' && (show.live.includes(t))));
-  const finished = $derived(plan && plan.tasks.length > 0 && show.live.length === 0 && show.next.length === 0);
+  const show = $derived(plan ? runOfShow(plan, now, { cooks: meal?.cooks ?? 1 }) : null);
+  const open = $derived(show ? show.focus.length + show.timers.length + show.waiting.length + show.missed.length + show.next.length : 0);
+  const lastServe = $derived(plan ? Math.max(Date.parse(plan.serve_at), ...plan.serving.map((s) => Date.parse(s.serve_at))) : 0);
+  const over = $derived(plan && now > lastServe + 3 * 3600e3);
+  const finished = $derived(plan && plan.tasks.length > 0 && (open === 0 || over));
+  // When nothing is due, the rail holds the next task, so it is never empty.
+  const nextUp = $derived(show && !show.focus.length && !show.timers.length ? show.next.find((t) => t.kind !== 'preheat') : null);
+  const upNext = $derived(show ? show.next.filter((t) => t !== nextUp).slice(0, 8) : []);
+  const farOff = $derived(nextUp && Date.parse(nextUp.start) - now > 12 * 3600e3);
+  const cooked = $derived(plan ? cookedMinutes(plan) : null);
 
   function until(iso) {
     const min = Math.round((Date.parse(iso) - now) / 60e3);
     if (min <= 0) return 'now';
     if (min < 60) return `in ${min} min`;
-    // Past half a day a clock is easier to read than a countdown.
-    if (min >= 720) return whenAt(iso, tz, now);
+    // Past half a day the day says it; the clock is beside it already.
+    if (min >= 720) return new Date(iso).toLocaleDateString(undefined, { timeZone: tz, weekday: 'short', month: 'short', day: 'numeric' });
     return `in ${span(min)}`;
   }
 
-  // What each oven is doing now, or next.
+  // What each oven is doing now, or next; a preheat counts as on.
   const ovens = $derived.by(() => {
     if (!plan) return [];
+    const title = (u) => [...new Set(u.tasks.map((k) => plan.tasks.find((t) => t.key === k)?.recipe_title).filter(Boolean))].join(', ');
+    const temp = (u) => (u.temp_max ? `${u.temp}–${u.temp_max}°` : u.temp ? `${u.temp}°` : 'On');
     return plan.ovens.map((o) => {
       const cur = o.uses.find((u) => Date.parse(u.start) <= now && Date.parse(u.end) > now);
       const nxt = o.uses.find((u) => Date.parse(u.start) > now);
-      const title = (u) => [...new Set(u.tasks.map((k) => plan.tasks.find((t) => t.key === k)?.recipe_title).filter(Boolean))].join(', ');
-      return { name: o.name, cur: cur && { ...cur, what: title(cur) }, nxt: nxt && { ...nxt, what: title(nxt) } };
+      const heating = plan.tasks.find((t) => t.kind === 'preheat' && t.oven === o.name && Date.parse(t.start) <= now && Date.parse(t.end) > now);
+      return {
+        name: o.name,
+        figure: cur ? temp(cur) : heating ? `${heating.oven_temp}°` : 'Off',
+        live: !!(cur || heating),
+        line: cur ? `${title(cur)} until ${clockAt(cur.end, tz)}` : heating ? `Heating for ${clockAt(heating.end, tz)}` : nxt ? `Next: ${temp(nxt)}F at ${clockAt(nxt.start, tz)}` : 'Nothing more today',
+      };
     });
   });
 
-  // One quiet announcement as tasks come due.
+  // One quiet announcement as work comes up.
   let said = $state('');
-  let seen = new Set();
+  const seen = new Set();
   $effect(() => {
-    const fresh = show.live.filter((t) => !seen.has(t.key));
-    for (const t of show.live) seen.add(t.key);
-    if (fresh.length && plan) said = `Now: ${fresh.map((t) => t.text).join('; ')}`;
+    if (!show) return;
+    const fresh = show.focus.filter((t) => !seen.has(t.key));
+    for (const t of show.focus) seen.add(t.key);
+    if (fresh.length) said = `Now: ${fresh.map((t) => t.text).join('; ')}`;
   });
 
   const label = (t) => {
-    if (t.kind === 'preheat') return 'Preheat';
-    if (t.status === 'active') return remaining(t, now) <= 0 ? 'Time’s up' : 'Under way';
-    if (t.status === 'late') return 'Late';
-    if (Date.parse(t.start) > now) return Date.parse(t.start) - now >= 720 * 60e3 ? 'Next up' : `Starts ${until(t.start)}`;
+    if (t.status === 'active') return 'Under way';
+    if (t.status === 'late') return 'Should have started';
+    if (Date.parse(t.start) > now) return `Starts ${until(t.start)}`;
     return 'Now';
   };
 </script>
@@ -127,16 +141,16 @@
       <p class="name">{meal?.title ?? 'Meal'}</p>
       {#if meal}<p class="served">Served {whenAt(meal.serve_at, tz, now)}</p>{/if}
     </div>
-    <p class="now fig" aria-label="The time">{clockAt(new Date(now).toISOString(), tz)}</p>
-    {#if plan}
+    {#if plan && !finished}
       <p class="status" class:behind={!plan.on_time} role="status">{plan.on_time ? 'On time' : `About ${span(plan.behind_minutes)} behind`}</p>
     {/if}
+    <p class="now fig"><span class="visually-hidden">The time is </span>{clockAt(new Date(now).toISOString(), tz)}</p>
   </header>
 
   {#if problem}<p class="problem" role="alert">{problem}</p>{/if}
 
   <main class="stage" id="main">
-    {#if !plan}
+    {#if !plan || !show}
       <p class="hint" role="status">Loading the plan…</p>
     {:else if !plan.tasks.length}
       <div class="empty">
@@ -146,60 +160,119 @@
       </div>
     {:else}
       <h1 class="visually-hidden">Cooking {meal?.title}</h1>
-      <div class="rail" aria-hidden="true"></div>
+
+      {#if show.missed.length && !finished}
+        <section class="missed" aria-labelledby="missed-h">
+          <h2 id="missed-h">Make-ahead work that didn’t happen</h2>
+          <ul>
+            {#each show.missed as m (m.item_id)}
+              {@const busy = m.tasks.some((t) => pending.has(t.key))}
+              <li>
+                <p><strong>{m.recipe_title}</strong>: {m.tasks.length === 1 ? '1 make-ahead step hasn’t' : `${m.tasks.length} make-ahead steps haven’t`} been done.</p>
+                <div class="m-acts">
+                  <button class="btn" onclick={() => change([m.tasks[0]], { started: true })} disabled={busy}><Play aria-hidden="true" />Do it now</button>
+                  <button class="btn" onclick={() => change(m.tasks, { done: true })} disabled={busy}><Check aria-hidden="true" />It’s done</button>
+                </div>
+              </li>
+            {/each}
+          </ul>
+        </section>
+      {/if}
+
+      <div class="rail-wrap"><div class="rail" aria-hidden="true"></div></div>
       {#if finished}
         <div class="hung">
           <article class="ticket card end">
             <span class="clip" aria-hidden="true"></span>
-            <ChefHat size={40} aria-hidden="true" />
-            <p class="end-title">That’s {meal.title}.</p>
-            <p class="end-sub">Time to eat.</p>
+            {#if open === 0}
+              <svg class="check" viewBox="0 0 48 48" aria-hidden="true"><path d="M10 25 L20 35 L38 14" /></svg>
+              <p class="label">{plan.tasks.filter((t) => t.kind !== 'preheat').length} tasks</p>
+              <p class="end-title">That’s {meal.title}.</p>
+              {#if cooked}<p class="fig end-fig">{span(cooked)}</p>{/if}
+              <p class="end-sub">Time to eat.</p>
+            {:else}
+              <p class="end-title">{meal.title} was served {whenAt(lastServe ? new Date(lastServe).toISOString() : plan.serve_at, tz, now)}.</p>
+              <p class="end-sub">{show.done.length} of {plan.tasks.filter((t) => t.kind !== 'preheat').length} tasks were ticked off.</p>
+            {/if}
           </article>
         </div>
       {:else}
         <div class="hung">
-          {#each hanging as t (t.key)}
-            {@const left = t.status === 'active' ? remaining(t, now) : null}
-            <article class="ticket card" class:upcoming={!show.live.includes(t)} class:over={left !== null && left <= 0} aria-busy={pending.has(t.key)}>
-              <span class="clip" aria-hidden="true"></span>
-              <div class="c-head">
-                {#if left !== null}
-                  <span class="big fig live">{left > 0 ? clock(left) : clock(-left)}</span>
-                {:else}
-                  <span class="big fig">{clockAt(t.start, tz)}</span>
-                {/if}
-                <span class="label state">{label(t)}{left !== null && left <= 0 ? ` · over by ${clock(-left)}` : ''}</span>
-              </div>
-              <hr class="perf" />
-              <p class="text">{t.text}</p>
-              <p class="meta">
-                {#if t.recipe_title}<span>{t.recipe_title}{t.step ? ` · step ${t.step}` : ''}</span>{/if}
-                <span>{span(t.minutes)}</span>
-                {#if t.oven}<span>{t.oven}{t.oven_temp ? ` · ${t.oven_temp}°F` : ''}</span>{:else if t.equipment}<span>{t.equipment}</span>{/if}
-                {#if t.hands_on && t.minutes}<span class="hands">hands-on</span>{/if}
-              </p>
-              {#if t.hold}<p class="hold">Then into the {t.hold.in === 'warm' ? 'warm' : t.hold.in} until {whenAt(t.hold.until, tz, now)}.</p>{/if}
-              {#if t.kind !== 'preheat' && show.live.includes(t)}
-                <div class="acts">
-                  {#if t.status !== 'active'}
-                    <button class="btn" onclick={() => change(t, { started: true })} disabled={pending.has(t.key)}><Play aria-hidden="true" />Start</button>
+          <div class="focus">
+            {#each show.focus.length ? show.focus : nextUp ? [nextUp] : [] as t, i (t.key)}
+              {@const left = t.status === 'active' ? remaining(t, now) : null}
+              {@const isNext = t === nextUp}
+              <article class="ticket card" class:upcoming={isNext} class:over={left !== null && left <= 0} aria-busy={pending.has(t.key)}>
+                <span class="clip" aria-hidden="true"></span>
+                <div class="c-head">
+                  {#if left !== null}
+                    <span class="big fig live">{clock(Math.abs(left))}</span>
+                    <span class="label state">{left > 0 ? 'Left' : 'Over by'}</span>
+                  {:else}
+                    <span class="big fig">{clockAt(t.start, tz)}</span>
+                    <span class="label state">{isNext ? `Next · ${until(t.start)}` : label(t)}</span>
                   {/if}
-                  <button class="btn" class:primary={t === firstActionable} onclick={() => change(t, { done: true })} disabled={pending.has(t.key)}><Check aria-hidden="true" />Done</button>
                 </div>
-                {#if t.recipe_id && t.step}
-                  <a class="open" href="/r/{t.recipe_id}/cook?step={t.step}" use:link>Open the recipe at step {t.step}</a>
+                <hr class="perf" />
+                <p class="text">{t.text}</p>
+                <p class="meta">
+                  {#if t.recipe_title}<span>{t.recipe_title}{t.step ? ` · step ${t.step}` : ''}</span>{/if}
+                  <span>{span(t.minutes)}</span>
+                  {#if t.oven}<span>{t.oven}{t.oven_temp ? ` · ${t.oven_temp}°F` : ''}</span>{:else if t.equipment}<span>{t.equipment}</span>{/if}
+                  {#if t.hands_on && t.minutes}<span class="hands">hands-on</span>{/if}
+                </p>
+                {#if t.hold}<p class="hold">Then it waits {holdPlace(t.hold.in)} until {whenAt(t.hold.until, tz, now)}.</p>{/if}
+                {#if !isNext}
+                  <div class="acts">
+                    {#if t.status !== 'active'}
+                      <button class="btn" onclick={() => change([t], { started: true })} disabled={pending.has(t.key)}><Play aria-hidden="true" />Start</button>
+                    {/if}
+                    <button class="btn" class:primary={i === 0} onclick={() => change([t], { done: true })} disabled={pending.has(t.key)}><Check aria-hidden="true" />Done</button>
+                  </div>
                 {/if}
-              {/if}
-            </article>
-          {/each}
+                {#if t.recipe_id && t.step}
+                  <a class="open" href="/r/{t.recipe_id}/cook?step={t.step}" use:link><BookOpen size={18} aria-hidden="true" />The recipe at step {t.step}</a>
+                {/if}
+              </article>
+            {/each}
+            {#if farOff}
+              <p class="calm">Nothing to do until {whenAt(nextUp.start, tz, now)}. Sous will keep the plan up to date until then.</p>
+            {/if}
+          </div>
+
+          {#if show.timers.length}
+            <ul class="timers" aria-label="Under way by themselves">
+              {#each show.timers as t (t.key)}
+                {@const left = t.kind === 'preheat' ? (Date.parse(t.end) - now) / 1000 : remaining(t, now)}
+                <li class="ticket tick" class:done={left <= 0 && t.kind !== 'preheat'}>
+                  <span class="clip" aria-hidden="true"></span>
+                  <p class="t-label">{#if t.kind === 'preheat'}<Flame size={16} aria-hidden="true" />{/if}{t.kind === 'preheat' ? `Heating to ${t.oven_temp}°F` : t.recipe_title}</p>
+                  <p class="t-what">{t.kind === 'preheat' ? t.oven : t.text}</p>
+                  <div class="t-row">
+                    <span class="t-clock fig">{left > 0 ? clock(left) : t.kind === 'preheat' ? 'Hot' : `+${clock(-left)}`}</span>
+                    {#if t.kind !== 'preheat'}
+                      <button class="btn small" onclick={() => change([t], { done: true })} disabled={pending.has(t.key)}><Check aria-hidden="true" />Done</button>
+                    {/if}
+                  </div>
+                </li>
+              {/each}
+            </ul>
+          {/if}
         </div>
       {/if}
 
       <div class="lower">
-        {#if upNext.length}
-          <section class="panel" aria-labelledby="next-h">
+        {#if !finished && (show.waiting.length || upNext.length)}
+          <section class="panel next" aria-labelledby="next-h">
             <h2 id="next-h" class="label">Up next</h2>
             <ol class="list">
+              {#each show.waiting as t (t.key)}
+                <li class="due">
+                  <span class="fig when">{clockAt(t.start, tz)}</span>
+                  <span class="what">{t.text}{#if t.recipe_title}<span class="sub"> · {t.recipe_title}</span>{/if}</span>
+                  <span class="in">due now</span>
+                </li>
+              {/each}
               {#each upNext as t (t.key)}
                 <li class:quiet={t.kind === 'preheat'}>
                   <span class="fig when">{clockAt(t.start, tz)}</span>
@@ -211,17 +284,14 @@
           </section>
         {/if}
 
-        {#if ovens.length}
+        {#if ovens.length && !finished}
           <section class="panel" aria-labelledby="ovens-h">
             <h2 id="ovens-h" class="label">Ovens</h2>
             <ul class="list">
               {#each ovens as o}
                 <li>
-                  <span class="fig when" class:live={o.cur}>{o.cur?.temp ? `${o.cur.temp}°` : o.cur ? 'On' : 'Off'}</span>
-                  <span class="what">
-                    {o.name}{#if o.cur}<span class="sub"> · {o.cur.what} until {clockAt(o.cur.end, tz)}</span>{/if}
-                    {#if o.nxt}<span class="sub"> · next {o.nxt.temp ? `${o.nxt.temp}°F` : ''} at {clockAt(o.nxt.start, tz)}</span>{/if}
-                  </span>
+                  <span class="fig when" class:live={o.live}>{o.figure}</span>
+                  <span class="what">{o.name}<span class="sub"> · {o.line}</span></span>
                 </li>
               {/each}
             </ul>
@@ -229,14 +299,14 @@
         {/if}
 
         {#if show.done.length}
-          <details class="panel done">
+          <details class="panel done" open={finished}>
             <summary><span class="label">Done</span> <span class="count fig">{show.done.length}</span></summary>
             <ul class="list">
-              {#each show.done.filter((t) => t.kind !== 'preheat') as t (t.key)}
+              {#each show.done as t (t.key)}
                 <li>
                   <span class="fig when">{t.done_at ? clockAt(t.done_at, tz) : clockAt(t.end, tz)}</span>
                   <span class="what">{t.text}{#if t.recipe_title}<span class="sub"> · {t.recipe_title}</span>{/if}</span>
-                  <button class="btn quiet" onclick={() => change(t, { done: false })} disabled={pending.has(t.key)} aria-label="Undo {t.text}"><Undo2 aria-hidden="true" />Undo</button>
+                  <button class="btn quiet" onclick={() => change([t], { done: false })} disabled={pending.has(t.key)} aria-label="Undo {t.text}"><Undo2 aria-hidden="true" />Undo</button>
                 </li>
               {/each}
             </ul>
@@ -245,12 +315,12 @@
 
         <div class="foot">
           {#if confirmReset}
-            <p>Forget what’s been started and ticked off?</p>
-            <button class="btn quiet" onclick={reset}>Start over</button>
-            <button class="btn" onclick={() => (confirmReset = false)}>Keep going</button>
+            <p>Forget everything started and ticked off on this meal?</p>
+            <button class="btn" onclick={() => (confirmReset = false)}>Keep it</button>
+            <button class="btn quiet" onclick={reset}>Forget progress</button>
           {:else}
-            <button class="btn quiet" onclick={() => (confirmReset = true)}>Start over</button>
             <a class="btn quiet" href="/m/{id}" use:link>The whole plan</a>
+            <button class="btn quiet" onclick={() => (confirmReset = true)}>Start over</button>
           {/if}
         </div>
       </div>
@@ -261,6 +331,7 @@
 
 <style>
   .run {
+    --bar-h: 68px;
     min-height: 100dvh;
     display: flex;
     flex-direction: column;
@@ -272,7 +343,7 @@
     display: flex;
     align-items: center;
     gap: var(--space-4);
-    min-height: 64px;
+    min-height: var(--bar-h);
     padding: var(--space-2) var(--gutter);
     padding-top: max(var(--space-2), env(safe-area-inset-top));
     background: var(--ticket);
@@ -301,14 +372,14 @@
     white-space: nowrap;
   }
   .served {
-    font-size: 0.875rem;
+    font-size: var(--ui);
     color: var(--ink-2);
   }
   .now {
-    font-size: 2rem;
+    font-size: 2.25rem;
   }
   .status {
-    font-size: var(--ui);
+    font-size: 1.0625rem;
     font-weight: 700;
     color: var(--ink-2);
   }
@@ -338,28 +409,90 @@
   .empty h1 {
     font-size: var(--title-l);
   }
-  .rail {
-    position: relative;
-    z-index: 1;
+
+  /* Missed make-ahead: a plain strip above the rail, one choice per dish. */
+  .missed {
+    margin-bottom: var(--space-4);
+    padding: var(--space-3) var(--space-5) var(--space-4);
+    background: var(--ticket);
+    border-top: 3px solid var(--ink);
+  }
+  .missed h2 {
+    font-size: var(--read);
+    font-weight: 800;
+  }
+  .missed ul {
+    list-style: none;
+    margin: var(--space-2) 0 0;
+    padding: 0;
+  }
+  .missed li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2) var(--space-4);
+    padding: var(--space-2) 0;
+    border-top: 1.5px dashed var(--ticket-press);
+  }
+  .m-acts {
+    display: flex;
+    gap: var(--space-2);
+  }
+  .m-acts .btn {
+    min-height: 52px;
+  }
+
+  /* The rail stays under the bar while the tickets scroll, as in cook mode. */
+  .rail-wrap {
+    position: sticky;
+    top: var(--bar-h);
+    z-index: 3;
+    padding-top: var(--space-2);
+    margin-top: calc(var(--space-2) * -1);
+    background: var(--pass);
   }
   .hung {
     display: flex;
-    flex-wrap: wrap;
     align-items: flex-start;
     gap: var(--space-4);
     padding: 0 var(--space-4);
     margin-top: -4px;
   }
+  .focus {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--space-4);
+  }
   .card {
     position: relative;
-    flex: 1 1 20rem;
-    max-width: 30rem;
+    flex: 1 1 24rem;
+    max-width: 42rem;
     display: grid;
     gap: var(--space-3);
-    padding: var(--space-5) var(--space-5) calc(var(--space-5) + var(--tear));
+    padding: var(--space-5) clamp(var(--space-4), 2.5vw, var(--space-6)) calc(var(--space-5) + var(--tear));
+    animation: fire 420ms var(--ease-out);
   }
-  .card.upcoming {
-    max-width: 26rem;
+  @keyframes fire {
+    0% {
+      opacity: 0;
+      transform: translateX(40px) rotate(1.2deg);
+    }
+    60% {
+      opacity: 1;
+      transform: translateX(0) rotate(-0.4deg);
+    }
+    100% {
+      transform: none;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .card {
+      animation: none;
+    }
   }
   .card.upcoming .text {
     color: var(--ink-2);
@@ -382,7 +515,8 @@
     padding-top: var(--space-2);
   }
   .big {
-    font-size: 2.75rem;
+    font-size: clamp(2.75rem, 2rem + 2vw, 3.5rem);
+    white-space: nowrap;
   }
   .live {
     color: var(--red);
@@ -391,29 +525,17 @@
     color: var(--ink-3);
     text-align: right;
   }
-  .card.over {
-    background: var(--red);
-    color: var(--ticket);
-  }
-  .card.over .live,
-  .card.over .state,
-  .card.over .meta,
-  .card.over .open {
-    color: var(--ticket);
-  }
-  .card.over .btn {
-    border-color: var(--ticket);
-  }
   .text {
-    font-size: clamp(1.25rem, 1rem + 0.8vw, 1.625rem);
+    font-size: clamp(1.5rem, 0.95rem + 1.5vw, 2.125rem);
     font-weight: 500;
-    line-height: 1.3;
+    line-height: 1.28;
+    max-width: 36ch;
   }
   .meta {
     display: flex;
     flex-wrap: wrap;
     gap: 0 var(--space-3);
-    font-size: var(--ui);
+    font-size: 1.0625rem;
     color: var(--ink-2);
   }
   .hands {
@@ -429,33 +551,176 @@
   }
   .acts .btn {
     flex: 1;
-    min-height: 60px;
-    font-size: 1.0625rem;
+    min-height: 72px;
+    font-size: 1.1875rem;
+  }
+  .acts .btn :global(svg) {
+    width: 22px;
+    height: 22px;
   }
   .open {
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: 44px;
+    padding: 0 var(--space-2);
+    margin-left: calc(var(--space-2) * -1);
+    border-radius: 3px;
     font-size: var(--ui);
+    font-weight: 600;
+    color: var(--ink-2);
+    text-decoration: none;
+  }
+  .open:hover {
+    background: var(--ticket-press);
+    color: var(--ink);
+  }
+  /* A ticket whose time is up turns solid red, like a finished timer; its
+     buttons turn to paper so Done still reads. */
+  .card.over {
+    background: var(--red);
+    color: var(--ticket);
+  }
+  .card.over .live,
+  .card.over .state,
+  .card.over .meta,
+  .card.over .hands,
+  .card.over .open {
+    color: var(--ticket);
+  }
+  .card.over .perf {
+    border-top-color: var(--ticket);
+  }
+  .card.over .btn {
+    border-color: var(--ticket);
+    background: transparent;
+    color: var(--ticket);
+  }
+  .card.over .btn.primary {
+    background: var(--ticket);
+    color: var(--red);
+  }
+  /* Its own line under the ticket: a max-width here would let it sit
+     beside the ticket and squeeze it. */
+  .calm {
+    flex: 1 0 100%;
     color: var(--ink-2);
   }
+
+  /* Hands-off work and heating ovens: a lane of small tickets beside the step. */
+  .timers {
+    flex: 0 0 16rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-3);
+  }
+  .tick {
+    position: relative;
+    display: grid;
+    gap: 2px;
+    padding: var(--space-4) var(--space-3) calc(var(--space-2) + var(--tear)) var(--space-4);
+  }
+  .t-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--ink-2);
+  }
+  .t-what {
+    font-size: 0.9375rem;
+    color: var(--ink-2);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .t-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-top: var(--space-1);
+  }
+  .t-clock {
+    font-size: 2.25rem;
+    min-width: 4.2ch;
+    color: var(--red);
+  }
+  .btn.small {
+    min-height: 52px;
+  }
+  .tick.done {
+    background: var(--red);
+    color: var(--ticket);
+  }
+  .tick.done .t-label,
+  .tick.done .t-what,
+  .tick.done .t-clock {
+    color: var(--ticket);
+  }
+  .tick.done .btn {
+    background: var(--ticket);
+    border-color: var(--ticket);
+    color: var(--red);
+  }
+
   .end {
+    flex: 0 1 34rem;
     justify-items: center;
     text-align: center;
   }
-  .end :global(svg) {
-    color: var(--red);
+  .check {
+    width: 56px;
+    height: 56px;
+    fill: none;
+    stroke: var(--red);
+    stroke-width: 5;
+    stroke-linecap: square;
+    stroke-dasharray: 48;
+    stroke-dashoffset: 48;
+    animation: draw 520ms var(--ease-out) 200ms forwards;
+  }
+  @keyframes draw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .check {
+      animation: none;
+      stroke-dashoffset: 0;
+    }
+  }
+  .end .label {
+    color: var(--ink-3);
   }
   .end-title {
     font-size: var(--title-l);
     font-weight: 800;
   }
+  .end-fig {
+    font-size: 2.75rem;
+  }
   .end-sub {
     color: var(--ink-3);
   }
+
   .lower {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
     gap: var(--space-4);
     margin-top: var(--space-6);
     align-items: start;
+  }
+  .lower > .done,
+  .foot {
+    grid-column: 1 / -1;
   }
   .panel {
     background: var(--ticket);
@@ -472,24 +737,31 @@
   }
   .list li {
     display: grid;
-    grid-template-columns: 5.25rem minmax(0, 1fr) auto;
+    grid-template-columns: 5.5rem minmax(0, 1fr) auto;
     gap: var(--space-3);
-    align-items: center;
+    align-items: baseline;
     padding: var(--space-2) 0;
     border-bottom: 1.5px dashed var(--ticket-press);
   }
   .list .when {
-    font-size: 1.5rem;
+    font-size: 1.625rem;
   }
   .list li.quiet .what,
   .list li.quiet .when {
     color: var(--ink-3);
   }
+  .list li.due .in {
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .what {
+    font-size: 1.0625rem;
+  }
   .sub {
     color: var(--ink-2);
   }
   .in {
-    font-size: 0.875rem;
+    font-size: var(--ui);
     color: var(--ink-2);
     white-space: nowrap;
   }
@@ -507,24 +779,47 @@
     color: var(--ink-2);
   }
   .foot {
-    grid-column: 1 / -1;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: var(--space-3);
   }
   .foot p {
+    flex: 1 0 100%;
     font-weight: 700;
   }
+
+  /* An iPad held upright: the timers lane sits under the step, side by
+     side, and the lower panels stack. */
+  @media (max-width: 1000px) {
+    .hung {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .timers {
+      flex: none;
+      grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    }
+    .card {
+      max-width: none;
+    }
+    .lower {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
   @media (max-width: 760px) {
+    .run {
+      --bar-h: 104px;
+    }
     .bar {
       flex-wrap: wrap;
-      gap: var(--space-2) var(--space-3);
+      gap: var(--space-1) var(--space-3);
     }
     .now {
-      font-size: 1.625rem;
+      font-size: 1.75rem;
     }
     .status {
+      order: 4;
       flex: 1 0 100%;
       padding-left: calc(52px + var(--space-3));
     }
@@ -532,15 +827,22 @@
       padding: 0 var(--space-2);
     }
     .card {
-      flex-basis: 100%;
-      max-width: none;
       padding: var(--space-4) var(--space-4) calc(var(--space-4) + var(--tear));
     }
+    .acts .btn {
+      min-height: 64px;
+    }
+    .missed {
+      padding: var(--space-3) var(--space-4) var(--space-4);
+    }
     .list li {
-      grid-template-columns: 4.25rem minmax(0, 1fr) auto;
+      grid-template-columns: 4.5rem minmax(0, 1fr);
+    }
+    .list .in {
+      grid-column: 2;
     }
     .list .when {
-      font-size: 1.25rem;
+      font-size: 1.375rem;
     }
   }
 </style>

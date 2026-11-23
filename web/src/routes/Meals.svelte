@@ -4,7 +4,7 @@
   import { go, link } from '../lib/router.svelte.js';
   import { asPerson } from '../lib/session.svelte.js';
   import { isOffline } from '../lib/net.svelte.js';
-  import { deviceZone, zonedToISO, clockAt, whenAt } from '../lib/meals.js';
+  import { deviceZone, zonedToISO, whenAt } from '../lib/meals.js';
 
   let meals = $state(null);
   let kitchen = $state(null);
@@ -39,7 +39,10 @@
     saving = true;
     problem = '';
     try {
-      const m = await asPerson(() => api.createMeal({ title: title.trim(), serve_at: zonedToISO(serve, zone), timezone: zone }));
+      // A meal served within about a day can't use the day before for prep.
+      const serveAt = zonedToISO(serve, zone);
+      const soon = Date.parse(serveAt) - Date.now() < 30 * 3600e3;
+      const m = await asPerson(() => api.createMeal({ title: title.trim(), serve_at: serveAt, timezone: zone, prep_days: soon ? 0 : 1 }));
       if (m) go(`/m/${m.id}`);
     } catch (err) {
       problem = err.message;
@@ -49,6 +52,11 @@
   }
 
   const past = (m) => Date.parse(m.serve_at) < Date.now() - 864e5;
+  // The one meal being cooked today (or soonest within a day) gets the
+  // step forward: Cook it.
+  const today = $derived(meals?.find((m) => Math.abs(Date.parse(m.serve_at) - Date.now()) < 18 * 3600e3) ?? null);
+  const dayFig = (m) => new Date(m.serve_at).toLocaleDateString(undefined, { timeZone: m.timezone, day: 'numeric' });
+  const monthDay = (m) => new Date(m.serve_at).toLocaleDateString(undefined, { timeZone: m.timezone, weekday: 'short', month: 'short' });
   const upcoming = $derived(meals?.filter((m) => !past(m)) ?? []);
   const earlier = $derived(meals?.filter(past).reverse() ?? []);
 
@@ -77,9 +85,9 @@
         <span class="label">Served</span>
         <input type="datetime-local" bind:value={serve} required />
       </label>
-      <button class="btn primary" disabled={saving || isOffline() || !serve}>Plan it</button>
+      <button class="btn" class:primary={!today} disabled={saving || isOffline() || !serve}>Plan it</button>
     </div>
-    <p class="hint">Times are in {zone.replace(/_/g, ' ')}. You'll add the dishes next.</p>
+    <p class="hint">Times are in {zone.replace(/_/g, ' ')}. You’ll add the dishes next; prep can start the day before.</p>
   </form>
 
   {#if kitchen}
@@ -99,11 +107,14 @@
         <ul class="list">
           {#each upcoming as m (m.id)}
             <li>
-              <a href="/m/{m.id}" use:link>
-                <span class="when fig">{clockAt(m.serve_at, m.timezone)}</span>
-                <span class="t">{m.title}</span>
-                <span class="sub">{whenAt(m.serve_at, m.timezone)} · {m.items === 1 ? '1 dish' : `${m.items} dishes`}</span>
-              </a>
+              <div class="row-item">
+                <a href="/m/{m.id}" use:link>
+                  <span class="when"><span class="fig">{dayFig(m)}</span><span class="label">{monthDay(m)}</span></span>
+                  <span class="t">{m.title}</span>
+                  <span class="sub">{whenAt(m.serve_at, m.timezone)} · {m.items === 1 ? '1 dish' : `${m.items} dishes`}</span>
+                </a>
+                {#if m === today && m.items}<a class="btn primary cook-it" href="/m/{m.id}/cook" use:link>Cook it</a>{/if}
+              </div>
             </li>
           {/each}
         </ul>
@@ -117,11 +128,13 @@
         <ul class="list past">
           {#each earlier as m (m.id)}
             <li>
-              <a href="/m/{m.id}" use:link>
-                <span class="when fig">{clockAt(m.serve_at, m.timezone)}</span>
-                <span class="t">{m.title}</span>
-                <span class="sub">{whenAt(m.serve_at, m.timezone)} · {m.items === 1 ? '1 dish' : `${m.items} dishes`}</span>
-              </a>
+              <div class="row-item">
+                <a href="/m/{m.id}" use:link>
+                  <span class="when"><span class="fig">{dayFig(m)}</span><span class="label">{monthDay(m)}</span></span>
+                  <span class="t">{m.title}</span>
+                  <span class="sub">{whenAt(m.serve_at, m.timezone)} · {m.items === 1 ? '1 dish' : `${m.items} dishes`}</span>
+                </a>
+              </div>
             </li>
           {/each}
         </ul>
@@ -240,9 +253,21 @@
     display: grid;
     gap: var(--space-2);
   }
-  .list a {
+  .row-item {
+    display: flex;
+    align-items: stretch;
+    background: var(--ticket);
+  }
+  .cook-it {
+    align-self: center;
+    margin-right: var(--space-4);
+    min-height: 52px;
+  }
+  .list a:not(.btn) {
+    flex: 1;
+    min-width: 0;
     display: grid;
-    grid-template-columns: 6.5rem minmax(0, 1fr);
+    grid-template-columns: 4.5rem minmax(0, 1fr);
     grid-template-areas: 'when t' 'when sub';
     column-gap: var(--space-4);
     align-items: baseline;
@@ -252,13 +277,20 @@
     color: inherit;
     text-decoration: none;
   }
-  .list a:hover {
+  .list a:not(.btn):hover {
     background: var(--ticket-press);
   }
   .when {
     grid-area: when;
-    font-size: 1.625rem;
+    display: grid;
+    justify-items: start;
     align-self: center;
+  }
+  .when .fig {
+    font-size: 2.25rem;
+  }
+  .when .label {
+    color: var(--ink-3);
   }
   .t {
     grid-area: t;
@@ -280,9 +312,16 @@
     .row .btn {
       width: 100%;
     }
-    .list a {
-      grid-template-columns: 5rem minmax(0, 1fr);
+    .list a:not(.btn) {
+      grid-template-columns: 3.75rem minmax(0, 1fr);
       padding: var(--space-3) var(--space-4);
+    }
+    .row-item {
+      flex-wrap: wrap;
+    }
+    .cook-it {
+      flex: 1 0 calc(100% - 2 * var(--space-4));
+      margin: 0 var(--space-4) var(--space-3);
     }
   }
 </style>

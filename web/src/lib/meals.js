@@ -101,22 +101,110 @@ export function span(min) {
   return m ? `${h} hr ${m}` : `${h} hr`;
 }
 
-/** What the day-of screen shows: tasks happening or due now, those coming
- *  up, and what's finished. Due means it should have started by now (or
- *  starts in the next few minutes), so it's what to do next. */
-export function runOfShow(plan, now = Date.now(), soonMin = 5) {
+/** What the day-of screen shows, so one glance answers "what now?":
+ *  - focus: what each cook should be doing, at most one ticket per cook:
+ *    hands-on work under way first, then what's due (starts within a few
+ *    minutes, or should have started), earliest first;
+ *  - timers: hands-off work under way (a roast), and ovens heating;
+ *  - waiting: due work beyond what the cooks can take on, first in line;
+ *  - missed: make-ahead work whose time passed before anyone started it,
+ *    by dish, for the cook to do now or call done;
+ *  - next: everything later; done: what's finished.
+ *  A dish's later step never comes up while an earlier one is still open. */
+export function runOfShow(plan, now = Date.now(), { cooks = 1, soonMin = 5 } = {}) {
   const soon = now + soonMin * 60e3;
-  const live = [];
-  const next = [];
-  const done = [];
+  const out = { focus: [], timers: [], waiting: [], missed: [], next: [], done: [] };
+  // The first open task of each dish; the rest wait for it.
+  const first = new Map();
+  // Dishes whose make-ahead work someone has taken up: their missed steps
+  // come up as ordinary work rather than in the missed strip.
+  const takenUp = new Set();
+  for (const t of plan.tasks) {
+    if (!t.item_id || t.kind === 'preheat') continue;
+    if (t.make_ahead && (t.status === 'active' || t.status === 'done')) takenUp.add(t.item_id);
+    if (t.status !== 'done' && !first.has(t.item_id)) first.set(t.item_id, t.key);
+  }
+  const missed = new Map();
+  const due = [];
+  const handsOnActive = [];
   for (const t of plan.tasks) {
     const s = Date.parse(t.start);
     const e = Date.parse(t.end);
-    if (t.status === 'done' || (t.kind === 'preheat' && e <= now)) done.push(t);
-    else if (t.status === 'active' || t.status === 'late' || (t.kind === 'preheat' ? s <= now : s <= soon)) live.push(t);
-    else next.push(t);
+    if (t.kind === 'preheat') {
+      if (e <= now) continue;
+      (s <= now ? out.timers : out.next).push(t);
+    } else if (t.status === 'done') out.done.push(t);
+    else if (t.status === 'missed' && !takenUp.has(t.item_id)) {
+      if (!missed.has(t.item_id)) missed.set(t.item_id, { item_id: t.item_id, recipe_title: t.recipe_title, tasks: [] });
+      missed.get(t.item_id).tasks.push(t);
+    } else if (t.status === 'active') (t.hands_on ? handsOnActive : out.timers).push(t);
+    // Sous has already moved late work to start from now, so what's due is
+    // simply what starts within the next few minutes.
+    else if (first.get(t.item_id) === t.key && s <= soon) due.push(t);
+    else out.next.push(t);
   }
-  return { live, next, done };
+  out.missed = [...missed.values()];
+  const slots = Math.max(0, cooks - handsOnActive.length);
+  out.focus = [...handsOnActive, ...due.slice(0, slots)];
+  out.waiting = due.slice(slots);
+  return out;
+}
+
+/** The time from the first start to the last tick, in minutes, for the
+ *  end of the meal; null when nothing was timed. */
+export function cookedMinutes(plan) {
+  const starts = plan.tasks.map((t) => t.started_at ?? t.done_at).filter(Boolean).map(Date.parse);
+  const ends = plan.tasks.map((t) => t.done_at).filter(Boolean).map(Date.parse);
+  if (!starts.length || !ends.length) return null;
+  return Math.round((Math.max(...ends) - Math.min(...starts)) / 60e3);
+}
+
+/** Where a held dish waits, in words: "in the fridge", "on the counter". */
+export function holdPlace(where) {
+  return { fridge: 'in the fridge', counter: 'on the counter', warm: 'somewhere warm' }[where] ?? `in the ${where}`;
+}
+
+/** Bars for the day's lane chart: one lane per oven, the stovetop, each
+ *  appliance, and the cooks' hands, with overlapping bars stacked in rows.
+ *  Only the meal's own day is drawn; make-ahead days are in the list. */
+export function lanes(plan, tz, ovens = []) {
+  const day = dayKey(plan.serve_at, tz);
+  const tasks = plan.tasks.filter((t) => t.minutes > 0 && dayKey(t.start, tz) === day);
+  if (!tasks.length) return null;
+  const from = Math.min(...tasks.map((t) => Date.parse(t.start)));
+  const to = Math.max(...tasks.map((t) => Date.parse(t.end)), Date.parse(plan.serve_at));
+  const hour = 3600e3;
+  const start = Math.floor(from / hour) * hour;
+  const end = Math.ceil(to / hour) * hour;
+  const pos = (ms) => ((ms - start) / (end - start)) * 100;
+  const pack = (items) => {
+    const rows = [];
+    for (const t of items) {
+      const s = Date.parse(t.start);
+      let row = rows.find((r) => r.at(-1).e <= s);
+      const bar = { ...t, s, e: Date.parse(t.end), left: pos(Date.parse(t.start)), width: pos(Date.parse(t.end)) - pos(Date.parse(t.start)) };
+      if (row) row.push(bar);
+      else rows.push([bar]);
+    }
+    return rows;
+  };
+  const out = [];
+  for (const o of ovens) {
+    const mine = tasks.filter((t) => t.oven === o.name);
+    if (mine.length) out.push({ name: o.name, rows: pack(mine) });
+  }
+  const stove = tasks.filter((t) => t.equipment === 'stovetop');
+  if (stove.length) out.push({ name: 'Stovetop', rows: pack(stove) });
+  for (const name of new Set(tasks.map((t) => t.equipment).filter((e) => e && e !== 'oven' && e !== 'stovetop'))) {
+    out.push({ name: name[0].toUpperCase() + name.slice(1), rows: pack(tasks.filter((t) => t.equipment === name)) });
+  }
+  const hands = tasks.filter((t) => t.hands_on && t.kind !== 'preheat');
+  if (hands.length) out.push({ name: 'Hands', rows: pack(hands), hands: true });
+  // Hour labels at least 8% of the width apart, so they never collide.
+  const every = Math.max(1, Math.ceil(8 / (100 / Math.max(1, (end - start) / hour))));
+  const ticks = [];
+  for (let h = start, n = 0; h <= end; h += hour, n++) ticks.push({ at: pos(h), iso: new Date(h).toISOString(), label: n % every === 0 });
+  return { lanes: out, ticks, pos, start, end };
 }
 
 /** Seconds left on a started task's own clock (negative once it's over). */
@@ -134,7 +222,7 @@ export function timingSummary(t) {
   else if (t.equipment) bits.push(t.equipment);
   if (t.space > 1) bits.push(t.equipment === 'stovetop' ? `${t.space} burners` : `${t.space} racks`);
   if (t.hands_on === false) bits.push('hands off');
-  if (t.hold_minutes) bits.push(`can wait ${span(t.hold_minutes)}${t.hold_in ? ` (${t.hold_in})` : ''}`);
+  if (t.hold_minutes) bits.push(`can wait ${span(t.hold_minutes)}${t.hold_in ? ` ${holdPlace(t.hold_in)}` : ''}`);
   if (t.reheat_minutes) bits.push(`reheat ${span(t.reheat_minutes)}${t.reheat_temp ? ` at ${t.reheat_temp}°F` : ''}`);
   return bits.join(' · ');
 }

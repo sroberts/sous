@@ -1,7 +1,7 @@
 <script>
   import { tick } from 'svelte';
   import { ArrowLeft, X, ImagePlus, Trash2, Link2, Clock } from '@lucide/svelte';
-  import { go, link, setLeaveGuard } from '../lib/router.svelte.js';
+  import { go, link, setLeaveGuard, route } from '../lib/router.svelte.js';
   import { api } from '../lib/api.js';
   import { session, asPerson, refreshIndex, toast } from '../lib/session.svelte.js';
   import { getRecipe } from '../lib/library.js';
@@ -156,6 +156,7 @@
         fill(r);
         if (merge && draft) mergeDraft(draft);
         loaded = true;
+        openAskedTiming();
         loadedTitle = r.title;
         document.title = `Editing ${r.title} · Sous`;
       },
@@ -368,6 +369,18 @@
     form.timing[i] = { ...form.timing[i], ...guesses[i] };
     touch();
   }
+  // A meal plan's "Set its timing" opens the editor at that step (?timing=N).
+  async function openAskedTiming() {
+    const n = +route.search.get('timing');
+    if (!n) return;
+    const i = stepNumbers.indexOf(n);
+    if (i < 0) return;
+    await openTiming(i);
+    await tick();
+    const el = document.getElementById(`timing-${i}`);
+    el?.scrollIntoView({ block: 'center' });
+    el?.querySelector('input, select, button')?.focus({ preventScroll: true });
+  }
   const EQUIPMENT = ['oven', 'stovetop', 'slow cooker', 'pressure cooker', 'grill', 'smoker', 'air fryer', 'microwave'];
   const setNum = (i, key, v, scale = 1) => {
     form.timing[i][key] = v === '' ? null : Math.round(+v * scale);
@@ -556,7 +569,7 @@
                       {#if t.equipment}
                         <label class="tf"><span class="label">{t.equipment === 'oven' ? 'Racks' : t.equipment === 'stovetop' ? 'Burners' : 'How many'}</span><input type="number" min="1" max="12" value={t.space ?? ''} placeholder="1" oninput={(e) => setNum(i, 'space', e.currentTarget.value)} /></label>
                       {/if}
-                      <label class="tf"><span class="label">Can wait after, hours</span><input type="number" min="0" step="0.5" value={t.hold_minutes ? t.hold_minutes / 60 : ''} oninput={(e) => setNum(i, 'hold_minutes', e.currentTarget.value, 60)} /></label>
+                      <label class="tf"><span class="label">Can wait after this (hours)</span><input type="number" min="0" step="0.5" value={t.hold_minutes ? t.hold_minutes / 60 : ''} oninput={(e) => setNum(i, 'hold_minutes', e.currentTarget.value, 60)} /></label>
                       {#if t.hold_minutes}
                         <label class="tf"><span class="label">Waits in the</span>
                           <select value={t.hold_in ?? 'counter'} onchange={(e) => ((t.hold_in = e.currentTarget.value), touch())}>
@@ -893,26 +906,20 @@
   .timing {
     grid-column: 2;
   }
+  /* Always there, so a laptop finds it without hovering each step. */
   .timing-toggle {
     justify-self: start;
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    min-height: 32px;
+    min-height: 36px;
     margin-bottom: var(--space-1);
     border: 0;
     background: none;
     padding: 0;
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     font-weight: 600;
     color: var(--ink-3);
-    opacity: 0;
-  }
-  .timing-toggle.set,
-  .timing-toggle[aria-expanded='true'],
-  .lines li:hover .timing-toggle,
-  .lines li:focus-within .timing-toggle {
-    opacity: 1;
   }
   .timing-toggle.set {
     color: var(--ink-2);
@@ -920,9 +927,9 @@
   .timing-toggle:hover {
     color: var(--red);
   }
-  @media (hover: none) {
+  @media (pointer: coarse) {
     .timing-toggle {
-      opacity: 1;
+      min-height: 44px;
     }
   }
   .timing {
@@ -981,8 +988,8 @@
   .guess .link {
     border: 0;
     background: none;
-    padding: 0 var(--space-1);
-    min-height: 32px;
+    padding: 0 var(--space-2);
+    min-height: 44px;
     font-weight: 700;
     color: var(--red);
     text-decoration: underline;

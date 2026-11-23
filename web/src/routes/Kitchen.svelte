@@ -244,8 +244,11 @@
     place-items: center;
     width: 44px;
     height: 44px;
+    padding: 0;
+    border: 0;
     border-radius: 3px;
-    color: var(--ink-2);
+    background: none;
+    color: var(--ink-3);
   }
   .icon:hover {
     background: var(--pass-deep);
@@ -257,6 +260,9 @@
     align-items: center;
     gap: var(--space-2);
     min-height: 44px;
+    padding: 0;
+    border: 0;
+    background: none;
     font-weight: 700;
     font-size: var(--ui);
     text-decoration: underline;
