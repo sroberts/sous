@@ -30,6 +30,19 @@ type Plan struct {
 	Ovens         []OvenUse     `json:"ovens"`
 	Serving       []ServingDish `json:"serving"`
 	Warnings      []PlanWarning `json:"warnings"`
+	Options       []LateOption  `json:"options" jsonschema:"when the meal is late, what would bring it in sooner, earliest landing first; empty when it's on time"`
+}
+
+// LateOption is one way to bring a late meal in: plan for another cook,
+// take the dish holding it up off the menu, or serve the whole meal later.
+type LateOption struct {
+	Kind          string  `json:"kind" jsonschema:"more_cooks, without or move"`
+	Cooks         *int    `json:"cooks" jsonschema:"for more_cooks, how many cooks to plan for"`
+	ItemID        *string `json:"item_id" jsonschema:"for without, the dish taken off the menu"`
+	RecipeTitle   *string `json:"recipe_title" jsonschema:"for without, that dish's recipe"`
+	LandsAt       string  `json:"lands_at" jsonschema:"when the meal would be ready; for move, the new serving time"`
+	BehindMinutes int     `json:"behind_minutes" jsonschema:"how late it would still be; 0 for move"`
+	InKitchenDay  bool    `json:"in_kitchen_day" jsonschema:"whether lands_at falls within the kitchen's hours"`
 }
 
 // PlanTask is one thing to do: a recipe step, a reheat, or a preheat.
@@ -125,6 +138,7 @@ const (
 	gridMin       = 5   // tasks start on a five-minute grid
 	tempTolerance = 25  // °F: dishes this close share an oven
 	preheatMin    = 15  // minutes an oven takes to change temperature
+	maxCooks      = 8   // the most cooks a meal can plan for
 	defaultStep   = 5   // minutes for a step whose time can't be guessed
 	waitWarnMin   = 30  // a cooked step waiting longer than this is flagged
 	lookBackDays  = 7   // how far before the prep window a task may be pushed
@@ -159,7 +173,78 @@ func (s *Service) MealPlan(ctx context.Context, c identity.Caller, id string, no
 		return Plan{}, err
 	}
 	in.now = now
-	return buildPlan(in)
+	plan, err := buildPlan(in)
+	if err != nil || plan.OnTime {
+		return plan, err
+	}
+	plan.Options = lateOptions(in, plan)
+	return plan, nil
+}
+
+// lateOptions works out what would bring a late meal in sooner: another
+// cook, the meal without the dish that sets its time, or the meal served
+// later, each planned in full, earliest landing first. An option that
+// doesn't gain real time is left out.
+func lateOptions(in planInput, plan Plan) []LateOption {
+	serve, err := time.Parse(time.RFC3339, in.meal.ServeAt)
+	if err != nil {
+		return []LateOption{}
+	}
+	loc, err := time.LoadLocation(in.meal.Timezone)
+	if err != nil {
+		return []LateOption{}
+	}
+	k := in.kitchen
+	k.fillDefaults()
+	from, _ := clockMinutes(k.DayStart)
+	to, _ := clockMinutes(k.DayEnd)
+	inDay := func(t time.Time) bool {
+		l := t.In(loc)
+		m := l.Hour()*60 + l.Minute()
+		return to <= from || (m >= from && m <= to)
+	}
+	option := func(o LateOption, behind int) LateOption {
+		at := serve.Add(time.Duration(behind) * time.Minute)
+		o.LandsAt, o.BehindMinutes, o.InKitchenDay = at.UTC().Format(timeFormat), behind, inDay(at)
+		return o
+	}
+	// Worth offering only if it gains real time: half an hour, or a quarter
+	// of the lateness when that's more. Dropping a dish to save ten minutes
+	// isn't a fix.
+	helps := func(p Plan) bool { return p.BehindMinutes <= plan.BehindMinutes-max(30, plan.BehindMinutes/4) }
+	var out []LateOption
+	if in.meal.Cooks < maxCooks {
+		alt := in
+		alt.meal.Cooks++
+		if p, err := buildPlan(alt); err == nil && helps(p) {
+			out = append(out, option(LateOption{Kind: "more_cooks", Cooks: ref(alt.meal.Cooks)}, p.BehindMinutes))
+		}
+	}
+	if len(plan.LateDishes) > 0 && len(in.meal.Items) > 1 {
+		lead := plan.LateDishes[0]
+		alt := in
+		alt.meal.Items, alt.recipes = nil, nil
+		for i, it := range in.meal.Items {
+			if it.ID != lead.ItemID {
+				alt.meal.Items = append(alt.meal.Items, it)
+				alt.recipes = append(alt.recipes, in.recipes[i])
+			}
+		}
+		if p, err := buildPlan(alt); err == nil && helps(p) {
+			out = append(out, option(LateOption{Kind: "without", ItemID: ref(lead.ItemID), RecipeTitle: ref(lead.RecipeTitle)}, p.BehindMinutes))
+		}
+	}
+	move := option(LateOption{Kind: "move"}, plan.BehindMinutes)
+	move.BehindMinutes = 0
+	out = append(out, move)
+	rank := map[string]int{"more_cooks": 0, "move": 1, "without": 2}
+	slices.SortStableFunc(out, func(a, b LateOption) int {
+		if c := cmp.Compare(a.LandsAt, b.LandsAt); c != 0 {
+			return c
+		}
+		return cmp.Compare(rank[a.Kind], rank[b.Kind])
+	})
+	return out
 }
 
 // taskProgress is a meal_tasks row.
@@ -225,6 +310,7 @@ type ptask struct {
 	holdMax   int
 	holdIn    string
 	prev      *ptask
+	heats     *ptask // for a preheat, the oven task it heats for
 
 	fixed, pinned, late, missed bool
 	ideal                       int // where the plan made without the clock put it
@@ -956,8 +1042,17 @@ func (p *planner) result(serve, prepFrom time.Time, tasks []*ptask, dayOf, ahead
 		} else if t.late && t.prog.started == nil {
 			pt.Status = StatusLate
 		}
-		if t.kind == KindPreheat && t.end <= nowMin {
-			pt.Status = StatusDone
+		// An oven is on once someone says so. It's hot for good once the
+		// work it heats for has begun; a preheat nobody confirmed by its
+		// time is late, so the cook is asked to turn the oven on.
+		if t.kind == KindPreheat {
+			switch {
+			case t.heats != nil && (t.heats.prog.started != nil || t.heats.prog.done != nil):
+				pt.Status = StatusDone
+			case t.prog.started != nil || t.prog.done != nil:
+			case t.end <= nowMin:
+				pt.Status = StatusLate
+			}
 		}
 		if t.start < prepMin && !t.fixed && t.kind != KindPreheat {
 			early = true
@@ -1055,6 +1150,7 @@ func (p *planner) result(serve, prepFrom time.Time, tasks []*ptask, dayOf, ahead
 	if out.Warnings == nil {
 		out.Warnings = []PlanWarning{}
 	}
+	out.Options = []LateOption{}
 	return out
 }
 
@@ -1074,7 +1170,9 @@ func (p *planner) preheats(tasks []*ptask) []*ptask {
 		for i, t := range mine {
 			hot := false
 			for _, u := range mine[:i] {
-				if u.end >= t.start && abs(u.temp-t.temp) <= tempTolerance {
+				// An oven at a close temperature until just before is still
+				// hot: the dial turns, it doesn't heat from cold.
+				if u.end >= t.start-preheatMin && abs(u.temp-t.temp) <= tempTolerance {
 					hot = true
 					break
 				}
@@ -1086,8 +1184,9 @@ func (p *planner) preheats(tasks []*ptask) []*ptask {
 				key: "preheat:" + strconv.Itoa(o) + ":" + t.key, kind: KindPreheat, item: -1, step: -1,
 				text: fmt.Sprintf("Preheat the %s to %d°F", strings.ToLower(k.Ovens[o].Name), t.temp),
 				dur:  preheatMin, equip: EquipOven, temp: t.temp, space: 0, oven: o,
-				start: t.start - preheatMin, end: t.start,
+				start: t.start - preheatMin, end: t.start, heats: t,
 			}
+			ph.prog = p.in.progress[ph.key]
 			out = append(out, ph)
 		}
 	}

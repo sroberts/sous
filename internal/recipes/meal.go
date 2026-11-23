@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"strconv"
 	"strings"
 	"time"
 	_ "time/tzdata" // a meal's timezone must load on a host without zoneinfo
@@ -404,6 +405,14 @@ func (s *Service) ResetProgress(ctx context.Context, c identity.Caller, mealID s
 
 // taskKnown reports whether task names a step (or the reheat) of an item.
 func taskKnown(m Meal, task string) bool {
+	// A preheat is "preheat:<oven>:<the task it heats for>".
+	if after, ok := strings.CutPrefix(task, "preheat:"); ok {
+		oven, heated, ok := strings.Cut(after, ":")
+		if _, err := strconv.Atoi(oven); !ok || err != nil {
+			return false
+		}
+		task = heated
+	}
 	item, rest, ok := strings.Cut(task, ":")
 	if !ok {
 		return false

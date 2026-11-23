@@ -3963,6 +3963,58 @@
         ],
         "additionalProperties": false
       },
+      "LateOption": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "description": "more_cooks, without or move"
+          },
+          "cooks": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "for more_cooks, how many cooks to plan for"
+          },
+          "item_id": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "for without, the dish taken off the menu"
+          },
+          "recipe_title": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "for without, that dish's recipe"
+          },
+          "lands_at": {
+            "type": "string",
+            "description": "when the meal would be ready; for move, the new serving time"
+          },
+          "behind_minutes": {
+            "type": "integer",
+            "description": "how late it would still be; 0 for move"
+          },
+          "in_kitchen_day": {
+            "type": "boolean",
+            "description": "whether lands_at falls within the kitchen's hours"
+          }
+        },
+        "required": [
+          "kind",
+          "cooks",
+          "item_id",
+          "recipe_title",
+          "lands_at",
+          "behind_minutes",
+          "in_kitchen_day"
+        ],
+        "additionalProperties": false
+      },
       "Me": {
         "type": "object",
         "properties": {
@@ -4679,6 +4731,16 @@
             "items": {
               "$ref": "#/components/schemas/PlanWarning"
             }
+          },
+          "options": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/LateOption"
+            },
+            "description": "when the meal is late, what would bring it in sooner, earliest landing first; empty when it's on time"
           }
         },
         "required": [
@@ -4694,7 +4756,8 @@
           "tasks",
           "ovens",
           "serving",
-          "warnings"
+          "warnings",
+          "options"
         ],
         "additionalProperties": false
       },

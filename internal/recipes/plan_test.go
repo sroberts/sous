@@ -1,6 +1,7 @@
 package recipes
 
 import (
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -476,5 +477,95 @@ func TestPlanUrgentDishFirst(t *testing.T) {
 		if task.Kind != KindPreheat && at(t, task.Start).Before(in.now.Add(-time.Minute)) && task.Status != StatusDone && task.Status != StatusActive {
 			t.Errorf("%s planned at %s, before now", task.Key, task.Start)
 		}
+	}
+}
+
+// A preheat never changes the oven's temperature under a dish baking at
+// another one: an oven still close to temperature just turns the dial.
+func TestPlanPreheatNeverCoolsABake(t *testing.T) {
+	for _, now := range []time.Time{time.Date(2026, 11, 20, 12, 0, 0, 0, time.UTC), time.Date(2026, 11, 26, 18, 30, 0, 0, time.UTC)} {
+		in := thanksgiving()
+		in.now = now
+		p := mustPlan(t, in)
+		for _, ph := range p.Tasks {
+			if ph.Kind != KindPreheat {
+				continue
+			}
+			s, e := at(t, ph.Start), at(t, ph.End)
+			for _, u := range p.Tasks {
+				if u.Kind == KindPreheat || u.Oven == nil || *u.Oven != *ph.Oven || u.OvenTemp == nil {
+					continue
+				}
+				if at(t, u.Start).Before(e) && s.Before(at(t, u.End)) && abs(*u.OvenTemp-*ph.OvenTemp) > 0 {
+					t.Errorf("now %s: %s heats to %d°F from %s while %s bakes at %d°F", now, ph.Key, *ph.OvenTemp, ph.Start, u.Key, *u.OvenTemp)
+				}
+			}
+		}
+	}
+}
+
+// A preheat is active once someone says the oven is on, and done once the
+// work it heats for begins. Until then it's the cook's to confirm.
+func TestPlanPreheatConfirmed(t *testing.T) {
+	in := thanksgiving()
+	in.now = time.Date(2026, 11, 26, 18, 30, 0, 0, time.UTC)
+	p := mustPlan(t, in)
+	var ph PlanTask
+	for _, pt := range p.Tasks {
+		if pt.Kind == KindPreheat && at(t, pt.Start).After(in.now) {
+			ph = pt
+			break
+		}
+	}
+	if ph.Key == "" {
+		t.Fatal("no preheat still to come")
+	}
+	if ph.Status != StatusPending {
+		t.Errorf("preheat to come = %s, want pending", ph.Status)
+	}
+	on := at(t, ph.Start)
+	in.progress = map[string]taskProgress{ph.Key: {started: &on}}
+	if got := taskByKey(t, mustPlan(t, in), ph.Key); got.Status != StatusActive {
+		t.Errorf("confirmed preheat = %s, want active", got.Status)
+	}
+	// The work it heats for, and everything before it in that dish, done.
+	heated := strings.SplitN(ph.Key, ":", 3)[2]
+	item, n, _ := strings.Cut(heated, ":")
+	last, _ := strconv.Atoi(n)
+	for i := 0; i <= last; i++ {
+		in.progress[item+":"+strconv.Itoa(i)] = taskProgress{started: &on, done: &on}
+	}
+	if got := taskByKey(t, mustPlan(t, in), ph.Key); got.Status != StatusDone {
+		t.Errorf("preheat once its bake began = %s, want done", got.Status)
+	}
+}
+
+// A late meal comes with what would help, earliest landing first; any
+// option but moving the meal gains real time, and moving it always works.
+func TestPlanLateOptions(t *testing.T) {
+	in := thanksgiving()
+	in.now = time.Date(2026, 11, 26, 18, 30, 0, 0, time.UTC)
+	p := mustPlan(t, in)
+	opts := lateOptions(in, p)
+	if len(opts) == 0 || opts[len(opts)-1].LandsAt < opts[0].LandsAt {
+		t.Fatalf("options %+v, want some, earliest first", opts)
+	}
+	kinds := map[string]LateOption{}
+	for _, o := range opts {
+		kinds[o.Kind] = o
+		if o.BehindMinutes > p.BehindMinutes-30 && o.Kind != "move" {
+			t.Errorf("%s leaves the meal %d min late, no better than %d", o.Kind, o.BehindMinutes, p.BehindMinutes)
+		}
+	}
+	mv, ok := kinds["move"]
+	if !ok || mv.BehindMinutes != 0 {
+		t.Errorf("move = %+v, want offered and on time", mv)
+	}
+	if want := at(t, in.meal.ServeAt).Add(time.Duration(p.BehindMinutes) * time.Minute); !at(t, mv.LandsAt).Equal(want) {
+		t.Errorf("move lands at %s, want %s", mv.LandsAt, want)
+	}
+	on := mustPlan(t, thanksgiving())
+	if !on.OnTime || len(on.Options) != 0 {
+		t.Errorf("on time %v with options %+v, want none", on.OnTime, on.Options)
 	}
 }
