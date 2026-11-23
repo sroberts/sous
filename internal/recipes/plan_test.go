@@ -407,8 +407,13 @@ func TestPlanMissedMakeAhead(t *testing.T) {
 		}
 	}
 	// Day-of work that should have started is late, not missed.
-	if got := taskByKey(t, p, "iturkey:0").Status; got != StatusLate {
-		t.Errorf("turkey prep = %s, want late", got)
+	prep := taskByKey(t, p, "iturkey:0")
+	if prep.Status != StatusLate {
+		t.Errorf("turkey prep = %s, want late", prep.Status)
+	}
+	// It says when it was meant to start, before the clock moved it.
+	if prep.PlannedFor == nil || !at(t, *prep.PlannedFor).Before(at(t, prep.Start)) {
+		t.Errorf("turkey prep planned_for = %v, start %s", prep.PlannedFor, prep.Start)
 	}
 	if len(p.LateDishes) == 0 || p.Warnings[0].Code != "behind" {
 		t.Fatalf("late dishes %+v, first warning %+v", p.LateDishes, p.Warnings[0])
@@ -438,7 +443,7 @@ func TestPlanAppetiserBeforeTheMeal(t *testing.T) {
 }
 
 func TestHumanMinutes(t *testing.T) {
-	for m, want := range map[int]string{45: "45 min", 60: "1 hr", 120: "2 hr", 100: "1 hr 40"} {
+	for m, want := range map[int]string{45: "45 min", 60: "1 hr", 120: "2 hr", 100: "1 hr 40 min"} {
 		if got := humanMinutes(m); got != want {
 			t.Errorf("humanMinutes(%d) = %q, want %q", m, got, want)
 		}

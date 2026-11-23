@@ -4743,6 +4743,13 @@
           "end": {
             "type": "string"
           },
+          "planned_for": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "where the plan had it before the clock moved it (it should have started then); null when it hasn't moved"
+          },
           "minutes": {
             "type": "integer"
           },
@@ -4823,6 +4830,7 @@
           "text",
           "start",
           "end",
+          "planned_for",
           "minutes",
           "hands_on",
           "equipment",

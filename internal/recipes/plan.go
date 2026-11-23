@@ -43,6 +43,7 @@ type PlanTask struct {
 	Text        string    `json:"text"`
 	Start       string    `json:"start"`
 	End         string    `json:"end"`
+	PlannedFor  *string   `json:"planned_for" jsonschema:"where the plan had it before the clock moved it (it should have started then); null when it hasn't moved"`
 	Minutes     int       `json:"minutes"`
 	HandsOn     bool      `json:"hands_on"`
 	Equipment   *string   `json:"equipment"`
@@ -940,6 +941,9 @@ func (p *planner) result(serve, prepFrom time.Time, tasks []*ptask, dayOf, ahead
 		if h, ok := holds[t]; ok {
 			pt.Hold = &h
 		}
+		if (t.late || t.missed) && t.ideal != t.start {
+			pt.PlannedFor = ref(p.stamp(t.ideal))
+		}
 		if t.prog.started != nil {
 			pt.StartedAt = ref(t.prog.started.UTC().Format(timeFormat))
 			pt.Status = StatusActive
@@ -1110,7 +1114,7 @@ func load(tasks []*ptask, s, e int, weight func(*ptask) int) int {
 	return peak
 }
 
-// humanMinutes says minutes as the UI does: "45 min", "2 hr", "1 hr 40".
+// humanMinutes says minutes as the UI does: "45 min", "2 hr", "1 hr 40 min".
 func humanMinutes(m int) string {
 	switch {
 	case m < 60:
@@ -1118,7 +1122,7 @@ func humanMinutes(m int) string {
 	case m%60 == 0:
 		return fmt.Sprintf("%d hr", m/60)
 	}
-	return fmt.Sprintf("%d hr %d", m/60, m%60)
+	return fmt.Sprintf("%d hr %d min", m/60, m%60)
 }
 
 // short is a step's opening words, for a warning.
