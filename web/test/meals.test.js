@@ -24,7 +24,7 @@ test('tasks group by the kitchen’s day, not UTC’s', () => {
 
 test('spans read as the plan says them', () => {
   assert.equal(span(45), '45 min');
-  assert.equal(span(90), '1 hr 30');
+  assert.equal(span(90), '1 hr 30 min');
   assert.equal(span(120), '2 hr');
   assert.equal(span(2880), '2 days');
 });
@@ -59,6 +59,12 @@ test('the run of show puts one ticket per cook on the rail', () => {
   const two = runOfShow(plan, now, { cooks: 2 });
   assert.deepEqual(two.focus.map((x) => x.key), ['cran:0', 'mash:0']);
 
+  // Hands-off work that's due goes on the rail whatever the cooks are doing:
+  // starting it takes a moment.
+  plan.tasks.push(t('beans', 'beans2', '2026-11-26T16:02:00Z', 30, { hands_on: false }));
+  assert.deepEqual(runOfShow(plan, now).focus.map((x) => x.key), ['cran:0', 'beans']);
+  plan.tasks.pop();
+
   // Once someone takes up a missed dish, its steps come up as ordinary work.
   plan.tasks[0] = { ...plan.tasks[0], status: 'done', done_at: '2026-11-26T15:59:00Z' };
   const after = runOfShow(plan, now, { cooks: 2 });
@@ -72,13 +78,13 @@ test('the day’s lanes stack what overlaps', () => {
   const plan = {
     serve_at: '2026-11-26T22:00:00.000Z',
     tasks: [
-      t('ahead', '2026-11-25T14:00:00Z', 30, { hands_on: true }),
+      t('ahead', '2026-11-25T14:00:00Z', 30, { hands_on: true, make_ahead: true }),
       t('roast', '2026-11-26T17:00:00Z', 240, { oven: 'Oven', equipment: 'oven' }),
       t('beans', '2026-11-26T20:00:00Z', 30, { oven: 'Oven', equipment: 'oven' }),
       t('mash', '2026-11-26T21:00:00Z', 10, { hands_on: true }),
     ],
   };
-  const l = lanes(plan, 'America/New_York', [{ name: 'Oven', racks: 2 }]);
+  const l = lanes(plan, 'America/New_York', [{ name: 'Oven', racks: 2 }], Date.parse('2026-11-20T12:00:00Z'));
   assert.deepEqual(l.lanes.map((x) => [x.name, x.rows.length]), [['Oven', 2], ['Hands', 1]]);
   assert.equal(l.ticks[0].iso, '2026-11-26T17:00:00.000Z');
 });

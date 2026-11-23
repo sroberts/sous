@@ -369,6 +369,7 @@
     form.timing[i] = { ...form.timing[i], ...guesses[i] };
     touch();
   }
+  let filledFromGuess = $state(null);
   // A meal plan's "Set its timing" opens the editor at that step (?timing=N).
   async function openAskedTiming() {
     const n = +route.search.get('timing');
@@ -376,6 +377,12 @@
     const i = stepNumbers.indexOf(n);
     if (i < 0) return;
     await openTiming(i);
+    // Arriving from a plan whose time for this step was guessed: start from
+    // the guess, so it's checked rather than typed in again.
+    if (!cleanTiming(form.timing[i]) && guesses[i] && cleanTiming(guesses[i])) {
+      useGuess(i);
+      filledFromGuess = i;
+    }
     await tick();
     const el = document.getElementById(`timing-${i}`);
     el?.scrollIntoView({ block: 'center' });
@@ -551,10 +558,12 @@
                   </button>
                   {#if timingOpen === i && t}
                     <div class="timing" id="timing-{i}" role="group" aria-label="Timing for step {n}">
-                      {#if guesses[i] && timingSummary(cleanTiming(guesses[i]))}
+                      {#if filledFromGuess === i}
+                        <p class="guess">Filled in from what the step says. Check it, then save the recipe.</p>
+                      {:else if guesses[i] && timingSummary(cleanTiming(guesses[i]))}
                         <p class="guess">Sous reads: {timingSummary(cleanTiming(guesses[i]))} <button type="button" class="link" onclick={() => useGuess(i)}>Use it</button></p>
                       {/if}
-                      <label class="tf"><span class="label">Minutes</span><input type="number" min="0" inputmode="numeric" value={t.minutes ?? ''} oninput={(e) => setNum(i, 'minutes', e.currentTarget.value)} /></label>
+                      <label class="tf"><span class="label">Minutes</span><input type="number" min="0" inputmode="numeric" value={t.minutes ?? ''} placeholder={`${guesses[i]?.minutes ?? 5} guessed`} oninput={(e) => setNum(i, 'minutes', e.currentTarget.value)} /></label>
                       <label class="tf check"><input type="checkbox" checked={t.hands_on !== false} onchange={(e) => ((t.hands_on = e.currentTarget.checked ? null : false), touch())} />Needs the cook the whole time</label>
                       <label class="tf"><span class="label">Uses</span>
                         <select value={t.equipment ?? ''} onchange={(e) => ((t.equipment = e.currentTarget.value || null), touch())}>

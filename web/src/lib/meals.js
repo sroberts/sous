@@ -91,20 +91,29 @@ export function byDay(tasks, tz) {
   return out;
 }
 
-/** Minutes as the plan says them: 45 → "45 min", 90 → "1 hr 30", 2880 → "2 days". */
+/** Minutes as the plan says them: 45 → "45 min", 90 → "1 hr 30 min", 2880 → "2 days". */
 export function span(min) {
   if (min == null) return '';
   if (min >= 1440 && min % 1440 === 0) return min === 1440 ? '1 day' : `${min / 1440} days`;
   if (min < 60) return `${min} min`;
   const h = Math.floor(min / 60);
   const m = min % 60;
-  return m ? `${h} hr ${m}` : `${h} hr`;
+  return m ? `${h} hr ${m} min` : `${h} hr`;
+}
+
+/** The day an instant falls on, said one way everywhere: "Today",
+ *  "Tomorrow", else the short weekday ("Wed"). */
+export function dayWord(iso, tz, now = Date.now()) {
+  const k = dayKey(iso, tz);
+  if (k === dayKey(new Date(now).toISOString(), tz)) return 'Today';
+  if (k === dayKey(new Date(now + 864e5).toISOString(), tz)) return 'Tomorrow';
+  return new Date(iso).toLocaleDateString(undefined, { timeZone: tz, weekday: 'short' });
 }
 
 /** What the day-of screen shows, so one glance answers "what now?":
- *  - focus: what each cook should be doing, at most one ticket per cook:
- *    hands-on work under way first, then what's due (starts within a few
- *    minutes, or should have started), earliest first;
+ *  - focus: what each cook should be doing, at most one hands-on ticket per
+ *    cook (work under way first, then what's due, earliest first), plus any
+ *    hands-off work that's due, which only needs a moment to start;
  *  - timers: hands-off work under way (a roast), and ovens heating;
  *  - waiting: due work beyond what the cooks can take on, first in line;
  *  - missed: make-ahead work whose time passed before anyone started it,
@@ -145,8 +154,9 @@ export function runOfShow(plan, now = Date.now(), { cooks = 1, soonMin = 5 } = {
   }
   out.missed = [...missed.values()];
   const slots = Math.max(0, cooks - handsOnActive.length);
-  out.focus = [...handsOnActive, ...due.slice(0, slots)];
-  out.waiting = due.slice(slots);
+  const dueHands = due.filter((t) => t.hands_on);
+  out.focus = [...handsOnActive, ...dueHands.slice(0, slots), ...due.filter((t) => !t.hands_on)];
+  out.waiting = dueHands.slice(slots);
   return out;
 }
 
@@ -167,12 +177,14 @@ export function holdPlace(where) {
 /** Bars for the day's lane chart: one lane per oven, the stovetop, each
  *  appliance, and the cooks' hands, with overlapping bars stacked in rows.
  *  Only the meal's own day is drawn; make-ahead days are in the list. */
-export function lanes(plan, tz, ovens = []) {
-  const day = dayKey(plan.serve_at, tz);
-  const tasks = plan.tasks.filter((t) => t.minutes > 0 && dayKey(t.start, tz) === day);
+export function lanes(plan, tz, ovens = [], now = Date.now()) {
+  // The run-up to the meal: day-of work (make-ahead has its own days in
+  // the list), and once that's under way, from half an hour before now.
+  const tasks = plan.tasks.filter((t) => t.minutes > 0 && !t.make_ahead && t.status !== 'missed');
   if (!tasks.length) return null;
-  const from = Math.min(...tasks.map((t) => Date.parse(t.start)));
+  let from = Math.min(...tasks.map((t) => Date.parse(t.start)));
   const to = Math.max(...tasks.map((t) => Date.parse(t.end)), Date.parse(plan.serve_at));
+  if (now > from - 6 * 3600e3 && now < to) from = Math.min(from, now - 30 * 60e3);
   const hour = 3600e3;
   const start = Math.floor(from / hour) * hour;
   const end = Math.ceil(to / hour) * hour;
@@ -200,8 +212,8 @@ export function lanes(plan, tz, ovens = []) {
   }
   const hands = tasks.filter((t) => t.hands_on && t.kind !== 'preheat');
   if (hands.length) out.push({ name: 'Hands', rows: pack(hands), hands: true });
-  // Hour labels at least 8% of the width apart, so they never collide.
-  const every = Math.max(1, Math.ceil(8 / (100 / Math.max(1, (end - start) / hour))));
+  // Hour labels at least 12% of the width apart, so they never collide.
+  const every = Math.max(1, Math.ceil(12 / (100 / Math.max(1, (end - start) / hour))));
   const ticks = [];
   for (let h = start, n = 0; h <= end; h += hour, n++) ticks.push({ at: pos(h), iso: new Date(h).toISOString(), label: n % every === 0 });
   return { lanes: out, ticks, pos, start, end };

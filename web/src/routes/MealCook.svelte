@@ -1,6 +1,7 @@
 <script>
   import { onDestroy } from 'svelte';
-  import { X, Check, Play, Undo2, BookOpen, Flame } from '@lucide/svelte';
+  import { X, Check, Play, Undo2, BookOpen, Flame, ChevronDown } from '@lucide/svelte';
+  import LateFixes from '../components/LateFixes.svelte';
   import { api } from '../lib/api.js';
   import { link } from '../lib/router.svelte.js';
   import { asPerson } from '../lib/session.svelte.js';
@@ -14,6 +15,9 @@
   let problem = $state('');
   let now = $state(Date.now());
   let pending = $state(new Set()); // task keys with a change on its way
+  let barH = $state(68); // the bar's real height, for the rail sticking under it
+  let fixesOpen = $state(false);
+  let missedOpen = $state(false);
 
   async function refresh() {
     try {
@@ -134,18 +138,31 @@
   };
 </script>
 
-<div class="run">
-  <header class="bar">
+<div class="run" style="--bar-h: {barH}px">
+  <header class="bar" bind:clientHeight={barH}>
     <a class="icon-btn" href="/m/{id}" use:link aria-label="Back to the plan"><X size={22} /></a>
     <div class="who">
       <p class="name">{meal?.title ?? 'Meal'}</p>
       {#if meal}<p class="served">Served {whenAt(meal.serve_at, tz, now)}</p>{/if}
     </div>
     {#if plan && !finished}
-      <p class="status" class:behind={!plan.on_time} role="status">{plan.on_time ? 'On time' : `About ${span(plan.behind_minutes)} behind`}</p>
+      {#if plan.on_time}
+        <p class="status" role="status">On time · dinner at {clockAt(plan.serve_at, tz)}</p>
+      {:else}
+        <!-- Lead with when dinner now lands; the fixes are one tap away. -->
+        <button type="button" class="status behind" aria-expanded={fixesOpen} aria-controls="fixes" onclick={() => (fixesOpen = !fixesOpen)}>
+          Dinner {clockAt(new Date(Date.parse(plan.serve_at) + plan.behind_minutes * 60e3).toISOString(), tz)}<span class="late-by">{span(plan.behind_minutes)} late</span><ChevronDown size={18} aria-hidden="true" />
+        </button>
+      {/if}
     {/if}
     <p class="now fig"><span class="visually-hidden">The time is </span>{clockAt(new Date(now).toISOString(), tz)}</p>
   </header>
+
+  {#if fixesOpen && plan && !plan.on_time && meal}
+    <section class="fixes" id="fixes" aria-label="Running late">
+      <LateFixes {meal} {plan} {tz} compact onupdate={(u) => ((meal = u.meal), (plan = u.plan), u.plan.on_time && (fixesOpen = false))} />
+    </section>
+  {/if}
 
   {#if problem}<p class="problem" role="alert">{problem}</p>{/if}
 
@@ -162,20 +179,27 @@
       <h1 class="visually-hidden">Cooking {meal?.title}</h1>
 
       {#if show.missed.length && !finished}
-        <section class="missed" aria-labelledby="missed-h">
-          <h2 id="missed-h">Make-ahead work that didn’t happen</h2>
-          <ul>
-            {#each show.missed as m (m.item_id)}
-              {@const busy = m.tasks.some((t) => pending.has(t.key))}
-              <li>
-                <p><strong>{m.recipe_title}</strong>: {m.tasks.length === 1 ? '1 make-ahead step hasn’t' : `${m.tasks.length} make-ahead steps haven’t`} been done.</p>
-                <div class="m-acts">
-                  <button class="btn" onclick={() => change([m.tasks[0]], { started: true })} disabled={busy}><Play aria-hidden="true" />Do it now</button>
-                  <button class="btn" onclick={() => change(m.tasks, { done: true })} disabled={busy}><Check aria-hidden="true" />It’s done</button>
-                </div>
-              </li>
-            {/each}
-          </ul>
+        <!-- One quiet row: make-ahead still to do, sorted out when there's a
+             moment, without pushing the step in hand down the screen. -->
+        <section class="missed" aria-label="Make-ahead still to do">
+          <button type="button" class="m-row" aria-expanded={missedOpen} onclick={() => (missedOpen = !missedOpen)}>
+            <span><strong>Make-ahead still to do:</strong> {show.missed.map((m) => m.recipe_title).join(', ')}</span>
+            <span class="m-sort">{missedOpen ? 'Close' : 'Sort it'}<ChevronDown size={18} aria-hidden="true" /></span>
+          </button>
+          {#if missedOpen}
+            <ul>
+              {#each show.missed as m (m.item_id)}
+                {@const busy = m.tasks.some((t) => pending.has(t.key))}
+                <li>
+                  <p><strong>{m.recipe_title}</strong>: {m.tasks.length === 1 ? '1 step' : `${m.tasks.length} steps`}, {span(m.tasks.reduce((n, t) => n + t.minutes, 0))}.</p>
+                  <div class="m-acts">
+                    <button class="btn" onclick={() => change([m.tasks[0]], { started: true })} disabled={busy}><Play aria-hidden="true" />Start it now</button>
+                    <button class="btn" onclick={() => change(m.tasks, { done: true })} disabled={busy}><Check aria-hidden="true" />It’s already done</button>
+                  </div>
+                </li>
+              {/each}
+            </ul>
+          {/if}
         </section>
       {/if}
 
@@ -267,16 +291,17 @@
             <h2 id="next-h" class="label">Up next</h2>
             <ol class="list">
               {#each show.waiting as t (t.key)}
+                <!-- Due, but the cooks' hands are full: whoever's free can start it. -->
                 <li class="due">
                   <span class="fig when">{clockAt(t.start, tz)}</span>
-                  <span class="what">{t.text}{#if t.recipe_title}<span class="sub"> · {t.recipe_title}</span>{/if}</span>
-                  <span class="in">due now</span>
+                  <span class="what">{t.text}{#if t.recipe_title}<span class="sub">{` · ${t.recipe_title}`}</span>{/if}<span class="sub">{" · when a cook is free"}</span></span>
+                  <button class="btn" onclick={() => change([t], { started: true })} disabled={pending.has(t.key)}><Play aria-hidden="true" />Start</button>
                 </li>
               {/each}
               {#each upNext as t (t.key)}
                 <li class:quiet={t.kind === 'preheat'}>
                   <span class="fig when">{clockAt(t.start, tz)}</span>
-                  <span class="what">{t.text}{#if t.recipe_title}<span class="sub"> · {t.recipe_title}</span>{/if}</span>
+                  <span class="what">{t.text}{#if t.recipe_title}<span class="sub">{` · ${t.recipe_title}`}</span>{/if}</span>
                   <span class="in">{until(t.start)}</span>
                 </li>
               {/each}
@@ -291,7 +316,7 @@
               {#each ovens as o}
                 <li>
                   <span class="fig when" class:live={o.live}>{o.figure}</span>
-                  <span class="what">{o.name}<span class="sub"> · {o.line}</span></span>
+                  <span class="what">{o.name}<span class="sub">{` · ${o.line}`}</span></span>
                 </li>
               {/each}
             </ul>
@@ -305,7 +330,7 @@
               {#each show.done as t (t.key)}
                 <li>
                   <span class="fig when">{t.done_at ? clockAt(t.done_at, tz) : clockAt(t.end, tz)}</span>
-                  <span class="what">{t.text}{#if t.recipe_title}<span class="sub"> · {t.recipe_title}</span>{/if}</span>
+                  <span class="what">{t.text}{#if t.recipe_title}<span class="sub">{` · ${t.recipe_title}`}</span>{/if}</span>
                   <button class="btn quiet" onclick={() => change([t], { done: false })} disabled={pending.has(t.key)} aria-label="Undo {t.text}"><Undo2 aria-hidden="true" />Undo</button>
                 </li>
               {/each}
@@ -331,8 +356,10 @@
 
 <style>
   .run {
-    --bar-h: 68px;
     min-height: 100dvh;
+    /* A ticket firing onto the rail slides in from the right; clip it, so
+       the page never scrolls sideways (clip, unlike hidden, keeps sticky). */
+    overflow-x: clip;
     display: flex;
     flex-direction: column;
   }
@@ -383,8 +410,30 @@
     font-weight: 700;
     color: var(--ink-2);
   }
+  button.status {
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    min-height: 52px;
+    padding: 0 var(--space-3);
+    border: 2px solid var(--red);
+    border-radius: 3px;
+    background: none;
+    align-self: center;
+    align-items: center;
+  }
   .status.behind {
     color: var(--red);
+  }
+  .late-by {
+    font-weight: 600;
+  }
+  .fixes {
+    position: relative;
+    z-index: 4;
+    padding: var(--space-4) var(--gutter);
+    background: var(--ticket);
+    border-bottom: 3px solid var(--ink);
   }
   .problem {
     padding: var(--space-2) var(--gutter);
@@ -413,13 +462,36 @@
   /* Missed make-ahead: a plain strip above the rail, one choice per dish. */
   .missed {
     margin-bottom: var(--space-4);
-    padding: var(--space-3) var(--space-5) var(--space-4);
+    padding: var(--space-1) var(--space-5);
     background: var(--ticket);
     border-top: 3px solid var(--ink);
   }
-  .missed h2 {
-    font-size: var(--read);
-    font-weight: 800;
+  .m-row {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    background: none;
+    text-align: left;
+    color: var(--ink-2);
+  }
+  .m-row strong {
+    color: var(--ink);
+  }
+  .m-sort {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-weight: 700;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .m-row[aria-expanded='true'] :global(svg) {
+    transform: rotate(180deg);
   }
   .missed ul {
     list-style: none;
@@ -444,13 +516,12 @@
   }
 
   /* The rail stays under the bar while the tickets scroll, as in cook mode. */
+  /* Just the rail sticks, flush under the bar: it covers nothing but the
+     strip of pass the tickets hang below. */
   .rail-wrap {
     position: sticky;
     top: var(--bar-h);
     z-index: 3;
-    padding-top: var(--space-2);
-    margin-top: calc(var(--space-2) * -1);
-    background: var(--pass);
   }
   .hung {
     display: flex;
@@ -750,10 +821,6 @@
   .list li.quiet .when {
     color: var(--ink-3);
   }
-  .list li.due .in {
-    font-weight: 700;
-    color: var(--ink);
-  }
   .what {
     font-size: 1.0625rem;
   }
@@ -808,9 +875,6 @@
     }
   }
   @media (max-width: 760px) {
-    .run {
-      --bar-h: 104px;
-    }
     .bar {
       flex-wrap: wrap;
       gap: var(--space-1) var(--space-3);
@@ -833,7 +897,10 @@
       min-height: 64px;
     }
     .missed {
-      padding: var(--space-3) var(--space-4) var(--space-4);
+      padding: var(--space-1) var(--space-4);
+    }
+    button.status {
+      justify-self: start;
     }
     .list li {
       grid-template-columns: 4.5rem minmax(0, 1fr);
