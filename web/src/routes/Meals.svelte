@@ -4,7 +4,7 @@
   import { go, link } from '../lib/router.svelte.js';
   import { asPerson } from '../lib/session.svelte.js';
   import { isOffline } from '../lib/net.svelte.js';
-  import { deviceZone, zonedToISO, whenAt } from '../lib/meals.js';
+  import { deviceZone, zonedToISO, whenAt, span } from '../lib/meals.js';
 
   let meals = $state(null);
   let kitchen = $state(null);
@@ -55,6 +55,13 @@
   // The one meal being cooked today (or soonest within a day) gets the
   // step forward: Cook it.
   const today = $derived(meals?.find((m) => Math.abs(Date.parse(m.serve_at) - Date.now()) < 18 * 3600e3) ?? null);
+  // Today's meal says when it's running late, before it's opened.
+  let todayPlan = $state(null);
+  $effect(() => {
+    if (!today?.items) return;
+    api.mealPlan(today.id).then((p) => (todayPlan = p), () => (todayPlan = null));
+  });
+  const lateBy = (m) => (m === today && todayPlan && !todayPlan.on_time ? todayPlan.behind_minutes : 0);
   const dayFig = (m) => new Date(m.serve_at).toLocaleDateString(undefined, { timeZone: m.timezone, day: 'numeric' });
   const monthDay = (m) => new Date(m.serve_at).toLocaleDateString(undefined, { timeZone: m.timezone, weekday: 'short', month: 'short' });
   const upcoming = $derived(meals?.filter((m) => !past(m)) ?? []);
@@ -111,7 +118,7 @@
                 <a href="/m/{m.id}" use:link>
                   <span class="when"><span class="fig">{dayFig(m)}</span><span class="label">{monthDay(m)}</span></span>
                   <span class="t">{m.title}</span>
-                  <span class="sub">{whenAt(m.serve_at, m.timezone)} · {m.items === 1 ? '1 dish' : `${m.items} dishes`}</span>
+                  <span class="sub">{whenAt(m.serve_at, m.timezone)} · {m.items === 1 ? '1 dish' : `${m.items} dishes`}{#if lateBy(m)}<strong class="late">{` · ${span(lateBy(m))} late`}</strong>{/if}</span>
                 </a>
                 {#if m === today && m.items}<a class="btn primary cook-it" href="/m/{m.id}/cook" use:link>Cook it</a>{/if}
               </div>
@@ -301,6 +308,9 @@
     grid-area: sub;
     color: var(--ink-2);
     font-size: var(--ui);
+  }
+  .sub .late {
+    color: var(--red);
   }
   .past a {
     color: var(--ink-2);

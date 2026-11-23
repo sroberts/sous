@@ -110,6 +110,20 @@ export function dayWord(iso, tz, now = Date.now()) {
   return new Date(iso).toLocaleDateString(undefined, { timeZone: tz, weekday: 'short' });
 }
 
+/** What a meal is called by the hour it's served, for "Dinner at 6:00 PM"
+ *  or "Lunch now lands at 3:35 PM": breakfast from 5 to 11, lunch until 4,
+ *  and dinner after, running on past midnight. */
+export function mealWord(iso, tz) {
+  const h = +new Date(iso).toLocaleString('en-US', { timeZone: tz, hour: 'numeric', hourCycle: 'h23' });
+  return h >= 5 && h < 11 ? 'Breakfast' : h >= 11 && h < 16 ? 'Lunch' : 'Dinner';
+}
+
+/** A failed change, said plainly: what didn't happen and what to do. */
+export function problemText(err) {
+  if (err?.code === 'offline') return 'That didn’t reach Sous. Check the connection and try again.';
+  return `That didn’t save: ${err?.message ?? 'Sous didn’t answer'}. Try again in a moment.`;
+}
+
 /** What the day-of screen shows, so one glance answers "what now?":
  *  - focus: what each cook should be doing, at most one hands-on ticket per
  *    cook (work under way first, then what's due, earliest first), plus any

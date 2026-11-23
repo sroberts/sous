@@ -4,9 +4,10 @@
   import LateFixes from '../components/LateFixes.svelte';
   import { api } from '../lib/api.js';
   import { link } from '../lib/router.svelte.js';
-  import { asPerson } from '../lib/session.svelte.js';
+  import { session, asPerson, toast } from '../lib/session.svelte.js';
+  import { personName } from '../lib/format.js';
   import { clock } from '../lib/timers.svelte.js';
-  import { clockAt, whenAt, span, runOfShow, remaining, cookedMinutes, holdPlace } from '../lib/meals.js';
+  import { clockAt, whenAt, span, runOfShow, remaining, cookedMinutes, holdPlace, mealWord, problemText } from '../lib/meals.js';
 
   let { id } = $props();
 
@@ -22,6 +23,7 @@
   async function refresh() {
     try {
       const [m, p] = await Promise.all([meal ? Promise.resolve(meal) : api.meal(id), api.mealPlan(id)]);
+      if (plan) othersTicked(plan, p);
       meal = m;
       plan = p;
       problem = '';
@@ -30,6 +32,18 @@
       // A failed refresh keeps the plan on screen; the clock carries on.
       problem = err.code === 'offline' ? 'Sous can’t be reached; the plan shown may be out of date.' : err.message;
     }
+  }
+  // Another cook's ticks arrive with the next fetch; say whose, so a cook
+  // coming back to the screen knows what changed while they were away.
+  function othersTicked(before, after) {
+    const was = new Map(before.tasks.map((t) => [t.key, t.status]));
+    const me = session.person?.username;
+    const fresh = after.tasks.filter((t) => t.status === 'done' && was.get(t.key) !== 'done' && t.done_by && t.done_by !== me);
+    if (!fresh.length) return;
+    const who = personName(fresh[0].done_by, session.people);
+    const what = fresh.length === 1 ? fresh[0].text.replace(/\.$/, '') : `${fresh.length} steps`;
+    toast(`${who} ticked off ${what}.`);
+    said = `${who} ticked off ${what}.`;
   }
   refresh();
 
@@ -68,7 +82,7 @@
       if (p) plan = p;
       problem = '';
     } catch (err) {
-      problem = err.code === 'offline' ? 'That didn’t reach Sous. Check the connection and try again.' : err.message;
+      problem = problemText(err);
     } finally {
       pending = new Set([...pending].filter((k) => !keys.includes(k)));
     }
@@ -77,11 +91,12 @@
   let confirmReset = $state(false);
   async function reset() {
     confirmReset = false;
-    const p = await asPerson(() => api.resetMeal(id)).catch((err) => ((problem = err.message), null));
+    const p = await asPerson(() => api.resetMeal(id)).catch((err) => ((problem = problemText(err)), null));
     if (p) plan = p;
   }
 
   const tz = $derived(meal?.timezone ?? 'UTC');
+  const word = $derived(meal ? mealWord(meal.serve_at, tz) : 'The meal');
   const show = $derived(plan ? runOfShow(plan, now, { cooks: meal?.cooks ?? 1 }) : null);
   const open = $derived(show ? show.focus.length + show.timers.length + show.waiting.length + show.missed.length + show.next.length : 0);
   const lastServe = $derived(plan ? Math.max(Date.parse(plan.serve_at), ...plan.serving.map((s) => Date.parse(s.serve_at))) : 0);
@@ -130,10 +145,21 @@
     if (fresh.length) said = `Now: ${fresh.map((t) => t.text).join('; ')}`;
   });
 
+  // When the meal's landing time moves, say so once, as the bar changes.
+  let landed = null;
+  $effect(() => {
+    if (!plan) return;
+    const lands = plan.on_time ? 'on time' : clockAt(new Date(Date.parse(plan.serve_at) + plan.behind_minutes * 60e3).toISOString(), tz);
+    if (landed !== null && lands !== landed) said = plan.on_time ? `${word} is on time again.` : `${word} now lands at ${lands}.`;
+    landed = lands;
+  });
+
   const label = (t) => {
     if (t.status === 'active') return 'Under way';
-    if (t.status === 'late') return 'Should have started';
+    // Sous has already moved late work to start from now, so a start still
+    // ahead is the truth; late wording only once that start has come.
     if (Date.parse(t.start) > now) return `Starts ${until(t.start)}`;
+    if (t.planned_for) return `Start now · was ${clockAt(t.planned_for, tz)}`;
     return 'Now';
   };
 </script>
@@ -143,15 +169,15 @@
     <a class="icon-btn" href="/m/{id}" use:link aria-label="Back to the plan"><X size={22} /></a>
     <div class="who">
       <p class="name">{meal?.title ?? 'Meal'}</p>
-      {#if meal}<p class="served">Served {whenAt(meal.serve_at, tz, now)}</p>{/if}
+      {#if meal}<p class="served">{plan && !plan.on_time ? 'Planned for' : 'Served'} {whenAt(meal.serve_at, tz, now)}</p>{/if}
     </div>
     {#if plan && !finished}
       {#if plan.on_time}
-        <p class="status" role="status">On time · dinner at {clockAt(plan.serve_at, tz)}</p>
+        <p class="status" role="status">On time · {word.toLowerCase()} at {clockAt(plan.serve_at, tz)}</p>
       {:else}
         <!-- Lead with when dinner now lands; the fixes are one tap away. -->
         <button type="button" class="status behind" aria-expanded={fixesOpen} aria-controls="fixes" onclick={() => (fixesOpen = !fixesOpen)}>
-          Dinner {clockAt(new Date(Date.parse(plan.serve_at) + plan.behind_minutes * 60e3).toISOString(), tz)}<span class="late-by">{span(plan.behind_minutes)} late</span><ChevronDown size={18} aria-hidden="true" />
+          {word} {clockAt(new Date(Date.parse(plan.serve_at) + plan.behind_minutes * 60e3).toISOString(), tz)}<span class="late-by">{span(plan.behind_minutes)} late</span><ChevronDown size={18} aria-hidden="true" />
         </button>
       {/if}
     {/if}
@@ -193,8 +219,8 @@
                 <li>
                   <p><strong>{m.recipe_title}</strong>: {m.tasks.length === 1 ? '1 step' : `${m.tasks.length} steps`}, {span(m.tasks.reduce((n, t) => n + t.minutes, 0))}.</p>
                   <div class="m-acts">
-                    <button class="btn" onclick={() => change([m.tasks[0]], { started: true })} disabled={busy}><Play aria-hidden="true" />Start it now</button>
-                    <button class="btn" onclick={() => change(m.tasks, { done: true })} disabled={busy}><Check aria-hidden="true" />It’s already done</button>
+                    <button class="btn" onclick={() => change([m.tasks[0]], { started: true })} disabled={busy} aria-label="Start {m.recipe_title}’s make-ahead now"><Play aria-hidden="true" />Start it now</button>
+                    <button class="btn" onclick={() => change(m.tasks, { done: true })} disabled={busy} aria-label="{m.recipe_title}’s make-ahead is already made"><Check aria-hidden="true" />It’s already made</button>
                   </div>
                 </li>
               {/each}
@@ -249,9 +275,9 @@
                 {#if !isNext}
                   <div class="acts">
                     {#if t.status !== 'active'}
-                      <button class="btn" onclick={() => change([t], { started: true })} disabled={pending.has(t.key)}><Play aria-hidden="true" />Start</button>
+                      <button class="btn" class:primary={i === 0} onclick={() => change([t], { started: true })} disabled={pending.has(t.key)} aria-label="Start: {t.text}"><Play aria-hidden="true" />Start</button>
                     {/if}
-                    <button class="btn" class:primary={i === 0} onclick={() => change([t], { done: true })} disabled={pending.has(t.key)}><Check aria-hidden="true" />Done</button>
+                    <button class="btn" class:primary={i === 0 && t.status === 'active'} onclick={() => change([t], { done: true })} disabled={pending.has(t.key)} aria-label="Done: {t.text}"><Check aria-hidden="true" />Done</button>
                   </div>
                 {/if}
                 {#if t.recipe_id && t.step}
@@ -275,7 +301,7 @@
                   <div class="t-row">
                     <span class="t-clock fig">{left > 0 ? clock(left) : t.kind === 'preheat' ? 'Hot' : `+${clock(-left)}`}</span>
                     {#if t.kind !== 'preheat'}
-                      <button class="btn small" onclick={() => change([t], { done: true })} disabled={pending.has(t.key)}><Check aria-hidden="true" />Done</button>
+                      <button class="btn small" onclick={() => change([t], { done: true })} disabled={pending.has(t.key)} aria-label="Done: {t.text}"><Check aria-hidden="true" />Done</button>
                     {/if}
                   </div>
                 </li>
@@ -295,7 +321,7 @@
                 <li class="due">
                   <span class="fig when">{clockAt(t.start, tz)}</span>
                   <span class="what">{t.text}{#if t.recipe_title}<span class="sub">{` · ${t.recipe_title}`}</span>{/if}<span class="sub">{" · when a cook is free"}</span></span>
-                  <button class="btn" onclick={() => change([t], { started: true })} disabled={pending.has(t.key)}><Play aria-hidden="true" />Start</button>
+                  <button class="btn" onclick={() => change([t], { started: true })} disabled={pending.has(t.key)} aria-label="Start: {t.text}"><Play aria-hidden="true" />Start</button>
                 </li>
               {/each}
               {#each upNext as t (t.key)}

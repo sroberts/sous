@@ -1,10 +1,13 @@
 <script>
-  // When a meal is running late: when dinner now lands, every dish that's
-  // late and why, and the fixes that don't need thought. Shared by the
-  // planner and the run of show, so the cook can act on it from either.
+  // When a meal is running late: which dish is holding it up and why, and
+  // one recommended fix. Other late dishes, which don't change when the
+  // meal lands, fold away. Every fix can be undone. Shared by the planner
+  // and the run of show, so the cook can act on it from either.
+  import { ChevronDown } from '@lucide/svelte';
   import { api } from '../lib/api.js';
-  import { asPerson } from '../lib/session.svelte.js';
-  import { clockAt, span } from '../lib/meals.js';
+  import { session, asPerson, toast } from '../lib/session.svelte.js';
+  import { personName } from '../lib/format.js';
+  import { clockAt, span, mealWord, problemText } from '../lib/meals.js';
 
   let { meal, plan, tz, onupdate, compact = false } = $props();
 
@@ -13,94 +16,195 @@
 
   const roundUp = (m) => Math.ceil(m / 15) * 15;
   const at = (iso, plus) => new Date(Date.parse(iso) + plus * 60e3).toISOString();
-  const landsAt = $derived(at(plan.serve_at, plan.behind_minutes));
+  const word = $derived(mealWord(meal.serve_at, tz));
+  const lower = $derived(word.toLowerCase());
+  // Latest first: the first dish sets when the meal lands.
+  const lead = $derived(plan.late_dishes[0]);
+  const rest = $derived(plan.late_dishes.slice(1).filter((d) => d.minutes < lead.minutes));
+  const tied = $derived(plan.late_dishes.slice(1).filter((d) => d.minutes >= lead.minutes));
+  const moveTo = $derived(at(meal.serve_at, roundUp(plan.behind_minutes)));
   const CAUSE = {
     missed: 'its make-ahead is still to do',
     late_start: 'its work started later than planned',
     busy: 'the kitchen has no room for it sooner',
   };
 
-  // A change to the meal, applied again to someone else's newer version once.
-  async function patch(body, retry = true) {
+  // A change to the meal. If someone else changed it a moment before, the
+  // change goes onto theirs, once, and the message says so.
+  async function patch(body, said, undo, retry = true) {
     busy = true;
     problem = '';
     try {
       const m = await asPerson(() => api.updateMeal(meal.id, meal.version, body));
-      if (m) onupdate({ meal: m, plan: await api.mealPlan(meal.id) });
+      if (!m) return;
+      onupdate({ meal: m, plan: await api.mealPlan(meal.id) });
+      // An Undo after the block has gone finds its own change in the way: no news.
+      const other = retry || meal.updated_by === session.person?.username ? '' : ` ${personName(meal.updated_by, session.people)} had changed the meal just before; yours went on top.`;
+      if (said) toast(said + other, undo ? { label: 'Undo', run: undo } : null);
     } catch (err) {
       if (err.status === 412 && retry) {
         meal = err.body.current;
-        return patch(body, false);
+        busy = false;
+        return patch(body, said, undo, false);
       }
-      problem = err.message;
+      problem = problemText(err);
     } finally {
       busy = false;
     }
+  }
+
+  const itemsNow = () => meal.items.map((i) => ({ id: i.id, recipe_id: i.recipe_id, serve_offset_minutes: i.serve_offset_minutes, dish: i.dish }));
+
+  function moveMeal() {
+    const was = meal.serve_at;
+    patch({ serve_at: moveTo }, `${word} is now at ${clockAt(moveTo, tz)}.`, () => patch({ serve_at: was }, `${word} is back at ${clockAt(was, tz)}.`));
   }
 
   function serveLater(d) {
-    const items = meal.items.map((i) => ({ id: i.id, recipe_id: i.recipe_id, serve_offset_minutes: i.serve_offset_minutes, dish: i.dish }));
+    const before = itemsNow();
+    const items = itemsNow();
     const it = items.find((i) => i.id === d.item_id);
     if (!it) return;
     it.serve_offset_minutes = Math.min(720, it.serve_offset_minutes + roundUp(d.minutes));
-    patch({ items });
+    const when = clockAt(at(d.serve_at, roundUp(d.minutes)), tz);
+    patch({ items }, `${d.recipe_title} now goes to the table at ${when}.`, () => patch({ items: before }, `${d.recipe_title} is back with the ${lower}.`));
   }
 
-  async function makeAheadDone(d) {
+  // Make-ahead work: done after all, or started now.
+  async function tasks(d, body, said, undoBody) {
     busy = true;
+    problem = '';
+    const keys = plan.tasks.filter((t) => t.item_id === d.item_id && t.status === 'missed').map((t) => t.key);
+    const which = body.started ? keys.slice(0, 1) : keys;
     try {
       let p = null;
-      for (const t of plan.tasks.filter((t) => t.item_id === d.item_id && t.status === 'missed')) {
-        p = await asPerson(() => api.updateTask(meal.id, t.key, { done: true }));
-      }
-      if (p) onupdate({ meal, plan: p });
+      for (const k of which) p = await asPerson(() => api.updateTask(meal.id, k, body));
+      if (!p) return;
+      onupdate({ meal, plan: p });
+      toast(said, {
+        label: 'Undo',
+        run: async () => {
+          let q = null;
+          for (const k of which) q = await asPerson(() => api.updateTask(meal.id, k, undoBody));
+          if (q) onupdate({ meal, plan: q });
+        },
+      });
     } catch (err) {
-      problem = err.message;
+      problem = problemText(err);
     } finally {
       busy = false;
     }
   }
+  const doneAhead = (d) => tasks(d, { done: true }, `${d.recipe_title}’s make-ahead is ticked off.`, { done: false });
+  const startAhead = (d) => tasks(d, { started: true }, `${d.recipe_title}’s make-ahead is under way.`, { started: false });
 </script>
 
 <div class="late" class:compact>
-  <p class="lands">Dinner now lands at <strong class="fig">{clockAt(landsAt, tz)}</strong>, {span(plan.behind_minutes)} late.</p>
-  <ul class="dishes">
-    {#each plan.late_dishes as d (d.item_id)}
-      <li>
-        <p><strong>{d.recipe_title}</strong> is ready at {clockAt(d.ready_at, tz)}, {span(d.minutes)} after it’s served: {CAUSE[d.cause]}.</p>
-        <div class="acts">
-          {#if d.cause === 'missed'}<button type="button" class="btn" onclick={() => makeAheadDone(d)} disabled={busy}>Its make-ahead is done</button>{/if}
-          <button type="button" class="btn" onclick={() => serveLater(d)} disabled={busy}>Serve it at {clockAt(at(d.serve_at, roundUp(d.minutes)), tz)}</button>
-        </div>
-      </li>
-    {/each}
-  </ul>
-  <div class="all">
-    <button type="button" class="btn" onclick={() => patch({ serve_at: at(meal.serve_at, roundUp(plan.behind_minutes)) })} disabled={busy}>Move dinner to {clockAt(at(meal.serve_at, roundUp(plan.behind_minutes)), tz)}</button>
-    <span class="hint">Moves every dish, so nothing is rushed.</span>
+  <p class="cause" role="status">
+    <strong>{lead.recipe_title}</strong>{tied.length ? ` and ${tied.map((d) => d.recipe_title).join(' and ')}` : ''} {tied.length ? 'are' : 'is'} holding {lower} up: {CAUSE[lead.cause]}.
+  </p>
+
+  <div class="best">
+    <button type="button" class="btn primary" onclick={moveMeal} disabled={busy}>Move {lower} to {clockAt(moveTo, tz)}</button>
+    <p class="hint">Every dish moves with it, so nothing is rushed.</p>
   </div>
+
+  <div class="others">
+    {#if lead.cause === 'missed'}
+      <button type="button" class="btn" onclick={() => startAhead(lead)} disabled={busy}>Start its make-ahead now</button>
+      <button type="button" class="btn" onclick={() => doneAhead(lead)} disabled={busy}>It’s already made</button>
+    {/if}
+    <button type="button" class="btn quiet" onclick={() => serveLater(lead)} disabled={busy}>Serve {lead.recipe_title} later, at {clockAt(at(lead.serve_at, roundUp(lead.minutes)), tz)}</button>
+  </div>
+
+  {#if rest.length}
+    <details class="rest">
+      <summary><ChevronDown size={18} aria-hidden="true" />{rest.length === 1 ? '1 more dish is' : `${rest.length} more dishes are`} late, but won’t change when {lower} lands</summary>
+      <ul>
+        {#each rest as d (d.item_id)}
+          <li>
+            <p><strong>{d.recipe_title}</strong>: ready at {clockAt(d.ready_at, tz)}, {span(d.minutes)} after it’s due at the table; {CAUSE[d.cause]}.</p>
+            <div class="acts">
+              {#if d.cause === 'missed'}<button type="button" class="btn" onclick={() => doneAhead(d)} disabled={busy}>It’s already made</button>{/if}
+              <button type="button" class="btn quiet" onclick={() => serveLater(d)} disabled={busy}>Serve it at {clockAt(at(d.serve_at, roundUp(d.minutes)), tz)}</button>
+            </div>
+          </li>
+        {/each}
+      </ul>
+    </details>
+  {/if}
   {#if problem}<p class="problem" role="alert">{problem}</p>{/if}
 </div>
 
 <style>
   .late {
     display: grid;
+    gap: var(--space-3);
+  }
+  .cause {
+    font-size: var(--title-m);
+    font-weight: 600;
+    max-width: 52ch;
+  }
+  .best {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-4);
+  }
+  .best .btn {
+    min-height: 52px;
+    padding: 0 var(--space-5);
+    font-size: 1.0625rem;
+  }
+  .hint {
+    font-size: var(--ui);
+    color: var(--ink-2);
+  }
+  .others,
+  .acts {
+    display: flex;
+    flex-wrap: wrap;
     gap: var(--space-2);
   }
-  .lands {
-    font-size: var(--title-m);
+  /* Dish names are long: these buttons wrap rather than push the page wide. */
+  .late .btn {
+    max-width: 100%;
+    white-space: normal;
+    text-align: left;
+  }
+  .rest {
+    border-top: 1.5px dashed var(--ticket-press);
+  }
+  .rest summary {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: 44px;
+    font-size: var(--ui);
     font-weight: 700;
+    color: var(--ink-2);
+    cursor: pointer;
+    list-style: none;
   }
-  .lands .fig {
-    font-size: 1.75rem;
-    color: var(--red);
+  .rest summary::-webkit-details-marker {
+    display: none;
   }
-  .dishes {
+  .rest summary :global(svg) {
+    transition: transform 200ms var(--ease-out);
+  }
+  .rest[open] summary :global(svg) {
+    transform: rotate(180deg);
+  }
+  .rest summary:hover {
+    color: var(--ink);
+  }
+  .rest ul {
     list-style: none;
     margin: 0;
     padding: 0;
   }
-  .dishes li {
+  .rest li {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -109,32 +213,20 @@
     padding: var(--space-2) 0;
     border-top: 1.5px dashed var(--ticket-press);
   }
-  .dishes p {
+  .rest p {
     flex: 1 1 22rem;
     max-width: 62ch;
-  }
-  .acts {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-  }
-  .all {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-2) var(--space-3);
-    padding-top: var(--space-2);
-    border-top: 1.5px dashed var(--ticket-press);
-  }
-  .hint {
-    font-size: var(--ui);
-    color: var(--ink-2);
   }
   .problem {
     font-weight: 700;
     color: var(--red);
   }
   .compact .btn {
-    min-height: 52px;
+    min-height: 56px;
+  }
+  .compact .best .btn {
+    flex: 1 1 18rem;
+    min-height: 64px;
+    font-size: 1.1875rem;
   }
 </style>

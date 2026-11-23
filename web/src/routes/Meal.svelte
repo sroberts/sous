@@ -5,7 +5,8 @@
   import { go, link } from '../lib/router.svelte.js';
   import { session, asPerson, toast } from '../lib/session.svelte.js';
   import { isOffline } from '../lib/net.svelte.js';
-  import { byDay, clockAt, whenAt, span, isoToZoned, zonedToISO, holdPlace, lanes, dayKey, dayWord } from '../lib/meals.js';
+  import { byDay, clockAt, whenAt, span, isoToZoned, zonedToISO, holdPlace, lanes, dayKey, dayWord, mealWord, problemText, deviceZone } from '../lib/meals.js';
+  import { personName } from '../lib/format.js';
   import LateFixes from '../components/LateFixes.svelte';
 
   let { id } = $props();
@@ -32,30 +33,49 @@
   const tz = $derived(meal?.timezone ?? 'UTC');
 
   // Every change saves as it's made. If someone else changed the meal in
-  // the meantime, the change is applied again to theirs, once.
+  // the meantime, the change is applied again to theirs, once, and the
+  // message says so. A change that moves the plan says how much moved.
   async function patch(body, retry = true) {
     busy = true;
     problem = '';
+    const before = plan;
     try {
       const m = await asPerson(() => api.updateMeal(id, meal.version, body));
       if (!m) return false;
       meal = m;
       plan = await api.mealPlan(id);
+      const moved = before ? plan.tasks.filter((t) => before.tasks.some((b) => b.key === t.key && b.start !== t.start)).length : 0;
+      lastNews = [retry ? '' : `${personName(other, session.people)} had changed the meal just before; yours went on top.`, moved ? `${moved === 1 ? '1 step' : `${moved} steps`} moved.` : ''].filter(Boolean).join(' ');
       return true;
     } catch (err) {
       if (err.status === 412 && retry) {
         meal = err.body.current;
+        other = meal.updated_by;
+        busy = false;
         return patch(body, false);
       }
-      problem = err.message;
+      problem = problemText(err);
       return false;
     } finally {
       busy = false;
     }
   }
+  let other = null;
+  let lastNews = '';
+  // A setting changed, with its message and a way back.
+  async function setting(body, said) {
+    const was = Object.fromEntries(Object.keys(body).map((k) => [k, meal[k]]));
+    if (await patch(body)) toast([said, lastNews].filter(Boolean).join(' '), { label: 'Undo', run: () => patch(was) });
+  }
 
   const itemsInput = (items) => items.map((i) => ({ id: i.id, recipe_id: i.recipe_id, serve_offset_minutes: i.serve_offset_minutes, dish: i.dish }));
-  const setItem = (i, change) => patch({ items: itemsInput(meal.items).map((it, j) => (j === i ? { ...it, ...change } : it)) });
+  async function setItem(i, change) {
+    const before = itemsInput(meal.items);
+    const { title } = meal.items[i];
+    if (await patch({ items: before.map((it, j) => (j === i ? { ...it, ...change } : it)) })) {
+      toast([`${title} is changed.`, lastNews].join(' ').trim(), { label: 'Undo', run: () => patch({ items: before }) });
+    }
+  }
   async function removeItem(i) {
     const before = itemsInput(meal.items);
     const { title } = meal.items[i];
@@ -83,11 +103,33 @@
     await patch({ items: [...itemsInput(meal.items), { recipe_id: r.id }] });
     document.getElementById('add-dish')?.focus();
   }
+  let pick = $state(0);
+  $effect(() => {
+    query;
+    pick = 0;
+  });
   function addKey(e) {
-    if (e.key === 'Enter' && matches.length) {
+    if (!matches.length) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault();
-      add(matches[0]);
+      pick = (pick + (e.key === 'ArrowDown' ? 1 : -1) + matches.length) % matches.length;
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      add(matches[pick] ?? matches[0]);
+    } else if (e.key === 'Escape') {
+      query = '';
     }
+  }
+
+  // Keys at the desk: C cooks the meal, D adds a dish.
+  function onkey(e) {
+    if (!meal || session.asking || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.target.closest?.('input, textarea, select, [contenteditable], dialog[open]')) return;
+    const k = e.key.toLowerCase();
+    if (k === 'c' && plan?.tasks.length) go(`/m/${id}/cook`);
+    else if (k === 'd') document.getElementById('add-dish')?.focus();
+    else return;
+    e.preventDefault();
   }
 
   const OFFSETS = [-60, -30, 0, 15, 30, 45, 60, 90, 120];
@@ -99,7 +141,7 @@
       const p = await asPerson(() => api.updateTask(id, t.key, { pinned_start: t.pinned ? null : t.start }));
       if (p) plan = p;
     } catch (err) {
-      problem = err.message;
+      problem = problemText(err);
     }
   }
 
@@ -142,17 +184,50 @@
   const trackW = $derived(Math.max(0, chartW - 88));
   // A bar's label goes inside when it fits, just after it when there's room
   // before the next bar, and otherwise only in its name for screen readers.
-  function barLabel(b, lane) {
-    const text = b.kind === 'preheat' ? `${b.oven_temp}°` : `${b.recipe_title ?? ''}${b.oven_temp && !lane.hands ? ` ${b.oven_temp}°` : ''}`;
-    return { text, px: text.length * 6.6 + 10 };
+  // The recipe's name, with the oven's temperature when it fits; a narrow
+  // bar falls back to the name's first word. Preheats are a thin strip with
+  // no label: the bar after them says the temperature.
+  const PX = 7.4;
+  function labelFor(b, lane, room) {
+    if (b.kind === 'preheat') return null;
+    const name = b.recipe_title ?? '';
+    const tries = [b.oven_temp && !lane.hands ? `${name} ${b.oven_temp}°` : null, name, name.split(' ')[0]].filter(Boolean);
+    return tries.find((t) => t.length * PX + 10 <= room) ?? null;
   }
-  function labelPlace(b, row, k, lane) {
-    const { px } = barLabel(b, lane);
+  function placeLabel(b, row, k, lane) {
     const w = (b.width / 100) * trackW;
-    if (px <= w) return 'in';
+    const inside = labelFor(b, lane, w);
+    if (inside) return { at: 'in', text: inside };
     const right = ((b.left + b.width) / 100) * trackW;
     const next = row[k + 1] ? (row[k + 1].left / 100) * trackW : trackW;
-    return right + px + 4 <= next ? 'out' : 'none';
+    const out = labelFor(b, lane, next - right - 4);
+    return out ? { at: 'out', text: out } : { at: 'none', text: '' };
+  }
+  // The chart is one stop for Tab; the arrow keys walk its bars in time.
+  const bars = $derived(chart ? chart.lanes.flatMap((l) => l.rows.flat().map((b) => ({ key: `${l.name}|${b.key}`, lane: l.name, s: b.s }))) : []);
+  let barFocus = $state(null);
+  const barId = (k) => `bar-${k.replace(/[^\w-]/g, '_')}`;
+  const focusKey = $derived(bars.some((b) => b.key === barFocus) ? barFocus : bars[0]?.key);
+  function barKey(e) {
+    const i = bars.findIndex((b) => b.key === focusKey);
+    if (i < 0) return;
+    const lanesOrder = [...new Set(bars.map((b) => b.lane))];
+    let to = null;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+      const same = bars.filter((b) => b.lane === bars[i].lane).sort((a, b) => a.s - b.s);
+      const j = same.findIndex((b) => b.key === focusKey) + (e.key === 'ArrowRight' ? 1 : -1);
+      to = same[j];
+    } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      const l = lanesOrder[lanesOrder.indexOf(bars[i].lane) + (e.key === 'ArrowDown' ? 1 : -1)];
+      const there = bars.filter((b) => b.lane === l);
+      to = there.reduce((best, b) => (!best || Math.abs(b.s - bars[i].s) < Math.abs(best.s - bars[i].s) ? b : best), null);
+    } else if (e.key === 'Home' || e.key === 'End') {
+      to = e.key === 'Home' ? bars[0] : bars.at(-1);
+    }
+    if (!to) return;
+    e.preventDefault();
+    barFocus = to.key;
+    document.getElementById(barId(to.key))?.focus();
   }
   // The meal's day in one line per oven, for a phone.
   const ovenLines = $derived.by(() => {
@@ -191,7 +266,14 @@
   const past = (t) => Date.parse(t.end) <= now || t.status === 'done';
   const chartNow = $derived(chart && now >= chart.start && now <= chart.end ? chart.pos(now) : null);
   const serveDay = $derived(plan ? dayKey(plan.serve_at, tz) : '');
+  const word = $derived(meal ? mealWord(meal.serve_at, tz) : 'Dinner');
+  // When each dish is really ready: late dishes say so beside their time.
+  const readyAt = $derived(new Map((plan?.late_dishes ?? []).map((d) => [d.item_id, d.ready_at])));
+  const anyPinned = $derived((plan?.tasks ?? []).some((t) => t.pinned));
+  const otherZone = $derived(tz !== deviceZone());
 </script>
+
+<svelte:window onkeydown={onkey} />
 
 <main class="meal" id="main">
   <a class="back" href="/meals" use:link><ArrowLeft size={16} aria-hidden="true" />Meals</a>
@@ -204,19 +286,19 @@
       <div class="title-row">
         <div>
           <h1>{meal.title}</h1>
-          <p class="served">Served {dayWord(meal.serve_at, tz, now)} {clockAt(meal.serve_at, tz)}</p>
+          <p class="served" class:was={!plan.on_time}>{plan.on_time ? 'Served' : 'Planned for'} {dayWord(meal.serve_at, tz, now)} {clockAt(meal.serve_at, tz)}</p>
         </div>
-        <a class="btn primary cook" href="/m/{id}/cook" use:link aria-disabled={!plan.tasks.length}>Cook the meal</a>
+        <a class="btn primary cook" href="/m/{id}/cook" use:link aria-disabled={!plan.tasks.length} aria-keyshortcuts="c" title="Cook the meal (C)">Cook the meal</a>
       </div>
       <dl class="facts">
         <div><dt class="label">Dishes</dt><dd class="fig">{meal.items.length}</dd></div>
         <div><dt class="label">Starts</dt><dd class="fig">{plan.start ? clockAt(plan.start, tz).replace(/\s?[AP]M$/i, '') : '–'}{#if plan.start}<span class="unit">{clockAt(plan.start, tz).match(/[AP]M$/i)?.[0] ?? ''} {startDay}</span>{/if}</dd></div>
         <div><dt class="label">On the day</dt><dd class="fig">{span(handsOn) || '–'}<span class="unit">hands-on</span></dd></div>
         <div><dt class="label">Made ahead</dt><dd class="fig">{ahead}<span class="unit">{ahead === 1 ? 'step' : 'steps'}</span></dd></div>
-        <div class:late-fig={!plan.on_time}><dt class="label">{plan.on_time ? 'Dinner' : 'Dinner now'}</dt><dd class="fig">{clockAt(landsAt, tz).replace(/\s?[AP]M$/i, '')}<span class="unit">{clockAt(landsAt, tz).match(/[AP]M$/i)?.[0] ?? ''} {dayWord(landsAt, tz, now)}</span></dd></div>
+        <div class:late-fig={!plan.on_time}><dt class="label">{plan.on_time ? word : `${word} now`}</dt><dd class="fig">{clockAt(landsAt, tz).replace(/\s?[AP]M$/i, '')}<span class="unit">{clockAt(landsAt, tz).match(/[AP]M$/i)?.[0] ?? ''} {dayWord(landsAt, tz, now)}</span></dd></div>
       </dl>
       {#if !plan.on_time && plan.late_dishes.length}
-        <div class="late-block" role="status">
+        <div class="late-block">
           <LateFixes {meal} {plan} {tz} onupdate={(u) => ((meal = u.meal), (plan = u.plan))} />
         </div>
       {/if}
@@ -233,7 +315,7 @@
                 <li id="item-{it.id}" tabindex="-1" class:flash={flash === `item-${it.id}`}>
                   <a class="it-title" href="/r/{it.recipe_id}" use:link>{it.title}</a>
                   <button type="button" class="it-summary" aria-expanded={editing.has(it.id)} onclick={() => toggleEdit(it.id)}>
-                    <span>{offsetLabel(it.serve_offset_minutes)} · {it.dish ?? 'no dish chosen'}</span><span class="it-change">{editing.has(it.id) ? 'Done' : 'Change'}</span>
+                    <span class="it-sum">{[it.serve_offset_minutes ? offsetLabel(it.serve_offset_minutes) : '', it.dish ?? 'No dish chosen'].filter(Boolean).join(' · ')}</span><span class="it-change">{editing.has(it.id) ? 'Close' : 'Change'}</span>
                   </button>
                   {#if editing.has(it.id)}
                   <div class="it-fields">
@@ -271,12 +353,12 @@
           <div class="add">
             <label class="visually-hidden" for="add-dish">Add a dish from the library</label>
             <Plus size={18} aria-hidden="true" />
-            <input id="add-dish" type="search" bind:value={query} onkeydown={addKey} placeholder="Add a dish from the library" autocomplete="off" disabled={isOffline()} />
+            <input id="add-dish" type="search" bind:value={query} onkeydown={addKey} placeholder="Add a dish from the library" autocomplete="off" disabled={isOffline()} aria-keyshortcuts="d" role="combobox" aria-expanded={matches.length > 0} aria-controls="dish-matches" aria-activedescendant={matches.length ? `match-${pick}` : undefined} />
           </div>
           {#if matches.length}
-            <ul class="matches" aria-label="Recipes that match">
-              {#each matches as r (r.id)}
-                <li><button type="button" onclick={() => add(r)}>{r.title}</button></li>
+            <ul class="matches" id="dish-matches" role="listbox" aria-label="Recipes that match">
+              {#each matches as r, j (r.id)}
+                <li id="match-{j}" role="option" aria-selected={j === pick} class:picked={j === pick}><button type="button" tabindex="-1" onclick={() => add(r)}>{r.title}</button></li>
               {/each}
             </ul>
           {:else if query.trim()}
@@ -288,28 +370,28 @@
           <h2 id="set-h" class="label">The meal</h2>
           <label class="field">
             <span class="label">Name</span>
-            <input value={meal.title} onchange={(e) => e.currentTarget.value.trim() && patch({ title: e.currentTarget.value.trim() })} />
+            <input value={meal.title} onchange={(e) => e.currentTarget.value.trim() && setting({ title: e.currentTarget.value.trim() }, 'Renamed.')} />
           </label>
           <label class="field">
-            <span class="label">Served</span>
-            <input type="datetime-local" value={isoToZoned(meal.serve_at, tz)} onchange={(e) => e.currentTarget.value && patch({ serve_at: zonedToISO(e.currentTarget.value, tz) })} />
+            <span class="label">Served <span class="said">{dayWord(meal.serve_at, tz, now)} {clockAt(meal.serve_at, tz)}</span></span>
+            <input type="datetime-local" value={isoToZoned(meal.serve_at, tz)} onchange={(e) => { const v = e.currentTarget.value; if (v) setting({ serve_at: zonedToISO(v, tz) }, `${mealWord(zonedToISO(v, tz), tz)} is at ${clockAt(zonedToISO(v, tz), tz)}.`); }} />
           </label>
           <div class="pair">
             <label class="field">
               <span class="label">Cooks</span>
-              <select value={meal.cooks} onchange={(e) => patch({ cooks: +e.currentTarget.value })}>
+              <select value={meal.cooks} onchange={(e) => setting({ cooks: +e.currentTarget.value }, `Planned for ${e.currentTarget.value === '1' ? '1 cook' : `${e.currentTarget.value} cooks`}.`)}>
                 {#each [1, 2, 3, 4, 5, 6, 7, 8] as n}<option value={n}>{n === 1 ? '1 cook' : `${n} cooks`}</option>{/each}
               </select>
             </label>
             <label class="field">
               <span class="label">Prep from</span>
-              <select value={meal.prep_days} onchange={(e) => patch({ prep_days: +e.currentTarget.value })}>
+              <select value={meal.prep_days} onchange={(e) => setting({ prep_days: +e.currentTarget.value }, 'The prep window is changed.')}>
                 <option value={0}>The day itself</option>
                 {#each [1, 2, 3, 4, 5, 6, 7] as n}<option value={n}>{n === 1 ? 'The day before' : `${n} days before`}</option>{/each}
               </select>
             </label>
           </div>
-          <p class="hint">Times are in {tz.replace(/_/g, ' ')}.</p>
+          {#if otherZone}<p class="hint">Times are in {tz.replace(/_/g, ' ')}, not this device’s zone.</p>{/if}
           <a class="kitchen-link" href="/kitchen" use:link>Your kitchen: ovens, burners, dishes and hours<ChevronRight size={16} aria-hidden="true" /></a>
           {#if confirmDelete}
             <div class="confirm" role="alertdialog" aria-labelledby="del-q">
@@ -326,7 +408,7 @@
       <section class="panel plan" aria-labelledby="plan-h">
         <div class="plan-head">
           <h2 id="plan-h" class="label">Plan</h2>
-          {#if plan.tasks.length}<p class="hint">Pin a task to keep it where it is while the rest moves around it.</p>{/if}
+          {#if plan.tasks.length && !anyPinned}<p class="hint">Pin a task to keep it where it is while the rest moves around it.</p>{/if}
         </div>
         {#if warnings.length}
           <ul class="warnings">
@@ -346,11 +428,11 @@
           {#if ovenLines.length}
             <ul class="oven-lines">
               {#each ovenLines as o}
-                <li><strong>{o.name}</strong>{` · ${o.uses.map((u) => `${u.temp_max ? `${u.temp}–${u.temp_max}` : u.temp ?? ''}° ${clockAt(u.start, tz)}–${clockAt(u.end, tz)}`).join(', then ')}`}</li>
+                <li><strong>{o.name}</strong>{` · ${o.uses.map((u) => `${u.temp_max ? `${u.temp}–${u.temp_max}°F` : u.temp ? `${u.temp}°F` : 'on'} ${clockAt(u.start, tz)}–${clockAt(u.end, tz)}`).join(', then ')}`}</li>
               {/each}
             </ul>
           {/if}
-          <figure class="chart" bind:clientWidth={chartW} aria-label="The run-up to the meal: what each oven, the stovetop and the cooks are doing, hour by hour. Tap a bar for its step.">
+          <div class="chart" role="group" bind:clientWidth={chartW} aria-label="The run-up to the meal: what each oven, the stovetop and the cooks are doing, hour by hour. Arrow keys move between bars; a bar opens its step.">
             <div class="axis" aria-hidden="true">
               {#each chart.ticks as tk, i}
                 {#if tk.label && (i < chart.ticks.length - 1 || chart.ticks.length < 3)}<span style="left: {tk.at}%">{clockAt(tk.iso, tz).replace(':00', '')}</span>{/if}
@@ -363,19 +445,20 @@
                   {#each chart.ticks as tk}<span class="grid-line" style="left: {tk.at}%" aria-hidden="true"></span>{/each}
                   {#each lane.rows as row, r}
                     {#each row as b, k (b.key)}
-                      {@const place = labelPlace(b, row, k, lane)}
-                      <button type="button" class="bar" class:hands={lane.hands} class:heat={b.kind === 'preheat'} class:was={b.status === 'done'} style="left: {b.left}%; width: max({b.width}%, 6px); top: calc({r} * var(--row))" title="{clockAt(b.start, tz)} {b.text}{b.recipe_title ? ` · ${b.recipe_title}` : ''}" aria-label="{lane.name}, {clockAt(b.start, tz)} to {clockAt(b.end, tz)}: {b.text}{b.recipe_title ? `, ${b.recipe_title}` : ''}" onclick={() => showMe({ task: b.key })}>
-                        {#if place === 'in'}{barLabel(b, lane).text}{/if}
+                      {@const place = placeLabel(b, row, k, lane)}
+                      {@const bk = `${lane.name}|${b.key}`}
+                      <button type="button" id={barId(bk)} tabindex={bk === focusKey ? 0 : -1} onfocus={() => (barFocus = bk)} onkeydown={barKey} class="bar" class:hands={lane.hands} class:heat={b.kind === 'preheat'} class:was={b.status === 'done'} style="left: {b.left}%; width: max({b.width}%, 6px); top: calc({r} * var(--row))" title="{clockAt(b.start, tz)} {b.text}{b.recipe_title ? ` · ${b.recipe_title}` : ''}" aria-label="{lane.name}, {clockAt(b.start, tz)} to {clockAt(b.end, tz)}: {b.kind === 'preheat' ? `heating to ${b.oven_temp}°F` : b.text}{b.recipe_title ? `, ${b.recipe_title}` : ''}" onclick={() => showMe({ task: b.key })}>
+                        {#if place.at === 'in'}{place.text}{/if}
                       </button>
-                      {#if place === 'out'}<span class="bar-out" style="left: calc({b.left + b.width}% + 4px); top: calc({r} * var(--row))" aria-hidden="true">{barLabel(b, lane).text}</span>{/if}
+                      {#if place.at === 'out'}<span class="bar-out" style="left: calc({b.left + b.width}% + 4px); top: calc({r} * var(--row))" aria-hidden="true">{place.text}</span>{/if}
                     {/each}
                   {/each}
                 </div>
               </div>
             {/each}
             {#if chartNow !== null}<span class="chart-now" style="left: calc(var(--lane-name) + (100% - var(--lane-name)) * {chartNow / 100})" aria-hidden="true"></span>{/if}
-            <figcaption class="legend" aria-hidden="true"><span class="key solid"></span>Hands-on <span class="key hatched"></span>Looks after itself</figcaption>
-          </figure>
+            <p class="legend" aria-hidden="true"><span class="key solid"></span>Hands-on <span class="key hatched"></span>Looks after itself <span class="key heat"></span>Oven heating</p>
+          </div>
         {/if}
 
         {#if !plan.tasks.length}
@@ -429,7 +512,12 @@
           <h3 class="day">To the table</h3>
           <ul class="serving">
             {#each plan.serving as s}
-              <li><span class="fig">{clockAt(s.serve_at, tz)}</span><span>{s.recipe_title}</span><span class="dish" class:none={!s.dish}>{s.dish ?? 'No dish chosen'}</span></li>
+              {@const ready = readyAt.get(s.item_id)}
+              <li class:late={ready}>
+                <span class="fig">{clockAt(ready ?? s.serve_at, tz)}</span>
+                <span>{s.recipe_title}{#if ready}<span class="was-at">{` · ready ${span(Math.round((Date.parse(ready) - Date.parse(s.serve_at)) / 60e3))} late, planned for ${clockAt(s.serve_at, tz)}`}</span>{/if}</span>
+                <span class="dish" class:none={!s.dish}>{s.dish ?? 'No dish chosen'}</span>
+              </li>
             {/each}
           </ul>
         {/if}
@@ -486,6 +574,10 @@
   .served {
     margin-top: var(--space-2);
     color: var(--ink-2);
+  }
+  /* Running late, the planned time steps back for the time it now lands. */
+  .served.was {
+    color: var(--ink-3);
   }
   .cook {
     min-height: 52px;
@@ -618,6 +710,9 @@
     font-size: var(--ui);
     color: var(--ink-2);
   }
+  .it-sum {
+    min-width: 0;
+  }
   .it-change {
     font-weight: 700;
     color: var(--ink);
@@ -719,8 +814,15 @@
     font-weight: 600;
   }
   .matches button:hover,
-  .matches button:focus-visible {
+  .matches .picked button {
     background: var(--ticket-press);
+  }
+  .said {
+    margin-left: var(--space-2);
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--ink-2);
   }
   .settings {
     display: grid;
@@ -803,7 +905,7 @@
      cooks' hands. Ink is hands-on; hatching looks after itself. */
   .chart {
     --lane-name: 88px;
-    --row: 22px;
+    --row: 28px;
     position: relative;
     margin: var(--space-4) 0 0;
     padding: var(--space-3) 0 var(--space-2);
@@ -861,7 +963,7 @@
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     font-weight: 700;
     line-height: calc(var(--row) - 4px);
     color: var(--ink);
@@ -873,10 +975,18 @@
     color: var(--ticket);
     box-shadow: none;
   }
+  /* An oven heating: a thin steel strip along the foot of the row, leading
+     into the bake it heats for. */
   .bar.heat {
-    background: none;
-    box-shadow: inset 0 0 0 1px var(--perf);
-    color: var(--ink-3);
+    height: 6px;
+    margin-top: calc(var(--row) - 8px);
+    background: var(--steel);
+    box-shadow: none;
+  }
+  .bar:focus-visible {
+    outline: 2px solid var(--red);
+    outline-offset: 2px;
+    z-index: 1;
   }
   .bar.was {
     opacity: 0.45;
@@ -887,7 +997,7 @@
   .bar-out {
     position: absolute;
     margin-top: 2px;
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     font-weight: 700;
     line-height: calc(var(--row) - 4px);
     color: var(--ink-2);
@@ -934,6 +1044,11 @@
   }
   .key.solid {
     background: var(--ink);
+  }
+  .key.heat {
+    margin-left: var(--space-3);
+    height: 5px;
+    background: var(--steel);
   }
 
   .day {
@@ -1094,13 +1209,28 @@
     font-size: 1.375rem;
   }
   .o-what,
-  .dish {
+  .dish,
+  .was-at {
     color: var(--ink-2);
+  }
+  .serving li.late .fig {
+    color: var(--red);
   }
   .dish.none {
     color: var(--ink-3);
   }
 
+  /* Beside the plan, the menu stays in view as the plan scrolls, scrolling
+     on its own when it's the taller of the two. */
+  @media (min-width: 761px) {
+    .side {
+      position: sticky;
+      top: var(--space-3);
+      max-height: calc(100dvh - var(--space-5));
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+  }
   /* A laptop narrower than the side column likes, or an iPad in landscape. */
   @media (max-width: 1100px) {
     .cols {
@@ -1168,6 +1298,25 @@
     .o-what,
     .dish {
       grid-column: 2;
+    }
+  }
+  /* A narrow phone: the time sits above its task, so the step gets the width. */
+  @media (max-width: 480px) {
+    .task {
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 0 var(--space-2);
+    }
+    .task .when {
+      grid-column: 1;
+      font-size: 1.125rem;
+    }
+    .task .body {
+      grid-column: 1;
+    }
+    .task .pin {
+      grid-column: 2;
+      grid-row: 1 / span 2;
+      align-self: center;
     }
   }
 </style>

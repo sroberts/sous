@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { zonedToISO, isoToZoned, byDay, span, runOfShow, remaining, timingSummary, cleanTiming, lanes } from '../src/lib/meals.js';
+import { zonedToISO, isoToZoned, byDay, span, runOfShow, remaining, timingSummary, cleanTiming, lanes, mealWord } from '../src/lib/meals.js';
 
 test('a wall time in the kitchen’s zone round-trips', () => {
   assert.equal(zonedToISO('2026-11-26T17:00', 'America/New_York'), '2026-11-26T22:00:00.000Z');
@@ -94,4 +94,11 @@ test('timing reads in a few words and drops blanks', () => {
   assert.equal(timingSummary({ minutes: 15, hold_minutes: 2880, hold_in: 'fridge' }), '15 min · can wait 2 days in the fridge');
   assert.deepEqual(cleanTiming({ minutes: 10, oven_temp: 350, equipment: 'stovetop', hold_in: 'fridge' }), { minutes: 10, equipment: 'stovetop' });
   assert.equal(cleanTiming({ minutes: '', equipment: null }), null);
+});
+
+test('a meal is named by the hour it is served, in its own zone', () => {
+  assert.equal(mealWord('2026-11-26T14:00:00Z', 'America/New_York'), 'Breakfast');
+  assert.equal(mealWord('2026-11-26T18:00:00Z', 'America/New_York'), 'Lunch');
+  assert.equal(mealWord('2026-11-26T22:00:00Z', 'America/New_York'), 'Dinner');
+  assert.equal(mealWord('2026-11-27T05:30:00Z', 'America/New_York'), 'Dinner', 'a dinner run late past midnight');
 });
