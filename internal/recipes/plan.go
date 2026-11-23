@@ -1018,6 +1018,7 @@ func (p *planner) result(serve, prepFrom time.Time, tasks []*ptask, dayOf, ahead
 		have[strings.ToLower(d.Name)] += d.Count
 	}
 	used := map[string][]string{}
+	firstUse := map[string]string{} // the first item in each dish, for a warning to point at
 	for i, it := range m.Items {
 		title := p.in.recipes[i].Title
 		out.Serving = append(out.Serving, ServingDish{ItemID: it.ID, RecipeTitle: title, Dish: it.Dish, ServeAt: p.stamp(deadlines[i])})
@@ -1033,12 +1034,16 @@ func (p *planner) result(serve, prepFrom time.Time, tasks []*ptask, dayOf, ahead
 				Message: fmt.Sprintf("%s goes in “%s”, which isn't in the kitchen's dishes.", title, *it.Dish), ItemID: ref(it.ID)})
 		}
 		used[name] = append(used[name], title)
+		if _, ok := firstUse[name]; !ok {
+			firstUse[name] = it.ID
+		}
 	}
 	for _, d := range k.Dishes {
 		titles := used[strings.ToLower(d.Name)]
 		if len(titles) > d.Count {
 			p.warnings = append(p.warnings, PlanWarning{Code: "dish_short",
-				Message: fmt.Sprintf("“%s” is planned for %s, but the kitchen has %d.", d.Name, joinAnd(titles), d.Count)})
+				Message: fmt.Sprintf("“%s” is planned for %s, but the kitchen has %d.", d.Name, joinAnd(titles), d.Count),
+				ItemID:  ref(firstUse[strings.ToLower(d.Name)])})
 		}
 	}
 	// Most consequential first: lateness, then what won't fit, then the rest.
