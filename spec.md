@@ -960,7 +960,7 @@ with two racks and four burners, 08:00 to 22:00.
 
 `meals` (title, `serve_at` UTC, IANA `timezone`, `cooks` 1–8, `prep_days`
 0–7, notes, version, soft delete) and `meal_items` (a stable `id`, the
-recipe, `serve_offset_minutes` 0–720, serving `dish`). `/v1/meals` CRUD
+recipe, `serve_offset_minutes` −180 to 720 (negative is before the meal, for an appetiser), serving `dish`). `/v1/meals` CRUD
 follows recipes: `If-Match`, 412 with `current`, soft delete and restore,
 changes logged as entity `meal`. Items keep their id when passed back, so
 progress stays with a dish when the menu is reordered; a dish taken off the
@@ -982,9 +982,18 @@ is stored but progress. The scheduler (`internal/recipes/plan.go`):
    before the meal at `day_start`), no earlier than their hold allows, each
    finished before its day-of part starts.
 5. Once the meal is live (from a day before the prep window to six hours
-   after the last dish), moves every task that should have started, and
-   everything waiting on one, to the earliest time it fits from now; they
-   are `late`, and `on_time`/`behind_minutes` say how the meal stands.
+   after the last dish), nothing that isn't done, started or pinned may
+   start before now. Every dish is first refitted as above from now on;
+   a dish that then can't fit in time (a task before now, or one that
+   fits nowhere) is *in trouble*. Dishes in trouble are placed forwards
+   from now, the most urgent task first (the one whose latest start for
+   its dish to be on time comes soonest), and the rest refitted around
+   them, repeating until no more dishes join. So the four-hour roast gets
+   the oven before yesterday's pie. A task that should have started by
+   now, as planned without the clock, is `late`; make-ahead work in that
+   state is `missed`. `on_time`, `behind_minutes` and `late_dishes` (each
+   late dish, latest first, with when it will be ready, the task most to
+   blame and a cause: `missed`, `late_start` or `busy`) say how it stands.
 6. Adds a 15-minute preheat before each oven task that finds its oven cold
    or at another temperature.
 
@@ -995,7 +1004,10 @@ kitchen's day first. Limits the kitchen can't meet at all (no oven listed,
 an unknown appliance) are warned about and ignored. Warnings also cover
 guessed timings, cooked steps left waiting over 30 minutes, work that must
 start before the prep window, and serving dishes that are missing, unknown
-or used more times than the kitchen has.
+or used more times than the kitchen has. They come most consequential
+first (lateness, then what won't fit, down to guessed timings); `serving`
+is in time order, and an oven span shared by dishes at different
+temperatures gives the range (`temp` to `temp_max`).
 
 Progress is `meal_tasks` (pinned start, started, done, by whom), set with
 `PUT /v1/meals/{id}/tasks/{task}` and cleared, keeping pins, by
@@ -1012,10 +1024,18 @@ in the change log.
 ### UI
 
 `/meals` lists meals and plans a new one; `/kitchen` edits the kitchen;
-`/m/{id}` edits the menu and shows the plan by day, each oven's day and the
-serving dishes; `/m/{id}/cook` is the run of show (what's due on the rail
-with Start and Done, countdowns for started tasks, up next, the ovens, and
-what's done), fetching the plan each minute and keeping the screen awake.
+`/m/{id}` edits the menu and shows how late the meal is running, why, and
+one-tap fixes (serve that dish later, move the meal, call missed make-ahead
+done); warnings that lead to the dish or task they name; the meal's day as
+lanes (each oven, the stovetop, appliances, the cooks' hands); the plan by
+day with a now rule; each oven's day; and the serving dishes.
+`/m/{id}/cook` is the run of show: missed make-ahead in a strip above the
+rail (Do it now, It's done); on the rail one ticket per cook (hands-on work
+under way, then what starts within five minutes, a dish's later step never
+before its earlier one), beside a lane of hands-off work and heating ovens
+counting down; then up next (due work waiting for hands first), the ovens,
+and what's done. It fetches the plan every 20 seconds and keeps the screen
+awake.
 The recipe editor sets step timing. Meals need a connection; they aren't
 kept for offline use.
 

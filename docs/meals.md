@@ -46,8 +46,8 @@ says which dishes it guessed for.
 Under **Meals**, name the meal and when it's served, then add the dishes from
 your library. For each dish you can set:
 
-- **When it's served**: with the meal, or later (dessert an hour and a half
-  after, say).
+- **When it's served**: with the meal, before it (an appetiser), or later
+  (dessert an hour and a half after, say).
 - **Its serving dish**, from your kitchen's list.
 
 Set how many **cooks** there are (how many hands-on jobs can happen at once)
@@ -58,28 +58,41 @@ how long it takes, which oven at what temperature, and whether it's
 hands-on. Make-ahead dishes say where they wait and until when. Below the
 plan are each oven's day and what goes to the table in what.
 
-Warnings say what to check: guessed timings, a dish that would sit waiting
-because the kitchen is busy, work that has to start before your prep window,
-or a serving dish planned for two things at once. **Pin** a task to keep it
-where it is while the rest of the plan moves around it.
+At the top, a strip of lanes shows the meal's day at a glance: what each
+oven, the stovetop and your hands are doing hour by hour, with solid bars
+for hands-on work and hatched ones for things that look after themselves.
+
+If the meal is running late, the header says by how much, which dish, and
+why, with one-tap fixes: serve that dish later, move the meal, or (for
+make-ahead work you did after all) mark it done. Warnings say what else to
+check: a dish that would sit waiting because the kitchen is busy, work that
+has to start before your prep window, or a serving dish planned for two
+things at once. Tap one to jump to the dish or step it's about. **Pin** a
+task to keep it where it is while the rest of the plan moves around it.
 
 ## 4. Cook it
 
 On the day, open the meal and press **Cook the meal**. The screen stays on.
 
-- What to do now hangs from the rail. **Start** begins a task's countdown;
-  **Done** ticks it off. Tasks that look after themselves (a roast) count
-  down until they're due out.
-- **Up next** shows what's coming and when, and **Ovens** shows what each
-  oven is doing and what it needs next.
-- If you fall behind, everything still to do moves later, and the bar says
-  how late the meal will be. Tasks that should have started are marked late.
+- What to do now hangs from the rail: one ticket per cook, the most urgent
+  first. **Start** begins a task's countdown; **Done** ticks it off. A
+  dish's next step only comes up once the one before it is done.
+- Things that look after themselves (a roast, an oven heating) count down
+  in a lane beside it, and turn red when they're due out.
+- **Up next** shows what's coming and when, led by anything due that's
+  waiting for free hands. **Ovens** shows what each oven is doing.
+- If make-ahead work didn't happen (the pie meant for yesterday), it's
+  listed above the rail: **Do it now** puts it on the rail, **It's done**
+  ticks it off.
+- If you fall behind, Sous replans from now, giving the oven and your
+  hands to the dish in most trouble first, and the bar says how late the
+  meal will be.
 - **Open the recipe at step N** jumps into that recipe's own cook mode.
 - **Done** keeps what you've finished, with Undo. **Start over** forgets the
   progress (pins stay) to cook the meal again.
 
-Several people can cook from several devices: each one's taps update the plan
-for all of them within a minute.
+Several people can cook from several devices: each one's taps reach the
+others within about 20 seconds.
 
 ## Things it doesn't do yet
 
