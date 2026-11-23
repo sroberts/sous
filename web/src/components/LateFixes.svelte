@@ -1,8 +1,10 @@
 <script>
-  // When a meal is running late: which dish is holding it up and why, and
-  // one recommended fix. Other late dishes, which don't change when the
-  // meal lands, fold away. Every fix can be undone. Shared by the planner
-  // and the run of show, so the cook can act on it from either.
+  // When a meal is running late: which dish is holding it up and what's in
+  // its way, then what would help, each worked out in full by the planner
+  // (another cook, the meal without that dish, the meal served later), the
+  // one that brings the meal in soonest first. The dish's own fixes and
+  // other late dishes fold away. Every fix can be undone. Shared by the
+  // planner and the run of show, so the cook can act on it from either.
   import { ChevronDown } from '@lucide/svelte';
   import { api } from '../lib/api.js';
   import { session, asPerson, toast } from '../lib/session.svelte.js';
@@ -14,20 +16,48 @@
   let busy = $state(false);
   let problem = $state('');
 
-  const roundUp = (m) => Math.ceil(m / 15) * 15;
   const at = (iso, plus) => new Date(Date.parse(iso) + plus * 60e3).toISOString();
   const word = $derived(mealWord(meal.serve_at, tz));
   const lower = $derived(word.toLowerCase());
+  const landsAt = $derived(at(plan.serve_at, plan.behind_minutes));
   // Latest first: the first dish sets when the meal lands.
   const lead = $derived(plan.late_dishes[0]);
-  const rest = $derived(plan.late_dishes.slice(1).filter((d) => d.minutes < lead.minutes));
   const tied = $derived(plan.late_dishes.slice(1).filter((d) => d.minutes >= lead.minutes));
-  const moveTo = $derived(at(meal.serve_at, roundUp(plan.behind_minutes)));
+  const rest = $derived(plan.late_dishes.slice(1).filter((d) => d.minutes < lead.minutes));
+  const options = $derived(plan.options?.length ? plan.options : [{ kind: 'move', lands_at: landsAt, behind_minutes: 0, in_kitchen_day: true }]);
   const CAUSE = {
     missed: 'its make-ahead is still to do',
     late_start: 'its work started later than planned',
     busy: 'the kitchen has no room for it sooner',
   };
+
+  // What's in the way, named: the oven, the burners or the cooks' hands,
+  // busy with another dish until a time.
+  function blocker(d) {
+    const task = plan.tasks.find((t) => t.key === d.task);
+    if (d.cause !== 'busy' || !task) return CAUSE[d.cause];
+    const start = Date.parse(task.start);
+    const uses = (u) =>
+      task.oven ? u.oven === task.oven : task.equipment === 'stovetop' ? u.equipment === 'stovetop' : task.hands_on ? u.hands_on : false;
+    const by = plan.tasks
+      .filter((u) => u.kind !== 'preheat' && u.item_id !== task.item_id && uses(u) && Date.parse(u.end) <= start + 60e3 && Date.parse(u.end) > start - 45 * 60e3)
+      .sort((a, b) => Date.parse(b.end) - Date.parse(a.end))[0];
+    if (!by) return CAUSE.busy;
+    const until = clockAt(by.end, tz);
+    if (task.oven) return `the ${task.oven.toLowerCase()} is busy with ${by.recipe_title}${by.oven_temp ? ` at ${by.oven_temp}°F` : ''} until ${until}`;
+    if (task.equipment === 'stovetop') return `the burners are busy with ${by.recipe_title} until ${until}`;
+    return `${meal.cooks > 1 ? 'every cook’s hands are' : 'your hands are'} on ${by.recipe_title} until ${until}`;
+  }
+
+  // Dishes ready long before the meal now lands, unless it moves.
+  const early = $derived.by(() => {
+    const late = new Set(plan.late_dishes.map((d) => d.item_id));
+    const held = new Set(plan.tasks.filter((t) => t.hold).map((t) => t.item_id));
+    const gap = (s) => Math.round((Date.parse(landsAt) - Date.parse(s.serve_at)) / 60e3);
+    const list = plan.serving.filter((s) => !late.has(s.item_id) && !held.has(s.item_id) && gap(s) >= 60);
+    return list.length ? { names: list.map((s) => s.recipe_title), by: gap(list[0]) } : null;
+  });
+  const joinAnd = (xs) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}`);
 
   // A change to the meal. If someone else changed it a moment before, the
   // change goes onto theirs, once, and the message says so.
@@ -55,9 +85,27 @@
 
   const itemsNow = () => meal.items.map((i) => ({ id: i.id, recipe_id: i.recipe_id, serve_offset_minutes: i.serve_offset_minutes, dish: i.dish }));
 
-  function moveMeal() {
-    const was = meal.serve_at;
-    patch({ serve_at: moveTo }, `${word} is now at ${clockAt(moveTo, tz)}.`, () => patch({ serve_at: was }, `${word} is back at ${clockAt(was, tz)}.`));
+  function label(o) {
+    if (o.kind === 'more_cooks') return `Plan for ${o.cooks} cooks`;
+    if (o.kind === 'without') return `Take ${o.recipe_title} off the menu`;
+    return `Move ${lower} to ${clockAt(o.lands_at, tz)}`;
+  }
+  function outcome(o) {
+    if (o.kind === 'move') return o.in_kitchen_day ? 'Every dish moves with it, so nothing is rushed.' : 'Every dish moves with it, but that’s past your kitchen’s hours.';
+    const lands = `${word} would land at ${clockAt(o.lands_at, tz)}`;
+    return o.behind_minutes ? `${lands}, ${span(o.behind_minutes)} late.` : `${lands}, on time.`;
+  }
+  function take(o) {
+    if (o.kind === 'move') {
+      const was = meal.serve_at;
+      return patch({ serve_at: o.lands_at }, `${word} is now at ${clockAt(o.lands_at, tz)}.`, () => patch({ serve_at: was }, `${word} is back at ${clockAt(was, tz)}.`));
+    }
+    if (o.kind === 'more_cooks') {
+      const was = meal.cooks;
+      return patch({ cooks: o.cooks }, `Planned for ${o.cooks} cooks.`, () => patch({ cooks: was }, `Back to ${was === 1 ? '1 cook' : `${was} cooks`}.`));
+    }
+    const before = itemsNow();
+    patch({ items: before.filter((i) => i.id !== o.item_id) }, `${o.recipe_title} is off the menu.`, () => patch({ items: before }, `${o.recipe_title} is back on the menu.`));
   }
 
   function serveLater(d) {
@@ -65,8 +113,8 @@
     const items = itemsNow();
     const it = items.find((i) => i.id === d.item_id);
     if (!it) return;
-    it.serve_offset_minutes = Math.min(720, it.serve_offset_minutes + roundUp(d.minutes));
-    const when = clockAt(at(d.serve_at, roundUp(d.minutes)), tz);
+    it.serve_offset_minutes = Math.min(720, it.serve_offset_minutes + d.minutes);
+    const when = clockAt(at(d.serve_at, d.minutes), tz);
     patch({ items }, `${d.recipe_title} now goes to the table at ${when}.`, () => patch({ items: before }, `${d.recipe_title} is back with the ${lower}.`));
   }
 
@@ -100,39 +148,48 @@
 </script>
 
 <div class="late" class:compact>
-  <p class="cause" role="status">
-    <strong>{lead.recipe_title}</strong>{tied.length ? ` and ${tied.map((d) => d.recipe_title).join(' and ')}` : ''} {tied.length ? 'are' : 'is'} holding {lower} up: {CAUSE[lead.cause]}.
+  <p class="cause">
+    <strong>{lead.recipe_title}</strong>{tied.length ? ` and ${joinAnd(tied.map((d) => d.recipe_title))}` : ''} {tied.length ? 'are' : 'is'} holding {lower} up: {blocker(lead)}.
   </p>
 
-  <div class="best">
-    <button type="button" class="btn primary" onclick={moveMeal} disabled={busy}>Move {lower} to {clockAt(moveTo, tz)}</button>
-    <p class="hint">Every dish moves with it, so nothing is rushed.</p>
-  </div>
+  <ul class="opts">
+    {#each options as o, i (o.kind)}
+      <li>
+        <button type="button" class="btn" class:primary={i === 0} onclick={() => take(o)} disabled={busy}>{label(o)}</button>
+        <p class="hint" class:warn={o.kind === 'move' && !o.in_kitchen_day}>{outcome(o)}</p>
+      </li>
+    {/each}
+  </ul>
 
-  <div class="others">
-    {#if lead.cause === 'missed'}
+  {#if lead.cause === 'missed'}
+    <div class="own">
       <button type="button" class="btn" onclick={() => startAhead(lead)} disabled={busy}>Start its make-ahead now</button>
-      <button type="button" class="btn" onclick={() => doneAhead(lead)} disabled={busy}>It’s already made</button>
-    {/if}
-    <button type="button" class="btn quiet" onclick={() => serveLater(lead)} disabled={busy}>Serve {lead.recipe_title} later, at {clockAt(at(lead.serve_at, roundUp(lead.minutes)), tz)}</button>
-  </div>
-
-  {#if rest.length}
-    <details class="rest">
-      <summary><ChevronDown size={18} aria-hidden="true" />{rest.length === 1 ? '1 more dish is' : `${rest.length} more dishes are`} late, but won’t change when {lower} lands</summary>
-      <ul>
-        {#each rest as d (d.item_id)}
-          <li>
-            <p><strong>{d.recipe_title}</strong>: ready at {clockAt(d.ready_at, tz)}, {span(d.minutes)} after it’s due at the table; {CAUSE[d.cause]}.</p>
-            <div class="acts">
-              {#if d.cause === 'missed'}<button type="button" class="btn" onclick={() => doneAhead(d)} disabled={busy}>It’s already made</button>{/if}
-              <button type="button" class="btn quiet" onclick={() => serveLater(d)} disabled={busy}>Serve it at {clockAt(at(d.serve_at, roundUp(d.minutes)), tz)}</button>
-            </div>
-          </li>
-        {/each}
-      </ul>
-    </details>
+      <button type="button" class="btn quiet" onclick={() => doneAhead(lead)} disabled={busy}>It’s already made</button>
+    </div>
   {/if}
+
+  {#if early}
+    <p class="hint">Unless {lower} moves, {joinAnd(early.names)} {early.names.length === 1 ? 'is' : 'are'} ready {span(early.by)} before it lands.</p>
+  {/if}
+
+  <details class="rest">
+    <summary><ChevronDown size={18} aria-hidden="true" />{rest.length ? `Other fixes, and ${rest.length === 1 ? '1 more late dish' : `${rest.length} more late dishes`} that won’t change when ${lower} lands` : 'Other fixes'}</summary>
+    <ul>
+      <li>
+        <p><strong>{lead.recipe_title}</strong> on its own, after the rest of the {lower}.</p>
+        <div class="acts"><button type="button" class="btn quiet" onclick={() => serveLater(lead)} disabled={busy}>Serve it at {clockAt(at(lead.serve_at, lead.minutes), tz)}</button></div>
+      </li>
+      {#each rest as d (d.item_id)}
+        <li>
+          <p><strong>{d.recipe_title}</strong>: ready at {clockAt(d.ready_at, tz)}, {span(d.minutes)} after it’s due at the table; {blocker(d)}.</p>
+          <div class="acts">
+            {#if d.cause === 'missed'}<button type="button" class="btn" onclick={() => doneAhead(d)} disabled={busy}>It’s already made</button>{/if}
+            <button type="button" class="btn quiet" onclick={() => serveLater(d)} disabled={busy}>Serve it at {clockAt(at(d.serve_at, d.minutes), tz)}</button>
+          </div>
+        </li>
+      {/each}
+    </ul>
+  </details>
   {#if problem}<p class="problem" role="alert">{problem}</p>{/if}
 </div>
 
@@ -146,13 +203,20 @@
     font-weight: 600;
     max-width: 52ch;
   }
-  .best {
+  .opts {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-2);
+  }
+  .opts li {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: var(--space-2) var(--space-4);
+    gap: var(--space-1) var(--space-4);
   }
-  .best .btn {
+  .opts .btn {
     min-height: 52px;
     padding: 0 var(--space-5);
     font-size: 1.0625rem;
@@ -161,7 +225,11 @@
     font-size: var(--ui);
     color: var(--ink-2);
   }
-  .others,
+  .hint.warn {
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .own,
   .acts {
     display: flex;
     flex-wrap: wrap;
@@ -191,6 +259,7 @@
     display: none;
   }
   .rest summary :global(svg) {
+    flex: none;
     transition: transform 200ms var(--ease-out);
   }
   .rest[open] summary :global(svg) {
@@ -224,8 +293,7 @@
   .compact .btn {
     min-height: 56px;
   }
-  .compact .best .btn {
-    flex: 1 1 18rem;
+  .compact .opts .btn {
     min-height: 64px;
     font-size: 1.1875rem;
   }

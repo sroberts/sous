@@ -17,8 +17,21 @@
   let problem = $state('');
   let busy = $state(false);
   let now = $state(Date.now());
-  const ticker = setInterval(() => (now = Date.now()), 30_000);
+  // On the day the plan moves with the clock and other cooks' taps, so it's
+  // fetched again every 30 seconds while the page is in view.
+  const ticker = setInterval(() => {
+    now = Date.now();
+    if (plan && meal && !busy && document.visibilityState === 'visible' && Math.abs(Date.parse(meal.serve_at) - now) < 24 * 3600e3) refreshPlan();
+  }, 30_000);
   onDestroy(() => clearInterval(ticker));
+  async function refreshPlan() {
+    try {
+      const [m, p] = await Promise.all([api.meal(id), api.mealPlan(id)]);
+      if (!busy) [meal, plan] = [m, p];
+    } catch {
+      // A failed refresh keeps what's on screen; the next one tries again.
+    }
+  }
 
   async function load() {
     try {
@@ -83,11 +96,13 @@
       toast(`${title} is off the menu.`, { label: 'Undo', run: () => patch({ items: before }) });
     }
   }
-  function moveItem(i, by) {
+  async function moveItem(i, by) {
+    const before = itemsInput(meal.items);
     const items = itemsInput(meal.items);
     const [it] = items.splice(i, 1);
     items.splice(i + by, 0, it);
-    patch({ items });
+    const { title } = meal.items[i];
+    if (await patch({ items })) toast(`${title} moved ${by < 0 ? 'up' : 'down'} the menu.`, { label: 'Undo', run: () => patch({ items: before }) });
   }
 
   // Adding a dish: search the library on this device.
@@ -121,13 +136,22 @@
     }
   }
 
-  // Keys at the desk: C cooks the meal, D adds a dish.
+  // Keys at the desk: C cooks the meal, D adds a dish, ? lists them.
+  let keysDialog = $state();
+  const KEYS = [
+    ['C', 'Cook the meal'],
+    ['D', 'Add a dish; ↑ ↓ pick from the matches, Enter adds'],
+    ['← →', 'In the lanes: the bar before or after'],
+    ['↑ ↓', 'In the lanes: the lane above or below'],
+    ['?', 'These keys'],
+  ];
   function onkey(e) {
     if (!meal || session.asking || e.altKey || e.ctrlKey || e.metaKey) return;
     if (e.target.closest?.('input, textarea, select, [contenteditable], dialog[open]')) return;
     const k = e.key.toLowerCase();
     if (k === 'c' && plan?.tasks.length) go(`/m/${id}/cook`);
     else if (k === 'd') document.getElementById('add-dish')?.focus();
+    else if (e.key === '?') keysDialog?.showModal();
     else return;
     e.preventDefault();
   }
@@ -185,13 +209,15 @@
   // A bar's label goes inside when it fits, just after it when there's room
   // before the next bar, and otherwise only in its name for screen readers.
   // The recipe's name, with the oven's temperature when it fits; a narrow
-  // bar falls back to the name's first word. Preheats are a thin strip with
-  // no label: the bar after them says the temperature.
+  // bar falls back to the name's last word, which names the dish ("turkey",
+  // "casserole") where the first names how it's made ("Roast"). Preheats
+  // are a thin strip with no label: the bar after them says the temperature.
   const PX = 7.4;
   function labelFor(b, lane, room) {
     if (b.kind === 'preheat') return null;
     const name = b.recipe_title ?? '';
-    const tries = [b.oven_temp && !lane.hands ? `${name} ${b.oven_temp}°` : null, name, name.split(' ')[0]].filter(Boolean);
+    const noun = name.split(' ').at(-1);
+    const tries = [b.oven_temp && !lane.hands ? `${name} ${b.oven_temp}°` : null, name, noun && noun[0].toUpperCase() + noun.slice(1)].filter(Boolean);
     return tries.find((t) => t.length * PX + 10 <= room) ?? null;
   }
   function placeLabel(b, row, k, lane) {
@@ -271,12 +297,30 @@
   const readyAt = $derived(new Map((plan?.late_dishes ?? []).map((d) => [d.item_id, d.ready_at])));
   const anyPinned = $derived((plan?.tasks ?? []).some((t) => t.pinned));
   const otherZone = $derived(tz !== deviceZone());
+  // A dish held for the meal waits until the meal, wherever it now lands.
+  function holdUntil(t) {
+    const s = plan.serving.find((x) => x.item_id === t.item_id);
+    if (plan.on_time || !s || t.hold.until < s.serve_at) return whenAt(t.hold.until, tz, now);
+    return 'it goes to the table';
+  }
+  // When the meal's landing time moves, say so once.
+  let said = $state('');
+  let landed = null;
+  $effect(() => {
+    if (!plan) return;
+    const lands = plan.on_time ? 'on time' : clockAt(landsAt, tz);
+    if (landed !== null && lands !== landed) said = plan.on_time ? `${word} is on time.` : `${word} now lands at ${lands}.`;
+    landed = lands;
+  });
 </script>
 
 <svelte:window onkeydown={onkey} />
 
 <main class="meal" id="main">
-  <a class="back" href="/meals" use:link><ArrowLeft size={16} aria-hidden="true" />Meals</a>
+  <div class="crumbs">
+    <a class="back" href="/meals" use:link><ArrowLeft size={16} aria-hidden="true" />Meals</a>
+    {#if meal}<button type="button" class="back" aria-haspopup="dialog" aria-keyshortcuts="?" title="Keys on a meal (?)" onclick={() => keysDialog?.showModal()}><kbd aria-hidden="true">?</kbd>Keys</button>{/if}
+  </div>
 
   {#if problem && !meal}
     <h1>That meal couldn’t be opened.</h1>
@@ -286,16 +330,25 @@
       <div class="title-row">
         <div>
           <h1>{meal.title}</h1>
+          {#if !plan.on_time}
+            <!-- Late, the news leads: when it now lands, then what was planned. -->
+            <p class="lands">{word} now lands <strong class="fig">{clockAt(landsAt, tz)}</strong>{` ${dayWord(landsAt, tz, now).toLowerCase()} · ${span(plan.behind_minutes)} late`}</p>
+          {/if}
           <p class="served" class:was={!plan.on_time}>{plan.on_time ? 'Served' : 'Planned for'} {dayWord(meal.serve_at, tz, now)} {clockAt(meal.serve_at, tz)}</p>
         </div>
-        <a class="btn primary cook" href="/m/{id}/cook" use:link aria-disabled={!plan.tasks.length} aria-keyshortcuts="c" title="Cook the meal (C)">Cook the meal</a>
+        {#if plan.tasks.length}
+          <!-- One red button in view: while the late block's fix is red, this steps back. -->
+          <a class="btn cook" class:primary={plan.on_time} href="/m/{id}/cook" use:link aria-keyshortcuts="c" title="Cook the meal (C)">Cook the meal</a>
+        {:else}
+          <button type="button" class="btn cook" disabled>Cook the meal</button>
+        {/if}
       </div>
       <dl class="facts">
         <div><dt class="label">Dishes</dt><dd class="fig">{meal.items.length}</dd></div>
         <div><dt class="label">Starts</dt><dd class="fig">{plan.start ? clockAt(plan.start, tz).replace(/\s?[AP]M$/i, '') : '–'}{#if plan.start}<span class="unit">{clockAt(plan.start, tz).match(/[AP]M$/i)?.[0] ?? ''} {startDay}</span>{/if}</dd></div>
         <div><dt class="label">On the day</dt><dd class="fig">{span(handsOn) || '–'}<span class="unit">hands-on</span></dd></div>
         <div><dt class="label">Made ahead</dt><dd class="fig">{ahead}<span class="unit">{ahead === 1 ? 'step' : 'steps'}</span></dd></div>
-        <div class:late-fig={!plan.on_time}><dt class="label">{plan.on_time ? word : `${word} now`}</dt><dd class="fig">{clockAt(landsAt, tz).replace(/\s?[AP]M$/i, '')}<span class="unit">{clockAt(landsAt, tz).match(/[AP]M$/i)?.[0] ?? ''} {dayWord(landsAt, tz, now)}</span></dd></div>
+        {#if plan.on_time}<div><dt class="label">{word}</dt><dd class="fig">{clockAt(landsAt, tz).replace(/\s?[AP]M$/i, '')}<span class="unit">{clockAt(landsAt, tz).match(/[AP]M$/i)?.[0] ?? ''} {dayWord(landsAt, tz, now)}</span></dd></div>{/if}
       </dl>
       {#if !plan.on_time && plan.late_dishes.length}
         <div class="late-block">
@@ -353,7 +406,7 @@
           <div class="add">
             <label class="visually-hidden" for="add-dish">Add a dish from the library</label>
             <Plus size={18} aria-hidden="true" />
-            <input id="add-dish" type="search" bind:value={query} onkeydown={addKey} placeholder="Add a dish from the library" autocomplete="off" disabled={isOffline()} aria-keyshortcuts="d" role="combobox" aria-expanded={matches.length > 0} aria-controls="dish-matches" aria-activedescendant={matches.length ? `match-${pick}` : undefined} />
+            <input id="add-dish" type="search" bind:value={query} onkeydown={addKey} placeholder="Add a dish" autocomplete="off" disabled={isOffline()} aria-keyshortcuts="d" role="combobox" aria-expanded={matches.length > 0} aria-controls="dish-matches" aria-activedescendant={matches.length ? `match-${pick}` : undefined} />
           </div>
           {#if matches.length}
             <ul class="matches" id="dish-matches" role="listbox" aria-label="Recipes that match">
@@ -426,16 +479,21 @@
 
         {#if chart}
           {#if ovenLines.length}
-            <ul class="oven-lines">
+            <div class="oven-lines">
               {#each ovenLines as o}
-                <li><strong>{o.name}</strong>{` · ${o.uses.map((u) => `${u.temp_max ? `${u.temp}–${u.temp_max}°F` : u.temp ? `${u.temp}°F` : 'on'} ${clockAt(u.start, tz)}–${clockAt(u.end, tz)}`).join(', then ')}`}</li>
+                <p class="ol-name">{o.name}</p>
+                <ul>
+                  {#each o.uses as u}
+                    <li><span class="fig">{u.temp_max ? `${u.temp}–${u.temp_max}°` : u.temp ? `${u.temp}°` : 'On'}</span><span>{clockAt(u.start, tz)}–{clockAt(u.end, tz)}</span></li>
+                  {/each}
+                </ul>
               {/each}
-            </ul>
+            </div>
           {/if}
           <div class="chart" role="group" bind:clientWidth={chartW} aria-label="The run-up to the meal: what each oven, the stovetop and the cooks are doing, hour by hour. Arrow keys move between bars; a bar opens its step.">
             <div class="axis" aria-hidden="true">
               {#each chart.ticks as tk, i}
-                {#if tk.label && (i < chart.ticks.length - 1 || chart.ticks.length < 3)}<span style="left: {tk.at}%">{clockAt(tk.iso, tz).replace(':00', '')}</span>{/if}
+                {#if tk.label && (i < chart.ticks.length - 1 || chart.ticks.length < 3)}<span style="left: {tk.at}%" class:day-tick={tk.day}>{tk.day ?? clockAt(tk.iso, tz).replace(':00', '')}</span>{/if}
               {/each}
             </div>
             {#each chart.lanes as lane}
@@ -457,7 +515,7 @@
               </div>
             {/each}
             {#if chartNow !== null}<span class="chart-now" style="left: calc(var(--lane-name) + (100% - var(--lane-name)) * {chartNow / 100})" aria-hidden="true"></span>{/if}
-            <p class="legend" aria-hidden="true"><span class="key solid"></span>Hands-on <span class="key hatched"></span>Looks after itself <span class="key heat"></span>Oven heating</p>
+            <p class="legend"><span class="key solid"></span>Hands-on <span class="key hatched"></span>Looks after itself <span class="key heat"></span>Oven heating</p>
           </div>
         {/if}
 
@@ -468,7 +526,7 @@
           <h3 class="day">{day.label}{#if day.key === serveDay}<span class="day-note">the meal</span>{/if}</h3>
           <ol class="tasks">
             {#each day.tasks as t (t.key)}
-              {#if t.key === nowKey}<li class="now-rule" aria-label="Now"><span class="fig">{clockAt(new Date(now).toISOString(), tz)}</span>Now</li>{/if}
+              {#if t.key === nowKey}<li class="now-rule" role="separator" aria-label="Now, {clockAt(new Date(now).toISOString(), tz)}"><span class="fig">{clockAt(new Date(now).toISOString(), tz)}</span>Now</li>{/if}
               <li class="task" id="task-{t.key}" tabindex="-1" class:quiet={t.kind === 'preheat'} class:past={past(t)} class:pinned={t.pinned} class:flash={flash === `task-${t.key}`}>
                 <span class="when fig">{clockAt(t.start, tz)}</span>
                 <div class="body">
@@ -480,7 +538,7 @@
                     {#if t.hands_on && t.minutes}<span class="hands"><Hand size={14} aria-hidden="true" />hands-on</span>{/if}
                     {#if t.planned_for}<span class="flag">{t.status === 'missed' ? `make-ahead, was for ${dayWord(t.planned_for, tz, now)} ${clockAt(t.planned_for, tz)}` : `moved from ${clockAt(t.planned_for, tz)}`}</span>{/if}
                   </p>
-                  {#if t.hold}<p class="hold">Then it waits {holdPlace(t.hold.in)} until {whenAt(t.hold.until, tz, now)}.</p>{/if}
+                  {#if t.hold}<p class="hold">Then it waits {holdPlace(t.hold.in)} until {holdUntil(t)}.</p>{/if}
                 </div>
                 {#if t.kind !== 'preheat'}
                   <button type="button" class="pin" aria-pressed={t.pinned} onclick={() => pin(t)} aria-label="{t.pinned ? 'Unpin' : 'Pin'} {t.text}"><Pin size={16} aria-hidden="true" />{t.pinned ? 'Pinned' : 'Pin'}</button>
@@ -491,7 +549,7 @@
         {/each}
 
         {#if plan.ovens.some((o) => o.uses.length)}
-          <h3 class="day">Ovens</h3>
+          <h3 class="section">Ovens</h3>
           {#each plan.ovens as o}
             <div class="oven">
               <p class="o-name">{o.name}<span class="o-racks">{o.racks} {o.racks === 1 ? 'rack' : 'racks'}</span></p>
@@ -509,13 +567,13 @@
         {/if}
 
         {#if plan.serving.length}
-          <h3 class="day">To the table</h3>
+          <h3 class="section">To the table</h3>
           <ul class="serving">
             {#each plan.serving as s}
               {@const ready = readyAt.get(s.item_id)}
-              <li class:late={ready}>
+              <li>
                 <span class="fig">{clockAt(ready ?? s.serve_at, tz)}</span>
-                <span>{s.recipe_title}{#if ready}<span class="was-at">{` · ready ${span(Math.round((Date.parse(ready) - Date.parse(s.serve_at)) / 60e3))} late, planned for ${clockAt(s.serve_at, tz)}`}</span>{/if}</span>
+                <span class="s-what">{s.recipe_title}{#if ready}<span class="was-at">planned for {clockAt(s.serve_at, tz)}</span>{/if}</span>
                 <span class="dish" class:none={!s.dish}>{s.dish ?? 'No dish chosen'}</span>
               </li>
             {/each}
@@ -526,7 +584,16 @@
   {:else}
     <p class="hint" role="status">Loading the meal…</p>
   {/if}
+  <p class="visually-hidden" aria-live="polite">{said}</p>
 </main>
+
+<dialog class="keys" bind:this={keysDialog} aria-labelledby="keys-h" onclick={(e) => e.target === keysDialog && keysDialog.close()}>
+  <h2 id="keys-h" class="label">Keys on a meal</h2>
+  <dl>
+    {#each KEYS as [key, what]}<div><dt><kbd>{key}</kbd></dt><dd>{what}</dd></div>{/each}
+  </dl>
+  <form method="dialog"><button class="btn">Done</button></form>
+</dialog>
 
 <style>
   .meal {
@@ -545,6 +612,78 @@
     text-decoration: none;
   }
   .back:hover {
+    color: var(--red);
+  }
+  .crumbs {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  button.back {
+    border: 0;
+    background: none;
+    padding: 0;
+    gap: var(--space-2);
+  }
+  @media (hover: none) {
+    button.back {
+      display: none;
+    }
+  }
+  .keys {
+    width: min(28rem, calc(100% - 2 * var(--gutter)));
+    padding: var(--space-5);
+    border: 0;
+    border-top: 3px solid var(--ink);
+    background: var(--ticket);
+    color: var(--ink);
+  }
+  .keys::backdrop {
+    background: rgb(20 24 28 / 0.4);
+  }
+  .keys h2 {
+    padding-bottom: var(--space-2);
+    border-bottom: 3px solid var(--ink);
+  }
+  .keys dl {
+    margin: var(--space-2) 0 var(--space-4);
+  }
+  .keys dl > div {
+    display: grid;
+    grid-template-columns: 3.5rem 1fr;
+    gap: var(--space-3);
+    align-items: baseline;
+    padding: var(--space-2) 0;
+    border-bottom: 1.5px dashed var(--ticket-press);
+  }
+  .keys dd {
+    margin: 0;
+  }
+  kbd {
+    display: inline-block;
+    min-width: 1.75rem;
+    padding: 1px var(--space-1);
+    border: 1.5px solid var(--ink-3);
+    border-radius: 3px;
+    font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 1.4;
+    text-align: center;
+  }
+  .keys form {
+    display: flex;
+    justify-content: flex-end;
+  }
+  /* Late, the time it now lands leads the header, in red: the one figure
+     that matters most today. */
+  .lands {
+    margin-top: var(--space-2);
+    font-size: var(--title-m);
+    font-weight: 700;
+  }
+  .lands .fig {
+    font-size: 2rem;
     color: var(--red);
   }
   h1 {
@@ -583,12 +722,6 @@
     min-height: 52px;
     padding: 0 var(--space-5);
   }
-  .cook[aria-disabled='true'] {
-    pointer-events: none;
-    background: transparent;
-    border-color: var(--perf);
-    color: var(--ink-3);
-  }
   .facts {
     display: flex;
     flex-wrap: wrap;
@@ -603,9 +736,6 @@
   .facts dd {
     margin: var(--space-1) 0 0;
     font-size: 2.25rem;
-  }
-  .late-fig dd {
-    color: var(--red);
   }
   .late-block {
     padding-top: var(--space-3);
@@ -916,6 +1046,9 @@
     height: 18px;
     margin-left: var(--lane-name);
   }
+  .axis .day-tick {
+    color: var(--ink);
+  }
   .axis span {
     position: absolute;
     transform: translateX(-50%);
@@ -1006,14 +1139,29 @@
   }
   .oven-lines {
     display: none;
-    list-style: none;
     margin: var(--space-3) 0 0;
     padding: var(--space-3) 0 0;
     border-top: 1.5px dashed var(--perf);
     font-size: var(--ui);
     color: var(--ink-2);
   }
-  .oven-lines strong {
+  .ol-name {
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .oven-lines ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .oven-lines li {
+    display: grid;
+    grid-template-columns: 4.25rem minmax(0, 1fr);
+    gap: var(--space-3);
+    align-items: baseline;
+  }
+  .oven-lines .fig {
+    font-size: 1.25rem;
     color: var(--ink);
   }
   .chart-now {
@@ -1145,8 +1293,6 @@
     font-size: 1.125rem;
     letter-spacing: 0;
   }
-  /* Pin: quiet until the row is pointed at, always there under a finger,
-     and always there once pinned. */
   .pin {
     display: inline-flex;
     align-items: center;
@@ -1163,15 +1309,8 @@
   .pin[aria-pressed='true'] {
     color: var(--red);
   }
+  /* Pin is always there, quiet, so it can be found without hunting. */
   @media (hover: hover) and (pointer: fine) {
-    .pin {
-      opacity: 0;
-    }
-    .task:hover .pin,
-    .task:focus-within .pin,
-    .pin[aria-pressed='true'] {
-      opacity: 1;
-    }
     .pin:hover {
       background: var(--pass-deep);
       color: var(--ink);
@@ -1204,6 +1343,13 @@
     padding: var(--space-1) 0;
     font-size: var(--ui);
   }
+  /* The dish's name takes what it needs; the serving dish sits at the end. */
+  .serving li {
+    grid-template-columns: 5.5rem minmax(0, 1fr) auto;
+  }
+  .serving .dish {
+    text-align: right;
+  }
   .o-temp,
   .serving .fig {
     font-size: 1.375rem;
@@ -1213,8 +1359,23 @@
   .was-at {
     color: var(--ink-2);
   }
-  .serving li.late .fig {
-    color: var(--red);
+  /* Section heads below the days: labels on a dashed rule, not more days. */
+  .section {
+    margin: var(--space-6) 0 var(--space-1);
+    padding-top: var(--space-2);
+    border-top: 1.5px dashed var(--perf);
+    font-size: var(--label);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .s-what {
+    min-width: 0;
+  }
+  .was-at {
+    display: block;
+    font-size: 0.875rem;
   }
   .dish.none {
     color: var(--ink-3);
@@ -1298,6 +1459,9 @@
     .o-what,
     .dish {
       grid-column: 2;
+    }
+    .serving .dish {
+      text-align: left;
     }
   }
   /* A narrow phone: the time sits above its task, so the step gets the width. */

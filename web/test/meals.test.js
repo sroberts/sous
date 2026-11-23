@@ -45,7 +45,7 @@ test('the run of show puts one ticket per cook on the rail', () => {
       t('cran:1', 'cran', '2026-11-26T16:00:00Z', 10),
       t('mash:0', 'mash', '2026-11-26T16:03:00Z', 10),
       t('later', 'mash2', '2026-11-26T17:00:00Z', 10),
-      t('hot', null, '2026-11-26T15:50:00Z', 15, { kind: 'preheat', item_id: null }),
+      t('hot', null, '2026-11-26T15:50:00Z', 15, { kind: 'preheat', item_id: null, status: 'active', started_at: '2026-11-26T15:50:00Z' }),
     ],
   };
   const one = runOfShow(plan, now);
@@ -63,6 +63,11 @@ test('the run of show puts one ticket per cook on the rail', () => {
   // starting it takes a moment.
   plan.tasks.push(t('beans', 'beans2', '2026-11-26T16:02:00Z', 30, { hands_on: false }));
   assert.deepEqual(runOfShow(plan, now).focus.map((x) => x.key), ['cran:0', 'beans']);
+  plan.tasks.pop();
+
+  // An oven nobody has said is on is a ticket, not a timer.
+  plan.tasks.push(t('cold', null, '2026-11-26T16:01:00Z', 15, { kind: 'preheat', item_id: null, hands_on: false }));
+  assert.equal(runOfShow(plan, now).focus[0].key, 'cold', 'turning the oven on comes first');
   plan.tasks.pop();
 
   // Once someone takes up a missed dish, its steps come up as ordinary work.

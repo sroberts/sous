@@ -52,7 +52,21 @@
   // as the screen comes back.
   const tick = setInterval(() => (now = Date.now()), 1000);
   const poll = setInterval(() => document.visibilityState === 'visible' && refresh(), 20_000);
-  const onVisible = () => document.visibilityState === 'visible' && (refresh(), keepAwake());
+  // Back after a while away: say what came up meanwhile.
+  let hiddenAt = null;
+  async function onVisible() {
+    if (document.visibilityState !== 'visible') {
+      hiddenAt = Date.now();
+      return;
+    }
+    const away = hiddenAt;
+    hiddenAt = null;
+    await refresh();
+    keepAwake();
+    if (!away || Date.now() - away < 2 * 60e3 || !plan) return;
+    const came = plan.tasks.filter((t) => t.status !== 'done' && Date.parse(t.start) > away && Date.parse(t.start) <= Date.now());
+    if (came.length) toast(`While you were away, ${came.length === 1 ? `“${came[0].text.replace(/\.$/, '')}” came up` : `${came.length} steps came up`}.`);
+  }
   document.addEventListener('visibilitychange', onVisible);
 
   // The screen stays on while the meal is being cooked, as in cook mode.
@@ -73,7 +87,7 @@
     lock?.release?.().catch(() => {});
   });
 
-  async function change(tasks, body) {
+  async function change(tasks, body, undoable = true) {
     const keys = tasks.map((t) => t.key);
     pending = new Set([...pending, ...keys]);
     try {
@@ -81,6 +95,11 @@
       for (const t of tasks) p = await asPerson(() => api.updateTask(id, t.key, body));
       if (p) plan = p;
       problem = '';
+      // A tick can be taken back right where it was made: wet hands slip.
+      if (p && body.done && undoable) {
+        const what = tasks.length === 1 ? tasks[0].text.replace(/\.$/, '') : `${tasks.length} steps`;
+        toast(`Ticked off: ${what}.`, { label: 'Undo', run: () => change(tasks, { done: false }, false) });
+      }
     } catch (err) {
       problem = problemText(err);
     } finally {
@@ -123,14 +142,19 @@
     const title = (u) => [...new Set(u.tasks.map((k) => plan.tasks.find((t) => t.key === k)?.recipe_title).filter(Boolean))].join(', ');
     const temp = (u) => (u.temp_max ? `${u.temp}–${u.temp_max}°` : u.temp ? `${u.temp}°` : 'On');
     return plan.ovens.map((o) => {
-      const cur = o.uses.find((u) => Date.parse(u.start) <= now && Date.parse(u.end) > now);
+      // In use now means someone has the work in it under way.
+      const under = (u) => u.tasks.some((k) => plan.tasks.find((t) => t.key === k)?.status === 'active');
+      const cur = o.uses.find((u) => Date.parse(u.start) <= now && Date.parse(u.end) > now && under(u));
       const nxt = o.uses.find((u) => Date.parse(u.start) > now);
-      const heating = plan.tasks.find((t) => t.kind === 'preheat' && t.oven === o.name && Date.parse(t.start) <= now && Date.parse(t.end) > now);
+      // An oven heats once a cook has said it's on; a preheat that's due but
+      // unconfirmed leaves the oven off.
+      const heating = plan.tasks.find((t) => t.kind === 'preheat' && t.oven === o.name && t.status === 'active');
+      const toTurnOn = plan.tasks.find((t) => t.kind === 'preheat' && t.oven === o.name && t.status !== 'active' && t.status !== 'done' && Date.parse(t.start) <= now + 5 * 60e3);
       return {
         name: o.name,
-        figure: cur ? temp(cur) : heating ? `${heating.oven_temp}°` : 'Off',
-        live: !!(cur || heating),
-        line: cur ? `${title(cur)} until ${clockAt(cur.end, tz)}` : heating ? `Heating for ${clockAt(heating.end, tz)}` : nxt ? `Next: ${temp(nxt)}F at ${clockAt(nxt.start, tz)}` : 'Nothing more today',
+        figure: heating ? `${heating.oven_temp}°` : cur && !toTurnOn ? temp(cur) : 'Off',
+        live: !!heating || !!(cur && !toTurnOn),
+        line: cur && !toTurnOn ? `${title(cur)} until ${clockAt(cur.end, tz)}` : heating ? (remaining(heating, now) > 0 ? `Heating to ${heating.oven_temp}°F` : `Hot at ${heating.oven_temp}°F`) : toTurnOn ? `Off · turn on to ${toTurnOn.oven_temp}°F by ${clockAt(toTurnOn.start, tz)}` : nxt ? `Next: ${temp(nxt)}F at ${clockAt(nxt.start, tz)}` : 'Nothing more today',
       };
     });
   });
@@ -153,6 +177,13 @@
     if (landed !== null && lands !== landed) said = plan.on_time ? `${word} is on time again.` : `${word} now lands at ${lands}.`;
     landed = lands;
   });
+
+  // A dish held for the meal waits until the meal, wherever it now lands.
+  function holdUntil(t) {
+    const s = plan.serving.find((x) => x.item_id === t.item_id);
+    if (plan.on_time || !s || t.hold.until < s.serve_at) return whenAt(t.hold.until, tz, now);
+    return `it goes to the table`;
+  }
 
   const label = (t) => {
     if (t.status === 'active') return 'Under way';
@@ -210,14 +241,14 @@
         <section class="missed" aria-label="Make-ahead still to do">
           <button type="button" class="m-row" aria-expanded={missedOpen} onclick={() => (missedOpen = !missedOpen)}>
             <span><strong>Make-ahead still to do:</strong> {show.missed.map((m) => m.recipe_title).join(', ')}</span>
-            <span class="m-sort">{missedOpen ? 'Close' : 'Sort it'}<ChevronDown size={18} aria-hidden="true" /></span>
+            <span class="m-sort">{missedOpen ? 'Close' : 'Start or tick off'}<ChevronDown size={18} aria-hidden="true" /></span>
           </button>
           {#if missedOpen}
             <ul>
               {#each show.missed as m (m.item_id)}
                 {@const busy = m.tasks.some((t) => pending.has(t.key))}
                 <li>
-                  <p><strong>{m.recipe_title}</strong>: {m.tasks.length === 1 ? '1 step' : `${m.tasks.length} steps`}, {span(m.tasks.reduce((n, t) => n + t.minutes, 0))}.</p>
+                  <p><strong>{m.recipe_title}</strong>: {m.tasks.length === 1 ? '1 step' : `${m.tasks.length} steps`}, {span(m.tasks.reduce((n, t) => n + t.minutes, 0))}. The plan has room for it at {clockAt(m.tasks[0].start, tz)}.</p>
                   <div class="m-acts">
                     <button class="btn" onclick={() => change([m.tasks[0]], { started: true })} disabled={busy} aria-label="Start {m.recipe_title}’s make-ahead now"><Play aria-hidden="true" />Start it now</button>
                     <button class="btn" onclick={() => change(m.tasks, { done: true })} disabled={busy} aria-label="{m.recipe_title}’s make-ahead is already made"><Check aria-hidden="true" />It’s already made</button>
@@ -257,30 +288,38 @@
                 <div class="c-head">
                   {#if left !== null}
                     <span class="big fig live">{clock(Math.abs(left))}</span>
-                    <span class="label state">{left > 0 ? 'Left' : 'Over by'}</span>
+                    <span class="state">{left > 0 ? 'left' : 'over'}</span>
                   {:else}
                     <span class="big fig">{clockAt(t.start, tz)}</span>
-                    <span class="label state">{isNext ? `Next · ${until(t.start)}` : label(t)}</span>
+                    <span class="state">{isNext ? `Next · ${until(t.start)}` : label(t)}</span>
                   {/if}
                 </div>
                 <hr class="perf" />
-                <p class="text">{t.text}</p>
+                <p class="text">{t.kind === 'preheat' ? `Turn the ${t.oven?.toLowerCase() ?? 'oven'} on to ${t.oven_temp}°F` : t.text}</p>
                 <p class="meta">
                   {#if t.recipe_title}<span>{t.recipe_title}{t.step ? ` · step ${t.step}` : ''}</span>{/if}
                   <span>{span(t.minutes)}</span>
                   {#if t.oven}<span>{t.oven}{t.oven_temp ? ` · ${t.oven_temp}°F` : ''}</span>{:else if t.equipment}<span>{t.equipment}</span>{/if}
                   {#if t.hands_on && t.minutes}<span class="hands">hands-on</span>{/if}
                 </p>
-                {#if t.hold}<p class="hold">Then it waits {holdPlace(t.hold.in)} until {whenAt(t.hold.until, tz, now)}.</p>{/if}
-                {#if !isNext}
+                {#if t.hold}<p class="hold">Then it waits {holdPlace(t.hold.in)} until {holdUntil(t)}.</p>{/if}
+                {#if t.kind === 'preheat' && !isNext}
                   <div class="acts">
+                    <button class="btn" class:primary={i === 0} onclick={() => change([t], { started: true })} disabled={pending.has(t.key)} aria-label="It’s on: {t.oven ?? 'oven'} heating to {t.oven_temp}°F"><Flame aria-hidden="true" />It’s on</button>
+                  </div>
+                {:else if !isNext}
+                  <!-- Start leads until the step is under way; then Done does.
+                       Before that, Done is a quiet "Already done", away from Start. -->
+                  <div class="acts" class:started={t.status === 'active'}>
                     {#if t.status !== 'active'}
-                      <button class="btn" class:primary={i === 0} onclick={() => change([t], { started: true })} disabled={pending.has(t.key)} aria-label="Start: {t.text}"><Play aria-hidden="true" />Start</button>
+                      <button class="btn" class:primary={i === 0} onclick={() => change([t], { started: true })} disabled={pending.has(t.key)} aria-label="Start: {t.text} ({label(t)})"><Play aria-hidden="true" />Start</button>
+                      <button class="btn quiet already" onclick={() => change([t], { done: true })} disabled={pending.has(t.key)} aria-label="Already done: {t.text}"><Check aria-hidden="true" />Already done</button>
+                    {:else}
+                      <button class="btn" class:primary={i === 0} onclick={() => change([t], { done: true })} disabled={pending.has(t.key)} aria-label="Done: {t.text}"><Check aria-hidden="true" />Done</button>
                     {/if}
-                    <button class="btn" class:primary={i === 0 && t.status === 'active'} onclick={() => change([t], { done: true })} disabled={pending.has(t.key)} aria-label="Done: {t.text}"><Check aria-hidden="true" />Done</button>
                   </div>
                 {/if}
-                {#if t.recipe_id && t.step}
+                {#if t.recipe_id && t.step && t.kind !== 'preheat'}
                   <a class="open" href="/r/{t.recipe_id}/cook?step={t.step}" use:link><BookOpen size={18} aria-hidden="true" />The recipe at step {t.step}</a>
                 {/if}
               </article>
@@ -293,13 +332,13 @@
           {#if show.timers.length}
             <ul class="timers" aria-label="Under way by themselves">
               {#each show.timers as t (t.key)}
-                {@const left = t.kind === 'preheat' ? (Date.parse(t.end) - now) / 1000 : remaining(t, now)}
+                {@const left = remaining(t, now)}
                 <li class="ticket tick" class:done={left <= 0 && t.kind !== 'preheat'}>
                   <span class="clip" aria-hidden="true"></span>
                   <p class="t-label">{#if t.kind === 'preheat'}<Flame size={16} aria-hidden="true" />{/if}{t.kind === 'preheat' ? `Heating to ${t.oven_temp}°F` : t.recipe_title}</p>
                   <p class="t-what">{t.kind === 'preheat' ? t.oven : t.text}</p>
                   <div class="t-row">
-                    <span class="t-clock fig">{left > 0 ? clock(left) : t.kind === 'preheat' ? 'Hot' : `+${clock(-left)}`}</span>
+                    <span class="t-clock"><span class="fig">{left > 0 ? clock(left) : t.kind === 'preheat' ? 'Hot' : `+${clock(-left)}`}</span>{#if left > 0 || t.kind !== 'preheat'}<span class="t-unit">{left > 0 ? 'left' : 'over'}</span>{/if}</span>
                     {#if t.kind !== 'preheat'}
                       <button class="btn small" onclick={() => change([t], { done: true })} disabled={pending.has(t.key)} aria-label="Done: {t.text}"><Check aria-hidden="true" />Done</button>
                     {/if}
@@ -618,8 +657,11 @@
   .live {
     color: var(--red);
   }
+  /* Read from across the counter: what to do about the time, not a caption. */
   .state {
-    color: var(--ink-3);
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--ink-2);
     text-align: right;
   }
   .text {
@@ -650,6 +692,13 @@
     flex: 1;
     min-height: 72px;
     font-size: 1.1875rem;
+  }
+  /* Before a step starts, Done steps back: quieter, and set apart from Start. */
+  .acts .btn.already {
+    flex: 0 1 auto;
+    margin-left: var(--space-3);
+    font-size: 1.0625rem;
+    color: var(--ink-2);
   }
   .acts .btn :global(svg) {
     width: 22px;
@@ -745,9 +794,19 @@
     margin-top: var(--space-1);
   }
   .t-clock {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
     font-size: 2.25rem;
-    min-width: 4.2ch;
     color: var(--red);
+  }
+  .t-clock .fig {
+    min-width: 4.2ch;
+  }
+  /* A countdown says it's one, so 2:02 never reads as a time of day. */
+  .t-unit {
+    font-size: 1rem;
+    font-weight: 700;
   }
   .btn.small {
     min-height: 52px;

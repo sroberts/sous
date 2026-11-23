@@ -127,7 +127,7 @@
       <div class="acts">
         {#if k.updated_by}<span class="by">Last changed by {personName(k.updated_by, session.people)} {ago(k.updated_at)}</span>{/if}
         {#if isOffline()}<span class="by" role="status">You’re offline. Saving needs a connection.</span>{/if}
-        <button class="btn primary" disabled={saving || !dirty || isOffline()}>{saving ? 'Saving…' : 'Save the kitchen'}</button>
+        <button class="btn" class:primary={dirty} disabled={saving || !dirty || isOffline()}>{saving ? 'Saving…' : dirty ? 'Save the kitchen' : 'Saved'}</button>
       </div>
     </form>
   {:else if !problem}

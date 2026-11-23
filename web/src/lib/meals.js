@@ -68,14 +68,16 @@ export function dayKey(iso, tz) {
   return `${z.year}-${z.month}-${z.day}`;
 }
 
-/** "Thursday 5:00 PM", or "Today 5:00 PM" / "Tomorrow" when it is. */
+/** "Thursday 5:00 PM", or "Today 5:00 PM" / "Tomorrow" / "Yesterday" when it is. */
 export function whenAt(iso, tz, now = Date.now()) {
   const k = dayKey(iso, tz);
   const label = k === dayKey(new Date(now).toISOString(), tz)
     ? 'Today'
     : k === dayKey(new Date(now + 864e5).toISOString(), tz)
       ? 'Tomorrow'
-      : new Date(iso).toLocaleDateString(undefined, { timeZone: tz, weekday: 'long', month: 'short', day: 'numeric' });
+      : k === dayKey(new Date(now - 864e5).toISOString(), tz)
+        ? 'Yesterday'
+        : new Date(iso).toLocaleDateString(undefined, { timeZone: tz, weekday: 'long', month: 'short', day: 'numeric' });
   return `${label} ${clockAt(iso, tz)}`;
 }
 
@@ -107,6 +109,7 @@ export function dayWord(iso, tz, now = Date.now()) {
   const k = dayKey(iso, tz);
   if (k === dayKey(new Date(now).toISOString(), tz)) return 'Today';
   if (k === dayKey(new Date(now + 864e5).toISOString(), tz)) return 'Tomorrow';
+  if (k === dayKey(new Date(now - 864e5).toISOString(), tz)) return 'Yesterday';
   return new Date(iso).toLocaleDateString(undefined, { timeZone: tz, weekday: 'short' });
 }
 
@@ -128,7 +131,8 @@ export function problemText(err) {
  *  - focus: what each cook should be doing, at most one hands-on ticket per
  *    cook (work under way first, then what's due, earliest first), plus any
  *    hands-off work that's due, which only needs a moment to start;
- *  - timers: hands-off work under way (a roast), and ovens heating;
+ *  - timers: hands-off work under way (a roast), and ovens a cook has
+ *    turned on, until the work they heat for begins;
  *  - waiting: due work beyond what the cooks can take on, first in line;
  *  - missed: make-ahead work whose time passed before anyone started it,
  *    by dish, for the cook to do now or call done;
@@ -154,8 +158,12 @@ export function runOfShow(plan, now = Date.now(), { cooks = 1, soonMin = 5 } = {
     const s = Date.parse(t.start);
     const e = Date.parse(t.end);
     if (t.kind === 'preheat') {
-      if (e <= now) continue;
-      (s <= now ? out.timers : out.next).push(t);
+      // An oven is on once a cook says so: until then, a due preheat is a
+      // ticket (turn it on); once on, a timer until the bake begins.
+      if (t.status === 'done') continue;
+      if (t.status === 'active') out.timers.push(t);
+      else if (s <= soon) due.push(t);
+      else out.next.push(t);
     } else if (t.status === 'done') out.done.push(t);
     else if (t.status === 'missed' && !takenUp.has(t.item_id)) {
       if (!missed.has(t.item_id)) missed.set(t.item_id, { item_id: t.item_id, recipe_title: t.recipe_title, tasks: [] });
@@ -169,7 +177,10 @@ export function runOfShow(plan, now = Date.now(), { cooks = 1, soonMin = 5 } = {
   out.missed = [...missed.values()];
   const slots = Math.max(0, cooks - handsOnActive.length);
   const dueHands = due.filter((t) => t.hands_on);
-  out.focus = [...handsOnActive, ...dueHands.slice(0, slots), ...due.filter((t) => !t.hands_on)];
+  // An oven to turn on leads: it's the first thing to do, and the work
+  // after it waits on the heat.
+  const heat = due.filter((t) => t.kind === 'preheat');
+  out.focus = [...heat, ...handsOnActive, ...dueHands.slice(0, slots), ...due.filter((t) => !t.hands_on && t.kind !== 'preheat')];
   out.waiting = dueHands.slice(slots);
   return out;
 }
@@ -194,7 +205,10 @@ export function holdPlace(where) {
 export function lanes(plan, tz, ovens = [], now = Date.now()) {
   // The run-up to the meal: day-of work (make-ahead has its own days in
   // the list), and once that's under way, from half an hour before now.
-  const tasks = plan.tasks.filter((t) => t.minutes > 0 && !t.make_ahead && t.status !== 'missed');
+  // Preheats come along only for the work they heat for.
+  const dayOf = (t) => t.kind !== 'preheat' && !t.make_ahead && t.status !== 'missed';
+  const keys = new Set(plan.tasks.filter(dayOf).map((t) => t.key));
+  const tasks = plan.tasks.filter((t) => t.minutes > 0 && (t.kind === 'preheat' ? keys.has(t.key.split(':').slice(2).join(':')) : dayOf(t)));
   if (!tasks.length) return null;
   let from = Math.min(...tasks.map((t) => Date.parse(t.start)));
   const to = Math.max(...tasks.map((t) => Date.parse(t.end)), Date.parse(plan.serve_at));
@@ -229,7 +243,10 @@ export function lanes(plan, tz, ovens = [], now = Date.now()) {
   // Hour labels at least 12% of the width apart, so they never collide.
   const every = Math.max(1, Math.ceil(12 / (100 / Math.max(1, (end - start) / hour))));
   const ticks = [];
-  for (let h = start, n = 0; h <= end; h += hour, n++) ticks.push({ at: pos(h), iso: new Date(h).toISOString(), label: n % every === 0 });
+  // Midnight is labelled with the day it begins, so a chart over two days says which.
+  const midnight = (h) => new Date(h).toLocaleString('en-US', { timeZone: tz, hour: 'numeric', hourCycle: 'h23' }) === '0';
+  const weekday = (h) => new Date(h).toLocaleDateString(undefined, { timeZone: tz, weekday: 'short' });
+  for (let h = start, n = 0; h <= end; h += hour, n++) ticks.push({ at: pos(h), iso: new Date(h).toISOString(), label: n % every === 0, day: midnight(h) ? weekday(h) : null });
   return { lanes: out, ticks, pos, start, end };
 }
 

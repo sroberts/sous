@@ -309,8 +309,9 @@
     color: var(--ink-2);
     font-size: var(--ui);
   }
+  /* Lateness in ink: the row's one red is Cook it. */
   .sub .late {
-    color: var(--red);
+    color: var(--ink);
   }
   .past a {
     color: var(--ink-2);
