@@ -35,7 +35,7 @@ type MealItem struct {
 	ID                 string  `json:"id" jsonschema:"stays the same across edits; tasks in the plan are keyed by it"`
 	RecipeID           string  `json:"recipe_id"`
 	Title              string  `json:"title" jsonschema:"the recipe's title; read-only"`
-	ServeOffsetMinutes int     `json:"serve_offset_minutes" jsonschema:"minutes after serve_at this dish is served (dessert at 90, say); 0 with the meal"`
+	ServeOffsetMinutes int     `json:"serve_offset_minutes" jsonschema:"minutes after serve_at this dish is served (dessert at 90, say); 0 with the meal; negative before it (an appetiser)"`
 	Dish               *string `json:"dish" jsonschema:"the serving dish it goes to the table in, by its name in the kitchen"`
 }
 
@@ -65,7 +65,7 @@ type MealInput struct {
 type MealItemInput struct {
 	ID                 *string `json:"id,omitempty" jsonschema:"an existing item's id, to keep its progress; omit for a new dish"`
 	RecipeID           string  `json:"recipe_id"`
-	ServeOffsetMinutes int     `json:"serve_offset_minutes,omitempty" jsonschema:"minutes after serve_at, 0 to 720"`
+	ServeOffsetMinutes int     `json:"serve_offset_minutes,omitempty" jsonschema:"minutes after serve_at, -180 (before the meal) to 720"`
 	Dish               *string `json:"dish,omitempty" jsonschema:"serving dish, by its name in the kitchen"`
 }
 
@@ -98,6 +98,7 @@ type PlanQuery struct {
 const (
 	maxMealItems   = 40
 	maxServeOffset = 12 * 60
+	minServeOffset = -3 * 60 // an appetiser before the meal
 )
 
 func mealNotFound() *Error { return Errorf(CodeNotFound, "that meal does not exist") }
@@ -441,8 +442,8 @@ func setMealItems(ctx context.Context, tx *sql.Tx, mealID string, items []MealIt
 	}
 	seen := map[string]bool{}
 	for i, it := range items {
-		if it.ServeOffsetMinutes < 0 || it.ServeOffsetMinutes > maxServeOffset {
-			return Errorf(CodeInvalid, "items[%d]: serve_offset_minutes must be between 0 and %d", i, maxServeOffset)
+		if it.ServeOffsetMinutes < minServeOffset || it.ServeOffsetMinutes > maxServeOffset {
+			return Errorf(CodeInvalid, "items[%d]: serve_offset_minutes must be between %d and %d", i, minServeOffset, maxServeOffset)
 		}
 		var one int
 		err := tx.QueryRowContext(ctx, `SELECT 1 FROM recipes WHERE id = ?`, it.RecipeID).Scan(&one)

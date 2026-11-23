@@ -233,7 +233,8 @@ func TestPlanThanksgiving(t *testing.T) {
 	if len(p.Ovens) != 1 || len(p.Ovens[0].Uses) < 3 {
 		t.Errorf("ovens = %+v", p.Ovens)
 	}
-	if len(p.Serving) != 5 || p.Serving[3].ServeAt != "2026-11-26T23:30:00.000Z" {
+	// To the table in time order: the pie, served later, comes last.
+	if len(p.Serving) != 5 || p.Serving[4].RecipeTitle != "Pumpkin pie" || p.Serving[4].ServeAt != "2026-11-26T23:30:00.000Z" {
 		t.Errorf("serving = %+v", p.Serving)
 	}
 }
@@ -392,5 +393,83 @@ func TestPlanEmptyMeal(t *testing.T) {
 	p := mustPlan(t, in)
 	if p.Start != nil || len(p.Tasks) != 0 || !p.OnTime || p.Warnings == nil || p.Serving == nil {
 		t.Errorf("plan = %+v", p)
+	}
+}
+
+func TestPlanMissedMakeAhead(t *testing.T) {
+	in := thanksgiving()
+	// Noon on the day: the pie and cranberry sauce were for yesterday.
+	in.now = time.Date(2026, 11, 26, 17, 0, 0, 0, time.UTC)
+	p := mustPlan(t, in)
+	for _, key := range []string{"ipie:0", "icranberry:0"} {
+		if got := taskByKey(t, p, key).Status; got != StatusMissed {
+			t.Errorf("%s = %s, want missed", key, got)
+		}
+	}
+	// Day-of work that should have started is late, not missed.
+	if got := taskByKey(t, p, "iturkey:0").Status; got != StatusLate {
+		t.Errorf("turkey prep = %s, want late", got)
+	}
+	if len(p.LateDishes) == 0 || p.Warnings[0].Code != "behind" {
+		t.Fatalf("late dishes %+v, first warning %+v", p.LateDishes, p.Warnings[0])
+	}
+	causes := map[string]string{}
+	for _, d := range p.LateDishes {
+		causes[d.ItemID] = d.Cause
+	}
+	if causes["ipie"] != "missed" {
+		t.Errorf("pie cause = %q, want missed (%+v)", causes["ipie"], p.LateDishes)
+	}
+	if causes["iturkey"] != "late_start" {
+		t.Errorf("turkey cause = %q, want late_start", causes["iturkey"])
+	}
+	if p.LateDishes[0].Minutes < p.LateDishes[len(p.LateDishes)-1].Minutes {
+		t.Errorf("late dishes not latest first: %+v", p.LateDishes)
+	}
+}
+
+func TestPlanAppetiserBeforeTheMeal(t *testing.T) {
+	in := thanksgiving()
+	in.meal.Items[2].ServeOffsetMinutes = -60
+	p := mustPlan(t, in)
+	if p.Serving[0].RecipeTitle != "Cranberry sauce" || p.Serving[0].ServeAt != "2026-11-26T21:00:00.000Z" {
+		t.Errorf("serving = %+v", p.Serving)
+	}
+}
+
+func TestHumanMinutes(t *testing.T) {
+	for m, want := range map[int]string{45: "45 min", 60: "1 hr", 120: "2 hr", 100: "1 hr 40"} {
+		if got := humanMinutes(m); got != want {
+			t.Errorf("humanMinutes(%d) = %q, want %q", m, got, want)
+		}
+	}
+}
+
+// Five hours before serving with the prep day missed: the turkey, whose
+// four-hour roast is the meal's critical path, gets the oven before the
+// pie, which is served later and can wait.
+func TestPlanUrgentDishFirst(t *testing.T) {
+	in := thanksgiving()
+	in.now = time.Date(2026, 11, 26, 17, 0, 0, 0, time.UTC) // noon
+	p := mustPlan(t, in)
+	roast, bake := taskByKey(t, p, "iturkey:1"), taskByKey(t, p, "ipie:1")
+	if !at(t, roast.Start).Before(at(t, bake.Start)) {
+		t.Errorf("roast starts %s, after the pie bakes at %s", roast.Start, bake.Start)
+	}
+	var turkey LateDish
+	for _, d := range p.LateDishes {
+		if d.ItemID == "iturkey" {
+			turkey = d
+		}
+	}
+	// Started at noon it needs 4h55m for a 5pm meal: under an hour late.
+	if turkey.Minutes > 60 {
+		t.Errorf("turkey late by %d minutes, want under an hour (%+v)", turkey.Minutes, p.LateDishes)
+	}
+	// Nothing is planned before now but what's already started or done.
+	for _, task := range p.Tasks {
+		if task.Kind != KindPreheat && at(t, task.Start).Before(in.now.Add(-time.Minute)) && task.Status != StatusDone && task.Status != StatusActive {
+			t.Errorf("%s planned at %s, before now", task.Key, task.Start)
+		}
 	}
 }

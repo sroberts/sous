@@ -3922,6 +3922,47 @@
         ],
         "additionalProperties": false
       },
+      "LateDish": {
+        "type": "object",
+        "properties": {
+          "item_id": {
+            "type": "string"
+          },
+          "recipe_title": {
+            "type": "string"
+          },
+          "serve_at": {
+            "type": "string",
+            "description": "when it is meant to be served"
+          },
+          "ready_at": {
+            "type": "string",
+            "description": "when, as things stand, it will be ready"
+          },
+          "minutes": {
+            "type": "integer",
+            "description": "how late it will be"
+          },
+          "cause": {
+            "type": "string",
+            "description": "missed (its make-ahead work's time passed), late_start (work that should have started hasn't), or busy (the kitchen has no room for it sooner)"
+          },
+          "task": {
+            "type": "string",
+            "description": "the task most to blame"
+          }
+        },
+        "required": [
+          "item_id",
+          "recipe_title",
+          "serve_at",
+          "ready_at",
+          "minutes",
+          "cause",
+          "task"
+        ],
+        "additionalProperties": false
+      },
       "Me": {
         "type": "object",
         "properties": {
@@ -4100,7 +4141,7 @@
           },
           "serve_offset_minutes": {
             "type": "integer",
-            "description": "minutes after serve_at this dish is served (dessert at 90, say); 0 with the meal"
+            "description": "minutes after serve_at this dish is served (dessert at 90, say); 0 with the meal; negative before it (an appetiser)"
           },
           "dish": {
             "type": [
@@ -4134,7 +4175,7 @@
           },
           "serve_offset_minutes": {
             "type": "integer",
-            "description": "minutes after serve_at, 0 to 720"
+            "description": "minutes after serve_at, -180 (before the meal) to 720"
           },
           "dish": {
             "type": [
@@ -4209,7 +4250,7 @@
                 },
                 "serve_offset_minutes": {
                   "type": "integer",
-                  "description": "minutes after serve_at, 0 to 720"
+                  "description": "minutes after serve_at, -180 (before the meal) to 720"
                 },
                 "dish": {
                   "type": [
@@ -4361,7 +4402,15 @@
             "type": [
               "null",
               "integer"
-            ]
+            ],
+            "description": "°F; the lowest, when dishes within 25°F share it"
+          },
+          "temp_max": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "°F, the highest, when dishes at different temperatures share it; null otherwise"
           },
           "tasks": {
             "type": [
@@ -4378,6 +4427,7 @@
           "start",
           "end",
           "temp",
+          "temp_max",
           "tasks"
         ],
         "additionalProperties": false
@@ -4583,6 +4633,16 @@
             "type": "integer",
             "description": "how late the latest dish would be; 0 when on time"
           },
+          "late_dishes": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/LateDish"
+            },
+            "description": "each dish that won't be ready when it's served, latest first, and why"
+          },
           "tasks": {
             "type": [
               "null",
@@ -4630,6 +4690,7 @@
           "start",
           "on_time",
           "behind_minutes",
+          "late_dishes",
           "tasks",
           "ovens",
           "serving",
@@ -4731,7 +4792,7 @@
           },
           "status": {
             "type": "string",
-            "description": "pending, active (started), done, or late (should have started by now)"
+            "description": "pending, active (started), done, late (should have started by now), or missed (make-ahead work whose time has passed; it is replanned from now)"
           },
           "started_at": {
             "type": [
