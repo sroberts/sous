@@ -477,10 +477,39 @@ func setMealItems(ctx context.Context, tx *sql.Tx, mealID string, items []MealIt
 			return err
 		}
 	}
-	// Progress on a dish that left the menu goes with it.
-	_, err := tx.ExecContext(ctx, `DELETE FROM meal_tasks WHERE meal_id = ?1
-		AND substr(task, 1, instr(task, ':') - 1) NOT IN (SELECT id FROM meal_items WHERE meal_id = ?1)`, mealID)
-	return err
+	// Progress on a dish that left the menu goes with it. A preheat's key
+	// starts "preheat:", so it is matched by the dish it heats for.
+	menu := Meal{}
+	for id := range seen {
+		menu.Items = append(menu.Items, MealItem{ID: id})
+	}
+	rows, err := tx.QueryContext(ctx, `SELECT task FROM meal_tasks WHERE meal_id = ?`, mealID)
+	if err != nil {
+		return err
+	}
+	var gone []string
+	for rows.Next() {
+		var task string
+		if err := rows.Scan(&task); err != nil {
+			rows.Close()
+			return err
+		}
+		if !taskKnown(menu, task) {
+			gone = append(gone, task)
+		}
+	}
+	if err := rows.Close(); err != nil {
+		return err
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	for _, task := range gone {
+		if _, err := tx.ExecContext(ctx, `DELETE FROM meal_tasks WHERE meal_id = ? AND task = ?`, mealID, task); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func loadMeal(ctx context.Context, tx *sql.Tx, id string) (Meal, error) {

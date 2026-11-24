@@ -24,10 +24,14 @@
     if (plan && meal && !busy && document.visibilityState === 'visible' && Math.abs(Date.parse(meal.serve_at) - now) < 24 * 3600e3) refreshPlan();
   }, 30_000);
   onDestroy(() => clearInterval(ticker));
+  // Each change on this page counts here, so a refresh fetched before one
+  // landed doesn't put the older meal and plan back over it.
+  let writes = 0;
   async function refreshPlan() {
+    const at = writes;
     try {
       const [m, p] = await Promise.all([api.meal(id), api.mealPlan(id)]);
-      if (!busy) [meal, plan] = [m, p];
+      if (!busy && at === writes) [meal, plan] = [m, p];
     } catch {
       // A failed refresh keeps what's on screen; the next one tries again.
     }
@@ -50,6 +54,7 @@
   // message says so. A change that moves the plan says how much moved.
   async function patch(body, retry = true) {
     busy = true;
+    writes++;
     problem = '';
     const before = plan;
     try {
@@ -161,6 +166,7 @@
 
   // Pinning keeps a task where it is while the rest of the plan moves.
   async function pin(t) {
+    writes++;
     try {
       const p = await asPerson(() => api.updateTask(id, t.key, { pinned_start: t.pinned ? null : t.start }));
       if (p) plan = p;
@@ -352,7 +358,7 @@
       </dl>
       {#if !plan.on_time && plan.late_dishes.length}
         <div class="late-block">
-          <LateFixes {meal} {plan} {tz} onupdate={(u) => ((meal = u.meal), (plan = u.plan))} />
+          <LateFixes {meal} {plan} {tz} onupdate={(u) => (writes++, (meal = u.meal), (plan = u.plan))} />
         </div>
       {/if}
       {#if problem}<p class="problem" role="alert">{problem}</p>{/if}

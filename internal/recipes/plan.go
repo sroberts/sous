@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"maps"
 	"math"
 	"slices"
 	"strconv"
@@ -333,6 +334,10 @@ type planner struct {
 	stuck    map[int]bool   // dishes with a task that fitted nowhere, in this pass
 	warnings []PlanWarning
 	warned   map[string]bool
+	// baseWarned is warned as it stood before the first pass: each pass
+	// starts from it, so a once-only warning dropped with the previous
+	// pass's warnings can be raised again.
+	baseWarned map[string]bool
 }
 
 func (p *planner) at(m int) time.Time { return p.origin.Add(time.Duration(m) * time.Minute) }
@@ -394,8 +399,9 @@ func buildPlan(in planInput) (Plan, error) {
 	// The prep window opens prep_days before the meal at the start of the
 	// day, and never later than three hours before serving.
 	ls := serve.In(loc)
-	prepFrom := time.Date(ls.Year(), ls.Month(), ls.Day()-in.meal.PrepDays, 0, 0, 0, 0, loc).
-		Add(time.Duration(p.dayStart) * time.Minute)
+	// By the wall clock, so a day that changes the clocks still starts at
+	// day_start.
+	prepFrom := time.Date(ls.Year(), ls.Month(), ls.Day()-in.meal.PrepDays, 0, p.dayStart, 0, 0, loc)
 	if latest := serve.Add(-3 * time.Hour); prepFrom.After(latest) {
 		prepFrom = latest.Truncate(gridMin * time.Minute)
 	}
@@ -411,6 +417,7 @@ func buildPlan(in planInput) (Plan, error) {
 	}
 	base := slices.Clone(p.placed)
 	baseWarnings := len(p.warnings)
+	p.baseWarned = maps.Clone(p.warned)
 
 	// The plan as it should be: nothing in it is held back by the clock.
 	none := make([]bool, len(dayOf))
@@ -771,9 +778,9 @@ func (p *planner) ovenFree(t *ptask, o int, oven Oven, s, e int) bool {
 // inDay reports whether [s, e) lies inside one of the kitchen's days.
 func (p *planner) inDay(s, e int) bool {
 	start := p.at(s).In(p.loc)
-	mid := time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, p.loc)
-	from := mid.Add(time.Duration(p.dayStart) * time.Minute)
-	to := mid.Add(time.Duration(p.dayEnd) * time.Minute)
+	// By the wall clock, so the hours hold on a day the clocks change.
+	from := time.Date(start.Year(), start.Month(), start.Day(), 0, p.dayStart, 0, 0, p.loc)
+	to := time.Date(start.Year(), start.Month(), start.Day(), 0, p.dayEnd, 0, 0, p.loc)
 	return !start.Before(from) && !p.at(e).After(to)
 }
 
@@ -785,6 +792,7 @@ func (p *planner) inDay(s, e int) bool {
 func (p *planner) pass(tasks []*ptask, dayOf, ahead [][]*ptask, deadlines []int, prepMin int, trouble []bool, floor int, base []*ptask, baseWarnings int) {
 	p.placed = slices.Clone(base)
 	p.warnings = p.warnings[:baseWarnings]
+	p.warned = maps.Clone(p.baseWarned)
 	p.floor = max(floor, 0)
 	p.stuck = map[int]bool{}
 	clear(p.lf)

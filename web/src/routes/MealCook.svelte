@@ -20,9 +20,17 @@
   let fixesOpen = $state(false);
   let missedOpen = $state(false);
 
+  // Each change made here counts, so a refresh fetched before one landed
+  // doesn't put the older plan back over it.
+  let writes = 0;
   async function refresh() {
+    const at = writes;
     try {
-      const [m, p] = await Promise.all([meal ? Promise.resolve(meal) : api.meal(id), api.mealPlan(id)]);
+      const p = await api.mealPlan(id);
+      // The meal is fetched again only when it has changed (another cook
+      // moved it, say), so its time and version stay current.
+      const m = meal && meal.version === p.meal_version ? meal : await api.meal(id);
+      if (at !== writes) return;
       if (plan) othersTicked(plan, p);
       meal = m;
       plan = p;
@@ -71,9 +79,13 @@
 
   // The screen stays on while the meal is being cooked, as in cook mode.
   let lock = null;
+  let gone = false;
   async function keepAwake() {
     try {
-      lock = await navigator.wakeLock?.request('screen');
+      const l = await navigator.wakeLock?.request('screen');
+      // Left the screen while asking: let it sleep again.
+      if (gone) l?.release?.().catch(() => {});
+      else lock = l;
     } catch {
       lock = null;
     }
@@ -81,6 +93,7 @@
   keepAwake();
 
   onDestroy(() => {
+    gone = true;
     clearInterval(tick);
     clearInterval(poll);
     document.removeEventListener('visibilitychange', onVisible);
@@ -90,6 +103,7 @@
   async function change(tasks, body, undoable = true) {
     const keys = tasks.map((t) => t.key);
     pending = new Set([...pending, ...keys]);
+    writes++;
     try {
       let p = null;
       for (const t of tasks) p = await asPerson(() => api.updateTask(id, t.key, body));
@@ -110,6 +124,7 @@
   let confirmReset = $state(false);
   async function reset() {
     confirmReset = false;
+    writes++;
     const p = await asPerson(() => api.resetMeal(id)).catch((err) => ((problem = problemText(err)), null));
     if (p) plan = p;
   }
@@ -217,7 +232,7 @@
 
   {#if fixesOpen && plan && !plan.on_time && meal}
     <section class="fixes" id="fixes" aria-label="Running late">
-      <LateFixes {meal} {plan} {tz} compact onupdate={(u) => ((meal = u.meal), (plan = u.plan), u.plan.on_time && (fixesOpen = false))} />
+      <LateFixes {meal} {plan} {tz} compact onupdate={(u) => (writes++, (meal = u.meal), (plan = u.plan), u.plan.on_time && (fixesOpen = false))} />
     </section>
   {/if}
 
