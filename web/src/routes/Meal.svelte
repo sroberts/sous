@@ -303,6 +303,7 @@
   const anyPinned = $derived((plan?.tasks ?? []).some((t) => t.pinned));
   const otherZone = $derived(tz !== deviceZone());
   const missedSteps = $derived((plan?.tasks ?? []).filter((t) => t.status === 'missed').length);
+  const firstMissed = $derived((plan?.tasks ?? []).find((t) => t.status === 'missed')?.start ?? null);
   // Cook the meal is the step forward only once cooking is near: before
   // then, the plan is what needs attention.
   const onTheDay = $derived(plan?.start ? Date.parse(plan.start) - now < 18 * 3600e3 : false);
@@ -346,9 +347,9 @@
           {/if}
           <p class="served" class:was={!plan.on_time}>{plan.on_time ? 'Served' : 'Planned for'} {dayWord(meal.serve_at, tz, now)} {clockAt(meal.serve_at, tz)}</p>
           {#if missedSteps}
-            <!-- Make-ahead whose time passed is replanned from now: say so,
-                 so an early start reads as a fallback, not the plan. -->
-            <p class="missed-note">{missedSteps === 1 ? '1 make-ahead step' : `${missedSteps} make-ahead steps`} didn’t happen when planned; Sous has moved {missedSteps === 1 ? 'it' : 'them'} to start from now.</p>
+            <!-- Make-ahead whose time passed is replanned (in the kitchen's
+                 hours when there's time): say so, and from when. -->
+            <p class="missed-note">{missedSteps === 1 ? '1 make-ahead step' : `${missedSteps} make-ahead steps`} didn’t happen when planned; Sous has replanned {missedSteps === 1 ? 'it' : 'them'}{firstMissed ? `, from ${dayWord(firstMissed, tz, now).toLowerCase() === 'today' ? '' : `${dayWord(firstMissed, tz, now)} `}${clockAt(firstMissed, tz)}` : ''}.</p>
           {/if}
         </div>
         {#if plan.tasks.length}

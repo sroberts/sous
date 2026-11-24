@@ -810,6 +810,21 @@ func (p *planner) inDay(s, e int) bool {
 	return !start.Before(from) && !p.at(e).After(to)
 }
 
+// nextDayStart is m if it falls within the kitchen's hours, else when they
+// next begin (that morning, or the next).
+func (p *planner) nextDayStart(m int) int {
+	l := p.at(m).In(p.loc)
+	from := time.Date(l.Year(), l.Month(), l.Day(), 0, p.dayStart, 0, 0, p.loc)
+	to := time.Date(l.Year(), l.Month(), l.Day(), 0, p.dayEnd, 0, 0, p.loc)
+	switch {
+	case l.Before(from):
+		return p.minutes(from)
+	case l.After(to):
+		return p.minutes(time.Date(l.Year(), l.Month(), l.Day()+1, 0, p.dayStart, 0, 0, p.loc))
+	}
+	return m
+}
+
 // pass places every task that isn't fixed. Dishes marked in trouble are
 // placed forwards from floor, the most urgent task first (the one whose
 // latest possible start comes soonest), with no regard to the kitchen's
@@ -922,7 +937,15 @@ func (p *planner) pass(tasks []*ptask, dayOf, ahead [][]*ptask, deadlines []int,
 			total += t.dur
 		}
 		hold := chain[len(chain)-1].holdMax
-		chains = append(chains, aheadChain{chain, max(prepMin, due-hold-total, floor), due})
+		ef := max(prepMin, due-hold-total, floor)
+		// Someone has to start a make-ahead chain, even one that then looks
+		// after itself: it begins in the kitchen's hours when there's time.
+		// Missed make-ahead caught up from now waits for the morning rather
+		// than calling the cook at 1 AM, unless waiting would make it late.
+		if day := p.nextDayStart(ef); day != ef && day+total <= due {
+			ef = day
+		}
+		chains = append(chains, aheadChain{chain, ef, due})
 	}
 	slices.SortStableFunc(chains, func(a, b aheadChain) int { return cmp.Compare(a.ef, b.ef) })
 	for _, ch := range chains {

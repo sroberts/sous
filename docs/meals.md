@@ -82,8 +82,10 @@ one that brings the meal in soonest first, and only options that gain real
 time are offered; taking a dish off the menu is never the recommended one.
 A later time past your kitchen's hours says so. If that dish's make-ahead
 didn't happen, the first fix is to start it now (or mark it already made).
-When make-ahead work was missed, the header says Sous has moved it to start
-from now, so an early start reads as catching up rather than the plan.
+When make-ahead work was missed, Sous replans it: in your kitchen's hours
+when there's time (a pie missed last night waits for the morning rather
+than calling you at 1 AM), or from now when waiting would make the meal
+late. The header says it was replanned, and from when.
 Serving it on its own later, and any other late dishes (which don't change
 when the meal lands), are under **Other fixes**. Every fix can be undone
 from the message that follows. **To the table** shows when each dish will
@@ -118,8 +120,8 @@ On the day, open the meal and press **Cook the meal**. The screen stays on.
 - **Up next** shows what's coming and when, led by anything due that's
   waiting for free hands. **Ovens** shows what each oven is doing.
 - If make-ahead work didn't happen (the pie meant for yesterday), Sous
-  replans it from now: when its new time comes it hangs on the rail like
-  any other step. Until then it's listed above the rail, with its time: **Start it now** puts it on the rail, **It's
+  replans it, in the kitchen's hours when there's time: when its new time
+  comes it hangs on the rail like any other step. Until then it's listed above the rail, with its time: **Start it now** puts it on the rail, **It's
   already made** ticks it off.
 - If you fall behind, Sous replans from now, giving the oven and your
   hands to the dish in most trouble first, and the bar says when the meal

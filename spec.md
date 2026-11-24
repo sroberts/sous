@@ -993,7 +993,10 @@ is stored but progress. The scheduler (`internal/recipes/plan.go`):
    them, repeating until no more dishes join. So the four-hour roast gets
    the oven before yesterday's pie. A task that should have started by
    now, as planned without the clock, is `late`; make-ahead work in that
-   state is `missed`. `on_time`, `behind_minutes` and `late_dishes` (each
+   state is `missed`. A make-ahead chain (missed work being caught up
+   included) starts within the kitchen's hours when it can still finish in
+   time, so missed work waits for the morning rather than starting at 1 AM;
+   a dish in trouble is caught up from now regardless. `on_time`, `behind_minutes` and `late_dishes` (each
    late dish, latest first, with when it will be ready, the task most to
    blame and a cause: `missed`, `late_start` or `busy`) say how it stands.
    A moved task carries `planned_for`, where the plan had it before the
