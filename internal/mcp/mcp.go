@@ -26,7 +26,8 @@ const instructions = `Sous is a household's shared recipe collection. You can se
 Every write is attributed to the person this connection names (the X-Sous-Person header, or the Outpost login) and is recorded in the change log as made via MCP.
 To edit or delete a recipe, first call get_recipe and pass its version back; if someone changed it since, you get a stale error with the current recipe to retry against.
 Deletes are soft: a deleted recipe goes to the trash and restore_recipe brings it back.
-To plan a meal of several recipes (a holiday dinner), describe the kitchen with get_kitchen and update_kitchen, set step timing on the recipes with update_recipe's step_timing, create the meal with create_meal, then read its timeline with plan_meal.`
+To plan a meal of several recipes (a holiday dinner), describe the kitchen with get_kitchen and update_kitchen, set step timing on the recipes, create the meal with create_meal, then read its timeline with plan_meal.
+Recipes saved before meal planning have no step timing: list_recipes_needing_timing finds them, get_step_timing shows each step with Sous's guess, and set_step_timing saves timing without touching the steps' words. The fill_step_timing prompt walks through it.`
 
 const importInstructions = `
 To add a recipe from a web page, call import_recipe with its link; check the draft it returns, then save it with create_recipe, or pass save=true to save it as read.`
@@ -63,6 +64,7 @@ func New(svc *recipes.Service, log *slog.Logger, version string, opts ...Option)
 	t := &tools{svc: svc, log: log, importer: o.importer}
 	register(server, t)
 	registerMeals(server, t)
+	registerTiming(server, t)
 	if t.importer != nil {
 		registerImport(server, t)
 	}
