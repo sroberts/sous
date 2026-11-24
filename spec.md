@@ -996,9 +996,19 @@ is stored but progress. The scheduler (`internal/recipes/plan.go`):
    blame and a cause: `missed`, `late_start` or `busy`) say how it stands.
    A moved task carries `planned_for`, where the plan had it before the
    clock moved it, so it can say "moved from 9:40 PM" rather than call a
-   task in the future late.
+   task in the future late. A late plan also carries `options`, each
+   planned in full: `more_cooks` (one more cook), `without` (the meal
+   without the dish that sets its time) and `move` (the meal served when it
+   now lands), each with `lands_at`, `behind_minutes` and `in_kitchen_day`,
+   earliest landing first. An option other than `move` is offered only when
+   it gains at least 30 minutes, or a quarter of the lateness if that's
+   more. An on-time plan's `options` is empty.
 6. Adds a 15-minute preheat before each oven task that finds its oven cold
-   or at another temperature.
+   or at another temperature (an oven at a close temperature until up to 15
+   minutes before is still hot). A preheat's key is
+   `preheat:<oven>:<the task it heats for>`; it's `active` once a cook says
+   the oven is on (`started`), `done` once the task it heats for begins,
+   and `late` when its time passes unconfirmed.
 
 A task fits when the cooks' hands, each oven (one temperature within 25°F,
 including the preheat before it, and no more dishes than racks), the burners
@@ -1023,6 +1033,16 @@ in the change log.
 `update_meal`, `delete_meal`, `restore_meal`, `plan_meal` and
 `update_meal_task`, over the same service; `update_recipe` and
 `create_recipe` take `step_timing`.
+
+For recipes saved before meal plans: `list_recipes_needing_timing`
+(recipes with an untimed step, by title, in batches of up to 100, with how
+many remain; `meal_id` narrows to one meal's dishes),
+`get_step_timing` (each step's text, timing and the regex guess) and
+`set_step_timing` (one entry per step, exactly, refused otherwise; only
+timing changes, through the same versioned update and change log as
+`update_recipe`). The prompt `fill_step_timing` (argument `meal`, optional)
+tells an assistant how to read steps into timing and to work through them
+in batches.
 
 ### UI
 

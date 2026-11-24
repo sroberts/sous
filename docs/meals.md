@@ -37,9 +37,18 @@ the recipe editor, each step has **Timing for meal plans** beneath it:
   reheat time (and oven temperature) adds a reheat on the day.
 
 Opening a step's timing shows what Sous reads in its words ("Sous reads:
-45 min · oven 350°F · hands off"), and **Use it** fills it in. Steps you
-haven't timed are guessed the same way when a meal is planned, and the plan
-says which dishes it guessed for.
+45 min · oven 350°F · hands off"), and **Use it** fills it in. Below the
+steps, **Fill them from Sous's reading** does that for every step without
+timing at once, to check before saving. Steps you haven't timed are guessed
+the same way when a meal is planned, and the plan says which dishes it
+guessed for.
+
+Sous's reading is a pattern-match on the words, and it often gets wrong
+what needs the cook and what can be made ahead. A connected AI assistant
+reads recipes properly and can fill in timing for the whole library, or
+just one meal's dishes, without changing any step's words. See
+[Connecting assistants](agents.md#filling-in-step-timing), or **Assistants**
+in Sous, under **Fill in step timing**.
 
 ## 3. Plan the meal
 

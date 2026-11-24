@@ -56,6 +56,13 @@ include breaking changes, and they're called out here.
 - REST: `/v1/kitchen`, `/v1/meals`, `/v1/meals/{id}/plan`,
   `/v1/meals/{id}/tasks/{task}`, `/v1/steps/suggest`, and `step_timing` on
   recipes. MCP: ten meal-planning tools.
+- Filling in step timing for recipes saved before meal plans: an assistant
+  over MCP can list recipes needing it (`list_recipes_needing_timing`), read
+  each step beside Sous's guess (`get_step_timing`) and save timing without
+  touching a step's words (`set_step_timing`); the `fill_step_timing` prompt
+  walks it through the library or one meal. The editor can fill every
+  untimed step from Sous's reading at once, and the Assistants page shows
+  how to ask an assistant.
 
 ### Changed
 - Upgrading runs database migration 3, which adds the meal tables and a
