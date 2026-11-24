@@ -61,6 +61,8 @@ your library. For each dish you can set:
 
 Set how many **cooks** there are (how many hands-on jobs can happen at once)
 and how early **prep** may start (the day itself, the day before, or more).
+A meal holds up to 40 dishes and 600 steps across them, which is far more
+than a holiday dinner needs.
 
 The plan appears beside the menu, day by day. Each task shows when it starts,
 how long it takes, which oven at what temperature, and whether it's

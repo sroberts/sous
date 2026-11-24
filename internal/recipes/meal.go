@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -100,7 +101,18 @@ const (
 	maxMealItems   = 40
 	maxServeOffset = 12 * 60
 	minServeOffset = -3 * 60 // an appetiser before the meal
+	// maxMealSteps bounds the steps across a menu, so one plan (and the
+	// alternatives a late plan is checked against) is a bounded amount of
+	// work: the scheduler's cost grows much faster than the task count.
+	maxMealSteps = 600
+	// maxPinDays is how far from serving a task may be pinned: the prep
+	// window and the days before it the planner looks back over.
+	maxPinDays = 15
 )
+
+func tooManySteps(n int) *Error {
+	return Errorf(CodeInvalid, "the menu has %d steps in all; a meal can plan at most %d", n, maxMealSteps)
+}
 
 func mealNotFound() *Error { return Errorf(CodeNotFound, "that meal does not exist") }
 
@@ -322,11 +334,13 @@ func (s *Service) UpdateTask(ctx context.Context, c identity.Caller, mealID, tas
 		return Plan{}, err
 	}
 	var pinned *string
+	var pinAt time.Time
 	if p.PinnedStart.Set && !p.PinnedStart.Null {
 		t, err := time.Parse(time.RFC3339, p.PinnedStart.Value)
 		if err != nil {
 			return Plan{}, Errorf(CodeInvalid, "pinned_start must be an RFC 3339 time")
 		}
+		pinAt = t
 		pinned = ref(t.UTC().Format(timeFormat))
 	}
 	now := s.now().UTC()
@@ -341,6 +355,15 @@ func (s *Service) UpdateTask(ctx context.Context, c identity.Caller, mealID, tas
 		}
 		if !taskKnown(m, task) {
 			return Errorf(CodeNotFound, "the meal has no task %q", task)
+		}
+		if pinned != nil {
+			serve, err := time.Parse(time.RFC3339, m.ServeAt)
+			if err != nil {
+				return err
+			}
+			if d := pinAt.Sub(serve); d < -maxPinDays*24*time.Hour || d > maxPinDays*24*time.Hour {
+				return Errorf(CodeInvalid, "pinned_start must be within %d days of the meal", maxPinDays)
+			}
 		}
 		if _, err := tx.ExecContext(ctx, `INSERT INTO meal_tasks (meal_id, task, updated_at) VALUES (?, ?, ?)
 			ON CONFLICT (meal_id, task) DO NOTHING`, mealID, task, stamp); err != nil {
@@ -403,12 +426,14 @@ func (s *Service) ResetProgress(ctx context.Context, c identity.Caller, mealID s
 	return s.MealPlan(ctx, c, mealID, s.now())
 }
 
-// taskKnown reports whether task names a step (or the reheat) of an item.
+// taskKnown reports whether task names a step (or the reheat) of an item:
+// "<item>:<step index>" or "<item>:reheat", or a preheat for one of those.
+// Anything else would only leave a row the plan never reads.
 func taskKnown(m Meal, task string) bool {
 	// A preheat is "preheat:<oven>:<the task it heats for>".
 	if after, ok := strings.CutPrefix(task, "preheat:"); ok {
 		oven, heated, ok := strings.Cut(after, ":")
-		if _, err := strconv.Atoi(oven); !ok || err != nil {
+		if n, err := strconv.Atoi(oven); !ok || err != nil || n < 0 || n >= maxOvens || strconv.Itoa(n) != oven {
 			return false
 		}
 		task = heated
@@ -417,9 +442,15 @@ func taskKnown(m Meal, task string) bool {
 	if !ok {
 		return false
 	}
+	if rest != "reheat" {
+		n, err := strconv.Atoi(rest)
+		if err != nil || n < 0 || n >= maxMealSteps || strconv.Itoa(n) != rest {
+			return false
+		}
+	}
 	for _, it := range m.Items {
 		if it.ID == item {
-			return rest != ""
+			return true
 		}
 	}
 	return false
@@ -450,16 +481,21 @@ func setMealItems(ctx context.Context, tx *sql.Tx, mealID string, items []MealIt
 		return err
 	}
 	seen := map[string]bool{}
+	steps := 0
 	for i, it := range items {
 		if it.ServeOffsetMinutes < minServeOffset || it.ServeOffsetMinutes > maxServeOffset {
 			return Errorf(CodeInvalid, "items[%d]: serve_offset_minutes must be between %d and %d", i, minServeOffset, maxServeOffset)
 		}
-		var one int
-		err := tx.QueryRowContext(ctx, `SELECT 1 FROM recipes WHERE id = ?`, it.RecipeID).Scan(&one)
+		var n int
+		err := tx.QueryRowContext(ctx, `SELECT (SELECT count(*) FROM recipe_steps s WHERE s.recipe_id = r.id)
+			FROM recipes r WHERE r.id = ?`, it.RecipeID).Scan(&n)
 		if errors.Is(err, sql.ErrNoRows) {
 			return Errorf(CodeInvalid, "items[%d]: no recipe has id %q", i, it.RecipeID)
 		} else if err != nil {
 			return err
+		}
+		if steps += n; steps > maxMealSteps {
+			return tooManySteps(steps)
 		}
 		id := ""
 		if it.ID != nil {
@@ -468,8 +504,8 @@ func setMealItems(ctx context.Context, tx *sql.Tx, mealID string, items []MealIt
 		if id == "" || seen[id] {
 			id = uuid.NewV7().String()
 		}
-		if strings.Contains(id, ":") || len(id) > 64 {
-			return Errorf(CodeInvalid, "items[%d]: id can't contain ':' or be longer than 64 characters", i)
+		if !itemID.MatchString(id) {
+			return Errorf(CodeInvalid, "items[%d]: id must be at most 64 letters, digits, '-' or '_'", i)
 		}
 		seen[id] = true
 		if _, err := tx.ExecContext(ctx, `INSERT INTO meal_items (meal_id, id, position, recipe_id, serve_offset_minutes, dish)
@@ -509,6 +545,9 @@ func loadMeal(ctx context.Context, tx *sql.Tx, id string) (Meal, error) {
 	}
 	return m, rows.Err()
 }
+
+// itemID is what a menu item's id may be: it goes into task keys and URLs.
+var itemID = regexp.MustCompile(`^[A-Za-z0-9_-]{1,64}$`)
 
 func parseServeAt(s string) (string, error) {
 	t, err := time.Parse(time.RFC3339, strings.TrimSpace(s))

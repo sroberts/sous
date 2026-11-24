@@ -964,7 +964,9 @@ recipe, `serve_offset_minutes` −180 to 720 (negative is before the meal, for a
 follows recipes: `If-Match`, 412 with `current`, soft delete and restore,
 changes logged as entity `meal`. Items keep their id when passed back, so
 progress stays with a dish when the menu is reordered; a dish taken off the
-menu takes its progress with it.
+menu takes its progress with it. A menu holds at most 40 dishes and 600
+steps in all (checked when the menu is set and again when it's planned,
+since recipes grow); an item `id` is 1–64 letters, digits, `-` or `_`.
 
 ### The plan
 
@@ -1025,7 +1027,11 @@ temperatures gives the range (`temp` to `temp_max`).
 Progress is `meal_tasks` (pinned start, started, done, by whom), set with
 `PUT /v1/meals/{id}/tasks/{task}` and cleared, keeping pins, by
 `POST /v1/meals/{id}/reset`; both answer with the new plan. Progress is not
-in the change log.
+in the change log. A task key must be one the plan can make (a step index
+below 600, `reheat`, or a preheat of oven 0–5), and `pinned_start` must be
+within 15 days of serving. The scheduler has a fixed work budget per plan:
+once a menu built to make every slot fail has spent it, the tasks still
+unplaced take the backstop (planned anyway, with a `conflict` warning).
 
 ### MCP
 

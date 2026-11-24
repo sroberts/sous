@@ -49,6 +49,9 @@ type Kitchen struct {
 	UpdatedBy *string `json:"updated_by" jsonschema:"username; null until someone first describes the kitchen"`
 }
 
+// maxOvens is the most ovens a kitchen lists.
+const maxOvens = 6
+
 // GetKitchen returns the household's kitchen.
 func (s *Service) GetKitchen(ctx context.Context, c identity.Caller) (Kitchen, error) {
 	var k Kitchen
@@ -138,8 +141,8 @@ func (p *KitchenProfile) fillDefaults() {
 // normalise trims names, drops blank rows and checks counts and hours.
 func (p *KitchenProfile) normalise() error {
 	p.fillDefaults()
-	if len(p.Ovens) > 6 {
-		return Errorf(CodeInvalid, "ovens: at most 6")
+	if len(p.Ovens) > maxOvens {
+		return Errorf(CodeInvalid, "ovens: at most %d", maxOvens)
 	}
 	if p.Burners < 0 || p.Burners > 16 {
 		return Errorf(CodeInvalid, "burners must be between 0 and 16")
