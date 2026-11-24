@@ -280,6 +280,8 @@ export function cleanTiming(t) {
   }
   if (out.equipment !== 'oven') delete out.oven_temp;
   if (!out.hold_minutes) {
+    // "Can wait 0 hours" is no hold; Sous refuses a hold_minutes of 0.
+    delete out.hold_minutes;
     delete out.hold_in;
     delete out.reheat_minutes;
     delete out.reheat_temp;
