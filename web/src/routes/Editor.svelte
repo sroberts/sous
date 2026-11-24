@@ -370,6 +370,31 @@
     touch();
   }
   let filledFromGuess = $state(null);
+  // Every step without timing, filled from what Sous reads in its words at
+  // once, to check rather than type. An assistant reads them more closely.
+  const untimed = $derived(form ? form.steps.filter((l, i) => stepNumbers[i] != null && l.trim() && !cleanTiming(form.timing[i])).length : 0);
+  let filledAll = $state(0);
+  async function fillAllFromGuess() {
+    const texts = form.steps.map((l) => l.trim());
+    const steps = texts.filter((l) => l && !l.startsWith('#'));
+    let got;
+    try {
+      got = steps.length ? await api.suggestTiming(steps) : [];
+    } catch {
+      return;
+    }
+    let k = 0;
+    guesses = texts.map((l) => (l && !l.startsWith('#') ? got[k++] : null));
+    let n = 0;
+    texts.forEach((l, i) => {
+      if (stepNumbers[i] != null && l && !cleanTiming(form.timing[i]) && guesses[i] && cleanTiming(guesses[i])) {
+        form.timing[i] = { ...form.timing[i], ...guesses[i] };
+        n++;
+      }
+    });
+    filledAll = n;
+    if (n) touch();
+  }
   // A meal plan's "Set its timing" opens the editor at that step (?timing=N).
   async function openAskedTiming() {
     const n = +route.search.get('timing');
@@ -597,6 +622,17 @@
               </li>
             {/each}
           </ol>
+          {#if untimed || filledAll}
+            <p class="fill-all" role="status">
+              {#if filledAll}
+                {filledAll === 1 ? '1 step' : `${filledAll} steps`} filled from Sous’s reading. Check {filledAll === 1 ? 'it' : 'them'}, then save.
+              {:else}
+                {untimed === 1 ? '1 step has' : `${untimed} steps have`} no timing for meal plans.
+                <button type="button" class="link" onclick={fillAllFromGuess}>Fill {untimed === 1 ? 'it' : 'them'} from Sous’s reading</button>
+              {/if}
+              <a class="link quiet" href="/assistants#timing" use:link>or have an assistant read them</a>
+            </p>
+          {/if}
           <button type="button" class="add" onclick={() => (splice('steps', form.steps.length, 0, ''), focusLine('steps', form.steps.length - 1))}>Add a step</button>
         </section>
 
@@ -993,6 +1029,34 @@
     flex: 1 0 100%;
     font-size: 0.875rem;
     color: var(--ink-2);
+  }
+  .fill-all {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 var(--space-2);
+    margin-top: var(--space-2);
+    font-size: var(--ui);
+    color: var(--ink-2);
+  }
+  .fill-all .link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    border: 0;
+    background: none;
+    padding: 0;
+    font-weight: 700;
+    color: var(--ink);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+  .fill-all .link.quiet {
+    font-weight: 600;
+    color: var(--ink-2);
+  }
+  .fill-all .link:hover {
+    color: var(--red);
   }
   .guess .link {
     border: 0;

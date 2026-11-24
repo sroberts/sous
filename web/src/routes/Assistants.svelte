@@ -28,6 +28,8 @@
   const sh = (s) => `'${s.replaceAll("'", `'\\''`)}'`;
   // On two lines, so the header (and the name in it) starts its own line
   // rather than breaking wherever the box ends.
+  const timingPrompt = '/mcp__sous__fill_step_timing\n/mcp__sous__fill_step_timing Thanksgiving';
+  const timingAsk = 'Fill in the step timing for my recipes in Sous, using its fill_step_timing prompt.';
   const claudeCode = $derived(`claude mcp add --transport http sous ${sh(url)} \\\n  --header ${sh(header)}`);
   const claudeDesktop = $derived(
     JSON.stringify(
@@ -187,6 +189,19 @@
             <dt>Nothing changes after editing a config file</dt>
             <dd>Quit the assistant fully and open it again; most only read their config at start.</dd>
           </dl>
+        </div>
+      </details>
+
+      <!-- Opened by the editor's "have an assistant read them". -->
+      <details class="way" id="timing" open={location.hash === '#timing'}>
+        <summary><h3>Fill in step timing</h3><span class="what">For meal plans, recipe by recipe</span><ChevronDown class="chev" size={20} aria-hidden="true" /></summary>
+        <div class="inner">
+          <p>Meal plans need to know how long each step takes, whether it needs the cook, what it bakes at and what can be made ahead. Recipes saved before meal plans don’t say. Sous guesses from the words, but an assistant reads them properly and fills the timing in, never changing a step’s words.</p>
+          <p>In Claude Code, run Sous’s prompt, for the whole library or one meal:</p>
+          {@render block('timing-prompt', timingPrompt, 'Fill in step timing, in Claude Code')}
+          <p>Any assistant can be asked in plain words instead:</p>
+          {@render block('timing-ask', timingAsk, 'Fill in step timing, asked in words')}
+          <p class="hint">It works through the recipes in batches and saves as it goes. Each change is signed with {username ? personName : 'the person it acts for'}’s name and shows in the recipe’s history; open a recipe’s editor to check or change what it set.</p>
         </div>
       </details>
 
