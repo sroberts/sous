@@ -9,7 +9,7 @@
   import { api } from '../lib/api.js';
   import { session, asPerson, toast } from '../lib/session.svelte.js';
   import { personName } from '../lib/format.js';
-  import { clockAt, span, mealWord, problemText } from '../lib/meals.js';
+  import { clockAt, span, mealWord, problemText, itemsOf, withItem, withoutItem, restoreItem } from '../lib/meals.js';
 
   let { meal, plan, tz, onupdate, compact = false } = $props();
 
@@ -65,7 +65,9 @@
     busy = true;
     problem = '';
     try {
-      const m = await asPerson(() => api.updateMeal(meal.id, meal.version, body));
+      // A function of the meal is worked out again on a newer version.
+      const b = typeof body === 'function' ? body(meal) : body;
+      const m = await asPerson(() => api.updateMeal(meal.id, meal.version, b));
       if (!m) return;
       onupdate({ meal: m, plan: await api.mealPlan(meal.id) });
       // An Undo after the block has gone finds its own change in the way: no news.
@@ -83,7 +85,6 @@
     }
   }
 
-  const itemsNow = () => meal.items.map((i) => ({ id: i.id, recipe_id: i.recipe_id, serve_offset_minutes: i.serve_offset_minutes, dish: i.dish }));
 
   function label(o) {
     if (o.kind === 'more_cooks') return `Plan for ${o.cooks} cooks`;
@@ -104,18 +105,17 @@
       const was = meal.cooks;
       return patch({ cooks: o.cooks }, `Planned for ${o.cooks} cooks.`, () => patch({ cooks: was }, `Back to ${was === 1 ? '1 cook' : `${was} cooks`}.`));
     }
-    const before = itemsNow();
-    patch({ items: before.filter((i) => i.id !== o.item_id) }, `${o.recipe_title} is off the menu.`, () => patch({ items: before }, `${o.recipe_title} is back on the menu.`));
+    const at = itemsOf(meal).findIndex((i) => i.id === o.item_id);
+    const it = itemsOf(meal)[at];
+    patch(withoutItem(o.item_id), `${o.recipe_title} is off the menu.`, () => patch(restoreItem(it, at), `${o.recipe_title} is back on the menu.`));
   }
 
   function serveLater(d) {
-    const before = itemsNow();
-    const items = itemsNow();
-    const it = items.find((i) => i.id === d.item_id);
+    const it = itemsOf(meal).find((i) => i.id === d.item_id);
     if (!it) return;
-    it.serve_offset_minutes = Math.min(720, it.serve_offset_minutes + d.minutes);
+    const was = it.serve_offset_minutes;
     const when = clockAt(at(d.serve_at, d.minutes), tz);
-    patch({ items }, `${d.recipe_title} now goes to the table at ${when}.`, () => patch({ items: before }, `${d.recipe_title} is back with the ${lower}.`));
+    patch(withItem(d.item_id, { serve_offset_minutes: Math.min(720, was + d.minutes) }), `${d.recipe_title} now goes to the table at ${when}.`, () => patch(withItem(d.item_id, { serve_offset_minutes: was }), `${d.recipe_title} is back with the ${lower}.`));
   }
 
   // Make-ahead work: done after all, or started now.

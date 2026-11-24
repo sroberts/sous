@@ -410,13 +410,17 @@ func (s *Service) ResetProgress(ctx context.Context, c identity.Caller, mealID s
 		return Plan{}, err
 	}
 	err := s.st.Write(ctx, func(tx *sql.Tx) error {
-		if _, err := loadMeal(ctx, tx, mealID); err != nil {
+		m, err := loadMeal(ctx, tx, mealID)
+		if err != nil {
 			return err
+		}
+		if m.DeletedAt != nil {
+			return Errorf(CodeDeleted, "that meal is in the trash; restore it first")
 		}
 		if _, err := tx.ExecContext(ctx, `DELETE FROM meal_tasks WHERE meal_id = ? AND pinned_start IS NULL`, mealID); err != nil {
 			return err
 		}
-		_, err := tx.ExecContext(ctx, `UPDATE meal_tasks SET started_at = NULL, done_at = NULL, done_by = NULL, updated_at = ?
+		_, err = tx.ExecContext(ctx, `UPDATE meal_tasks SET started_at = NULL, done_at = NULL, done_by = NULL, updated_at = ?
 			WHERE meal_id = ?`, s.stamp(), mealID)
 		return err
 	})

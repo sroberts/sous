@@ -92,3 +92,21 @@ func TestMealPreheatProgressKeptOnMenuEdit(t *testing.T) {
 		t.Errorf("progress left after the dish went: %v, %v", prog, err)
 	}
 }
+
+// Starting over on a meal in the trash is refused, like any other change to it.
+func TestResetRefusesTrashedMeal(t *testing.T) {
+	s := newTestService(t)
+	ann := person(t, s, "Ann")
+	pie := create(t, s, ann, RecipeInput{Title: "Pie", Steps: []string{"Bake at 400°F for 50 minutes."}})
+	m, err := s.CreateMeal(ctx, ann, MealInput{Title: "Dinner", ServeAt: "2026-11-26T17:00:00-05:00", Timezone: "America/New_York",
+		Items: []MealItemInput{{RecipeID: pie.ID}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.DeleteMeal(ctx, ann, m.ID, m.Version); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.ResetProgress(ctx, ann, m.ID); !isCode(err, CodeDeleted) {
+		t.Errorf("reset on a trashed meal: %v, want deleted", err)
+	}
+}

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { zonedToISO, isoToZoned, byDay, span, runOfShow, remaining, timingSummary, cleanTiming, lanes, mealWord } from '../src/lib/meals.js';
+import { zonedToISO, isoToZoned, byDay, span, runOfShow, remaining, timingSummary, cleanTiming, lanes, mealWord, withItem, withoutItem, restoreItem, moveItemBy } from '../src/lib/meals.js';
 
 test('a wall time in the kitchen’s zone round-trips', () => {
   assert.equal(zonedToISO('2026-11-26T17:00', 'America/New_York'), '2026-11-26T22:00:00.000Z');
@@ -106,4 +106,16 @@ test('a meal is named by the hour it is served, in its own zone', () => {
   assert.equal(mealWord('2026-11-26T18:00:00Z', 'America/New_York'), 'Lunch');
   assert.equal(mealWord('2026-11-26T22:00:00Z', 'America/New_York'), 'Dinner');
   assert.equal(mealWord('2026-11-27T05:30:00Z', 'America/New_York'), 'Dinner', 'a dinner run late past midnight');
+});
+
+test('menu changes apply to whatever version of the meal they meet', () => {
+  const it = (id, extra = {}) => ({ id, recipe_id: `r${id}`, serve_offset_minutes: 0, dish: null, title: id, ...extra });
+  const mine = { items: [it('a'), it('b')] };
+  // Someone else added c and moved b later meanwhile: a change to a keeps both.
+  const theirs = { items: [it('a'), it('b', { serve_offset_minutes: 30 }), it('c')] };
+  assert.deepEqual(withItem('a', { dish: 'Platter' })(theirs).items.map((x) => [x.id, x.dish, x.serve_offset_minutes]), [['a', 'Platter', 0], ['b', null, 30], ['c', null, 0]]);
+  assert.deepEqual(withoutItem('a')(theirs).items.map((x) => x.id), ['b', 'c']);
+  assert.deepEqual(restoreItem(mine.items[0], 0)(withoutItem('a')(theirs)).items.map((x) => x.id), ['a', 'b', 'c']);
+  assert.deepEqual(moveItemBy('c', -1)(theirs).items.map((x) => x.id), ['a', 'c', 'b']);
+  assert.deepEqual(moveItemBy('a', -1)(theirs).items.map((x) => x.id), ['a', 'b', 'c']);
 });

@@ -5,7 +5,7 @@
   import { go, link } from '../lib/router.svelte.js';
   import { session, asPerson, toast } from '../lib/session.svelte.js';
   import { isOffline } from '../lib/net.svelte.js';
-  import { byDay, clockAt, whenAt, span, isoToZoned, zonedToISO, holdPlace, lanes, dayKey, dayWord, mealWord, problemText, deviceZone } from '../lib/meals.js';
+  import { byDay, clockAt, whenAt, span, isoToZoned, zonedToISO, holdPlace, lanes, dayKey, dayWord, mealWord, problemText, deviceZone, itemsOf, withItem, withoutItem, restoreItem, moveItemBy, addRecipe } from '../lib/meals.js';
   import { personName } from '../lib/format.js';
   import LateFixes from '../components/LateFixes.svelte';
 
@@ -52,13 +52,16 @@
   // Every change saves as it's made. If someone else changed the meal in
   // the meantime, the change is applied again to theirs, once, and the
   // message says so. A change that moves the plan says how much moved.
+  // body may be a function of the meal, so a retry works the change out
+  // again on the newer version rather than undoing someone else's edit.
   async function patch(body, retry = true) {
     busy = true;
     writes++;
     problem = '';
     const before = plan;
     try {
-      const m = await asPerson(() => api.updateMeal(id, meal.version, body));
+      const b = typeof body === 'function' ? body(meal) : body;
+      const m = await asPerson(() => api.updateMeal(id, meal.version, b));
       if (!m) return false;
       meal = m;
       plan = await api.mealPlan(id);
@@ -86,28 +89,23 @@
     if (await patch(body)) toast([said, lastNews].filter(Boolean).join(' '), { label: 'Undo', run: () => patch(was) });
   }
 
-  const itemsInput = (items) => items.map((i) => ({ id: i.id, recipe_id: i.recipe_id, serve_offset_minutes: i.serve_offset_minutes, dish: i.dish }));
   async function setItem(i, change) {
-    const before = itemsInput(meal.items);
-    const { title } = meal.items[i];
-    if (await patch({ items: before.map((it, j) => (j === i ? { ...it, ...change } : it)) })) {
-      toast([`${title} is changed.`, lastNews].join(' ').trim(), { label: 'Undo', run: () => patch({ items: before }) });
+    const it = itemsOf(meal)[i];
+    const was = Object.fromEntries(Object.keys(change).map((k) => [k, it[k]]));
+    if (await patch(withItem(it.id, change))) {
+      toast([`${meal.items.find((x) => x.id === it.id)?.title ?? 'The dish'} is changed.`, lastNews].join(' ').trim(), { label: 'Undo', run: () => patch(withItem(it.id, was)) });
     }
   }
   async function removeItem(i) {
-    const before = itemsInput(meal.items);
+    const it = itemsOf(meal)[i];
     const { title } = meal.items[i];
-    if (await patch({ items: before.filter((_, j) => j !== i) })) {
-      toast(`${title} is off the menu.`, { label: 'Undo', run: () => patch({ items: before }) });
+    if (await patch(withoutItem(it.id))) {
+      toast(`${title} is off the menu.`, { label: 'Undo', run: () => patch(restoreItem(it, i)) });
     }
   }
   async function moveItem(i, by) {
-    const before = itemsInput(meal.items);
-    const items = itemsInput(meal.items);
-    const [it] = items.splice(i, 1);
-    items.splice(i + by, 0, it);
-    const { title } = meal.items[i];
-    if (await patch({ items })) toast(`${title} moved ${by < 0 ? 'up' : 'down'} the menu.`, { label: 'Undo', run: () => patch({ items: before }) });
+    const { id: itemId, title } = meal.items[i];
+    if (await patch(moveItemBy(itemId, by))) toast(`${title} moved ${by < 0 ? 'up' : 'down'} the menu.`, { label: 'Undo', run: () => patch(moveItemBy(itemId, -by)) });
   }
 
   // Adding a dish: search the library on this device.
@@ -120,7 +118,7 @@
   });
   async function add(r) {
     query = '';
-    await patch({ items: [...itemsInput(meal.items), { recipe_id: r.id }] });
+    await patch(addRecipe(r.id));
     document.getElementById('add-dish')?.focus();
   }
   let pick = $state(0);

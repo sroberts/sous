@@ -289,3 +289,24 @@ export function cleanTiming(t) {
   if (!out.reheat_minutes) delete out.reheat_temp;
   return Object.keys(out).length ? out : null;
 }
+
+/* Menu changes as functions of the meal they apply to, so a change that
+ * meets someone else's newer version (a 412) is worked out again on theirs
+ * rather than sending back the menu as this screen last saw it. */
+export const itemsOf = (m) => m.items.map((i) => ({ id: i.id, recipe_id: i.recipe_id, serve_offset_minutes: i.serve_offset_minutes, dish: i.dish }));
+export const withItem = (id, change) => (m) => ({ items: itemsOf(m).map((it) => (it.id === id ? { ...it, ...change } : it)) });
+export const withoutItem = (id) => (m) => ({ items: itemsOf(m).filter((it) => it.id !== id) });
+export const restoreItem = (item, index) => (m) => {
+  const items = itemsOf(m).filter((it) => it.id !== item.id);
+  items.splice(Math.min(index, items.length), 0, item);
+  return { items };
+};
+export const moveItemBy = (id, by) => (m) => {
+  const items = itemsOf(m);
+  const i = items.findIndex((it) => it.id === id);
+  if (i < 0) return { items };
+  const [it] = items.splice(i, 1);
+  items.splice(Math.max(0, Math.min(items.length, i + by)), 0, it);
+  return { items };
+};
+export const addRecipe = (recipeId) => (m) => ({ items: [...itemsOf(m), { recipe_id: recipeId }] });
