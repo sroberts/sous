@@ -15,6 +15,7 @@ include breaking changes, and they're called out here.
   days before, adds preheats, and checks every dish has a serving dish.
   On the day, Cook the meal runs it as a live checklist that counts down
   what's started and re-plans when you fall behind. Find it under Meals.
+  A meal holds up to 40 dishes and 600 steps in all.
 - When a meal is running late, both its page and the cook screen say
   which dish is holding it up and why, and lead with one fix: move the
   meal so nothing is rushed. Other late dishes fold away, and every fix can

@@ -144,7 +144,17 @@ const (
 	waitWarnMin   = 30  // a cooked step waiting longer than this is flagged
 	lookBackDays  = 7   // how far before the prep window a task may be pushed
 	liveAfterMin  = 360 // minutes after serving that a plan stops being live
+
+	// planBudget bounds one plan's work, counted as placed tasks looked at
+	// while trying slots. A real meal uses a small fraction of it; a menu
+	// built to make every slot fail would otherwise take minutes. Once it's
+	// spent, a task that hasn't found a slot takes the backstop (planned
+	// anyway, with a conflict warning) instead of searching on.
+	planBudget = 20_000_000
 )
+
+// spent reports whether the plan has used up its budget.
+func (p *planner) spent() bool { return p.work > planBudget }
 
 // MealPlan lays out the meal as of now.
 func (s *Service) MealPlan(ctx context.Context, c identity.Caller, id string, now time.Time) (Plan, error) {
@@ -155,10 +165,16 @@ func (s *Service) MealPlan(ctx context.Context, c identity.Caller, id string, no
 			return err
 		}
 		in.meal = m
+		steps := 0
 		for _, it := range m.Items {
 			r, err := loadRecipe(ctx, tx, it.RecipeID, "")
 			if err != nil {
 				return err
+			}
+			// Recipes can grow after they join a menu, so the bound on a
+			// plan's work is checked here too, not only when the menu is set.
+			if steps += len(r.Steps); steps > maxMealSteps {
+				return tooManySteps(steps)
 			}
 			in.recipes = append(in.recipes, r)
 		}
@@ -332,6 +348,7 @@ type planner struct {
 	lf       map[*ptask]int // each day-of task's latest finish, in the backward pass
 	floor    int            // the earliest a task may be placed: now, once live
 	stuck    map[int]bool   // dishes with a task that fitted nowhere, in this pass
+	work     int            // placed tasks looked at so far; see planBudget
 	warnings []PlanWarning
 	warned   map[string]bool
 	// baseWarned is warned as it stood before the first pass: each pass
@@ -644,7 +661,7 @@ func (p *planner) placeBack(t *ptask, lfMin int) {
 	s0 -= mod(s0, gridMin)
 	low := p.floor // nothing starts before now once the plan is live
 	for _, day := range p.dayPasses(t) {
-		for s := s0; s >= low; s -= gridMin {
+		for s := s0; s >= low && !p.spent(); s -= gridMin {
 			if oven, ok := p.fits(t, s, day); ok {
 				p.put(t, s, oven)
 				p.checkWait(t, lfMin)
@@ -664,7 +681,7 @@ func (p *planner) placeBack(t *ptask, lfMin int) {
 func (p *planner) placeFwd(t *ptask, ef, lfMin int) {
 	s0 := ef + mod(-ef, gridMin)
 	for _, day := range p.dayPasses(t) {
-		for s := s0; s+t.dur <= lfMin; s += gridMin {
+		for s := s0; s+t.dur <= lfMin && !p.spent(); s += gridMin {
 			if oven, ok := p.fits(t, s, day); ok {
 				p.put(t, s, oven)
 				return
@@ -714,6 +731,7 @@ func (p *planner) checkWait(t *ptask, lfMin int) {
 // oven it would use. Kitchen limits it can't meet at all (no oven, an
 // appliance the kitchen doesn't list) are warned about and ignored.
 func (p *planner) fits(t *ptask, s int, day bool) (int, bool) {
+	p.work += len(p.placed) + 1
 	e := s + t.dur
 	if t.dur <= 0 {
 		return p.firstOven(t), true
@@ -922,7 +940,7 @@ func (p *planner) pass(tasks []*ptask, dayOf, ahead [][]*ptask, deadlines []int,
 // placeFrom puts t at the earliest time from ef that it fits, at any hour.
 func (p *planner) placeFrom(t *ptask, ef int) {
 	s0 := ef + mod(-ef, gridMin)
-	for s := s0; s <= s0+3*24*60; s += gridMin {
+	for s := s0; s <= s0+3*24*60 && !p.spent(); s += gridMin {
 		if oven, ok := p.fits(t, s, false); ok {
 			p.put(t, s, oven)
 			return
