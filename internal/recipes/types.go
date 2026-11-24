@@ -56,6 +56,9 @@ type Ingredient struct {
 type Step struct {
 	Section *string `json:"section" jsonschema:"the heading this step sits under, or null"`
 	Text    string  `json:"text"`
+	// Timing is left out, not null, when the step has none, so a recipe
+	// that has never been planned reads exactly as before.
+	Timing *StepTiming `json:"timing,omitempty" jsonschema:"how the step fits a meal plan; absent when none is set"`
 }
 
 // Mine is the caller's own flags on a recipe. For nobody both are false.
@@ -118,7 +121,7 @@ type Change struct {
 	At       string  `json:"at"`
 	PersonID *string `json:"person_id" jsonschema:"username of who made the change"`
 	Via      string  `json:"via" jsonschema:"ui, api, mcp or system"`
-	Entity   string  `json:"entity" jsonschema:"recipe or person"`
+	Entity   string  `json:"entity" jsonschema:"recipe, person, meal or kitchen"`
 	EntityID string  `json:"entity_id"`
 	Action   string  `json:"action" jsonschema:"create, update, delete or restore"`
 	Summary  string  `json:"summary"`
@@ -166,40 +169,42 @@ type ImageRef struct {
 // RecipeInput is the body of POST /v1/recipes. Ingredients and steps are
 // raw lines; a line starting with # is a section heading.
 type RecipeInput struct {
-	Title         string   `json:"title"`
-	SourceURL     *string  `json:"source_url,omitempty" jsonschema:"an http or https link"`
-	Description   *string  `json:"description,omitempty"`
-	Notes         *string  `json:"notes,omitempty"`
-	YieldText     *string  `json:"yield_text,omitempty" jsonschema:"the yield as written; servings are derived from it"`
-	PrepMinutes   *int     `json:"prep_minutes,omitempty"`
-	CookMinutes   *int     `json:"cook_minutes,omitempty"`
-	TotalMinutes  *int     `json:"total_minutes,omitempty"`
-	TimeText      *string  `json:"time_text,omitempty"`
-	NutritionText *string  `json:"nutrition_text,omitempty"`
-	Tags          []string `json:"tags,omitempty" jsonschema:"tag names in order; the first is shown as the course"`
-	Images        []string `json:"images,omitempty" jsonschema:"hashes from image uploads; the first is the cover"`
-	Ingredients   []string `json:"ingredients,omitempty" jsonschema:"raw ingredient lines; '# Heading' starts a section"`
-	Steps         []string `json:"steps,omitempty" jsonschema:"raw step lines; '# Heading' starts a section"`
+	Title         string        `json:"title"`
+	SourceURL     *string       `json:"source_url,omitempty" jsonschema:"an http or https link"`
+	Description   *string       `json:"description,omitempty"`
+	Notes         *string       `json:"notes,omitempty"`
+	YieldText     *string       `json:"yield_text,omitempty" jsonschema:"the yield as written; servings are derived from it"`
+	PrepMinutes   *int          `json:"prep_minutes,omitempty"`
+	CookMinutes   *int          `json:"cook_minutes,omitempty"`
+	TotalMinutes  *int          `json:"total_minutes,omitempty"`
+	TimeText      *string       `json:"time_text,omitempty"`
+	NutritionText *string       `json:"nutrition_text,omitempty"`
+	Tags          []string      `json:"tags,omitempty" jsonschema:"tag names in order; the first is shown as the course"`
+	Images        []string      `json:"images,omitempty" jsonschema:"hashes from image uploads; the first is the cover"`
+	Ingredients   []string      `json:"ingredients,omitempty" jsonschema:"raw ingredient lines; '# Heading' starts a section"`
+	Steps         []string      `json:"steps,omitempty" jsonschema:"raw step lines; '# Heading' starts a section"`
+	StepTiming    []*StepTiming `json:"step_timing,omitempty" jsonschema:"timing for meal planning, one entry per step in order (headings don't count); null for a step without"`
 }
 
 // RecipePatch is the body of PATCH /v1/recipes/{id}. Absent fields are left
 // alone; null clears a nullable field. Sending ingredients, steps, tags or
 // images replaces that whole list.
 type RecipePatch struct {
-	Title         Optional[string]   `json:"title,omitzero"`
-	SourceURL     Optional[string]   `json:"source_url,omitzero" jsonschema:"an http or https link; a stored value that isn't one can be sent back unchanged"`
-	Description   Optional[string]   `json:"description,omitzero"`
-	Notes         Optional[string]   `json:"notes,omitzero"`
-	YieldText     Optional[string]   `json:"yield_text,omitzero"`
-	PrepMinutes   Optional[int]      `json:"prep_minutes,omitzero"`
-	CookMinutes   Optional[int]      `json:"cook_minutes,omitzero"`
-	TotalMinutes  Optional[int]      `json:"total_minutes,omitzero"`
-	TimeText      Optional[string]   `json:"time_text,omitzero"`
-	NutritionText Optional[string]   `json:"nutrition_text,omitzero"`
-	Tags          Optional[[]string] `json:"tags,omitzero" jsonschema:"replaces all tags"`
-	Images        Optional[[]string] `json:"images,omitzero" jsonschema:"replaces all images"`
-	Ingredients   Optional[[]string] `json:"ingredients,omitzero" jsonschema:"replaces all ingredients; raw lines, '# Heading' starts a section"`
-	Steps         Optional[[]string] `json:"steps,omitzero" jsonschema:"replaces all steps; raw lines, '# Heading' starts a section"`
+	Title         Optional[string]        `json:"title,omitzero"`
+	SourceURL     Optional[string]        `json:"source_url,omitzero" jsonschema:"an http or https link; a stored value that isn't one can be sent back unchanged"`
+	Description   Optional[string]        `json:"description,omitzero"`
+	Notes         Optional[string]        `json:"notes,omitzero"`
+	YieldText     Optional[string]        `json:"yield_text,omitzero"`
+	PrepMinutes   Optional[int]           `json:"prep_minutes,omitzero"`
+	CookMinutes   Optional[int]           `json:"cook_minutes,omitzero"`
+	TotalMinutes  Optional[int]           `json:"total_minutes,omitzero"`
+	TimeText      Optional[string]        `json:"time_text,omitzero"`
+	NutritionText Optional[string]        `json:"nutrition_text,omitzero"`
+	Tags          Optional[[]string]      `json:"tags,omitzero" jsonschema:"replaces all tags"`
+	Images        Optional[[]string]      `json:"images,omitzero" jsonschema:"replaces all images"`
+	Ingredients   Optional[[]string]      `json:"ingredients,omitzero" jsonschema:"replaces all ingredients; raw lines, '# Heading' starts a section"`
+	Steps         Optional[[]string]      `json:"steps,omitzero" jsonschema:"replaces all steps; raw lines, '# Heading' starts a section"`
+	StepTiming    Optional[[]*StepTiming] `json:"step_timing,omitzero" jsonschema:"replaces every step's timing, one entry per step in order (headings don't count); null clears it. When steps are sent without it, a step whose text is unchanged keeps its timing"`
 }
 
 // ListQuery filters GET /v1/recipes. The query tags name the URL
@@ -223,7 +228,7 @@ type TrashQuery struct {
 
 // ChangeQuery filters GET /v1/changes.
 type ChangeQuery struct {
-	EntityID string `query:"entity_id" json:"entity_id,omitempty" jsonschema:"only changes to this recipe or person"`
+	EntityID string `query:"entity_id" json:"entity_id,omitempty" jsonschema:"only changes to this recipe, person or meal"`
 	Person   string `query:"person" json:"person,omitempty" jsonschema:"only changes made by this username"`
 	Via      string `query:"via" json:"via,omitempty" jsonschema:"only changes made via ui, api, mcp or system"`
 	Cursor   string `query:"cursor" json:"cursor,omitempty" jsonschema:"next_cursor from the previous page"`

@@ -112,6 +112,22 @@ export const api = {
    * read throws an ApiError with status 422; err.body.page holds what the page
    * still offered. */
   importPreview: (body) => request('POST', '/v1/recipes/import/preview', { body }),
+
+  // Meal planning (spec.md §15).
+  kitchen: () => request('GET', '/v1/kitchen'),
+  updateKitchen: (version, body) => request('PUT', '/v1/kitchen', { body, version }),
+  /** Guesses at each step's timing from its words; saves nothing. */
+  suggestTiming: async (steps) => (await request('POST', '/v1/steps/suggest', { body: { steps }, read: true })).items,
+  meals: async () => (await request('GET', '/v1/meals')).items,
+  meal: (id) => request('GET', `/v1/meals/${id}`),
+  createMeal: (body) => request('POST', '/v1/meals', { body }),
+  updateMeal: (id, version, body) => request('PATCH', `/v1/meals/${id}`, { body, version }),
+  deleteMeal: (id, version) => request('DELETE', `/v1/meals/${id}`, { version }),
+  restoreMeal: (id) => request('POST', `/v1/meals/${id}/restore`),
+  mealPlan: (id) => request('GET', `/v1/meals/${id}/plan`),
+  /** Start, tick off or pin one task; answers with the new plan. */
+  updateTask: (id, key, body) => request('PUT', `/v1/meals/${id}/tasks/${encodeURIComponent(key)}`, { body }),
+  resetMeal: (id) => request('POST', `/v1/meals/${id}/reset`),
 };
 
 // The widths Sous scales a photo to (GET /v1/images/{hash}?w=). Without w,

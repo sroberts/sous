@@ -24,7 +24,34 @@ Assistants that connect from their maker's cloud (ChatGPT, Claude on the web
 and phone) can't reach Sous: it's only on your tailnet, and they can't send
 the `X-Sous-Person` header. Use an assistant that runs on your own computer.
 
-The tools are listed in [`spec.md`](../spec.md) §9.
+The tools are listed in [`spec.md`](../spec.md) §9, and the meal-planning
+tools (`get_kitchen`, `update_kitchen`, `list_meals`, `get_meal`,
+`create_meal`, `update_meal`, `delete_meal`, `restore_meal`, `plan_meal`,
+`update_meal_task`) in §15. An assistant can plan a whole meal: "Plan
+Thanksgiving for 5pm Thursday with the turkey, stuffing, pie and cranberry
+sauce, and tell me when the turkey goes in." `plan_meal` answers in UTC;
+assistants should give times in the meal's timezone.
+
+### Filling in step timing
+
+Recipes saved before meal plans don't say how long each step takes, whether
+it needs the cook, or what can be made ahead. Sous guesses from the words,
+but an assistant reads them properly. Three tools do it, without touching a
+step's words:
+
+- `list_recipes_needing_timing` lists recipes with steps that have no
+  timing, in batches (pass `meal_id` for one meal's dishes).
+- `get_step_timing` shows a recipe's steps, each with its timing and Sous's
+  guess.
+- `set_step_timing` saves one timing entry per step (null for none).
+
+The `fill_step_timing` prompt walks an assistant through all of it, for the
+whole library or one meal. In Claude Code it's
+`/mcp__sous__fill_step_timing`, or `/mcp__sous__fill_step_timing
+Thanksgiving` for one meal; any assistant can also just be asked, "Fill in
+the step timing for my recipes in Sous." Every change is signed and shows in
+the recipe's history. The Assistants page in Sous has the same, under **Fill
+in step timing**.
 
 ## REST API
 

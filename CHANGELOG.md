@@ -7,6 +7,69 @@ include breaking changes, and they're called out here.
 
 ## [Unreleased]
 
+### Added
+- Meals: plan several recipes for one sitting, such as a holiday dinner.
+  Sous lays out every step around your ovens (one temperature at a time,
+  as many dishes as racks), burners, appliances and the number of cooks,
+  works back from when each dish is served, moves make-ahead work into the
+  days before, adds preheats, and checks every dish has a serving dish.
+  On the day, Cook the meal runs it as a live checklist that counts down
+  what's started and re-plans when you fall behind. Find it under Meals.
+  A meal holds up to 40 dishes and 600 steps in all.
+- When a meal is running late, both its page and the cook screen say
+  which dish is holding it up and why, and lead with one fix: move the
+  meal so nothing is rushed. Other late dishes fold away, and every fix can
+  be undone. The old serving time steps back to "Planned for", To the table
+  shows when each dish will really be ready, and Meals shows how late
+  today's meal is. Moved steps say where they were planned, and the cook
+  screen replans from now, giving the oven and your hands to the dish in
+  most trouble first. Make-ahead work that didn't happen is listed apart,
+  to start now or mark made.
+- When a meal is late, the planner works out what would help (another
+  cook, the meal without the dish holding it up, or the meal served later)
+  and leads with the one that brings it in soonest, offering only those that
+  gain real time. It names what's in the way ("the oven is busy with Pumpkin
+  pie at 400°F until 12:20 AM"), says when a later time is past the
+  kitchen's hours, and points out dishes that would be ready long before.
+  REST and MCP plans carry these as `options`.
+- On the cook screen, a step that hasn't come up yet says when it starts
+  ("Starts in 4 min") rather than that it's late, Start is the button to
+  press until a step is under way (Done before then is a quieter "Already
+  done"), every tick can be undone from the message it leaves, and another
+  cook's ticks, and what came up while you were away, are announced.
+- Ovens aren't assumed to be on: a due preheat is a "Turn the oven on" ticket
+  with It's on, and only then counts down.
+- A meal's page refreshes itself on the day, leads with when the meal now
+  lands when it's late, and lists its keys under ? (C cooks, D adds a dish).
+  Pin is always shown, reordering the menu can be undone, and the lanes say
+  which day midnight starts.
+- A meal's page: C cooks the meal, D adds a dish (arrow keys pick from the
+  matches), the menu stays in view beside a long plan, settings changes say
+  how many steps moved and can be undone, and a meal is called breakfast,
+  lunch or dinner by when it's served.
+- A meal's page shows its day as lanes (ovens, stovetop, hands), with a
+  now line in the timeline; dishes can be served before the meal.
+- Your kitchen (from Meals): ovens and racks, burners, other appliances,
+  serving dishes and the hours of your cooking day.
+- Recipe steps can carry timing for meal plans (minutes, hands-on, oven
+  temperature, make-ahead), set in the editor, which offers what it reads
+  in the step's words. Steps without it are guessed.
+- REST: `/v1/kitchen`, `/v1/meals`, `/v1/meals/{id}/plan`,
+  `/v1/meals/{id}/tasks/{task}`, `/v1/steps/suggest`, and `step_timing` on
+  recipes. MCP: ten meal-planning tools.
+- Filling in step timing for recipes saved before meal plans: an assistant
+  over MCP can list recipes needing it (`list_recipes_needing_timing`), read
+  each step beside Sous's guess (`get_step_timing`) and save timing without
+  touching a step's words (`set_step_timing`); the `fill_step_timing` prompt
+  walks it through the library or one meal. The editor can fill every
+  untimed step from Sous's reading at once, and the Assistants page shows
+  how to ask an assistant.
+
+### Changed
+- Upgrading runs database migration 3, which adds the meal tables and a
+  `timing` column on recipe steps. As with any migration, take a backup
+  first; an older Sous will refuse to open the upgraded library.
+
 ## [0.5.0] - 2026-11-19
 
 ### Added

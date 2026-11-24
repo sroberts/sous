@@ -26,7 +26,21 @@ var typeSchemas = map[reflect.Type]*jsonschema.Schema{
 	reflect.TypeFor[Optional[string]]():   {Types: []string{"null", "string"}},
 	reflect.TypeFor[Optional[int]]():      {Types: []string{"null", "integer"}},
 	reflect.TypeFor[Optional[[]string]](): {Types: []string{"null", "array"}, Items: &jsonschema.Schema{Type: "string"}},
+	reflect.TypeFor[Optional[bool]]():     {Types: []string{"null", "boolean"}},
 	reflect.TypeFor[ParsedLine]():         parsedLineSchema(),
+
+	reflect.TypeFor[Optional[[]*StepTiming]]():   nullableArray[*StepTiming](),
+	reflect.TypeFor[Optional[[]MealItemInput]](): nullableArray[MealItemInput](),
+}
+
+// nullableArray is "an array of T, or null", for an Optional list of
+// objects.
+func nullableArray[T any]() *jsonschema.Schema {
+	item, err := jsonschema.For[T](nil)
+	if err != nil {
+		panic(err)
+	}
+	return &jsonschema.Schema{Types: []string{"null", "array"}, Items: item}
 }
 
 // parsedLineSchema mirrors ParsedLine.MarshalJSON: a heading or an

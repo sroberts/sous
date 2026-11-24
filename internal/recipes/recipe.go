@@ -3,6 +3,7 @@ package recipes
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"reflect"
 	"strings"
@@ -115,7 +116,11 @@ func (s *Service) createTx(ctx context.Context, tx *sql.Tx, c identity.Caller, i
 	if err := setIngredients(ctx, tx, id, ParseIngredientLines(in.Ingredients)); err != nil {
 		return Recipe{}, err
 	}
-	if err := setSteps(ctx, tx, id, ParseStepLines(in.Steps)); err != nil {
+	steps := ParseStepLines(in.Steps)
+	if err := applyTimings(steps, in.StepTiming); err != nil {
+		return Recipe{}, err
+	}
+	if err := setSteps(ctx, tx, id, steps); err != nil {
 		return Recipe{}, err
 	}
 	if err := s.logChange(ctx, tx, c, now, "recipe", id, "create", "Added "+title); err != nil {
@@ -180,8 +185,8 @@ func (s *Service) Update(ctx context.Context, c identity.Caller, id string, vers
 				return err
 			}
 		}
-		if patch.Steps.Set {
-			if err := setSteps(ctx, tx, id, ParseStepLines(patch.Steps.Value)); err != nil {
+		if patch.Steps.Set || patch.StepTiming.Set {
+			if err := updateSteps(ctx, tx, id, before.Steps, patch); err != nil {
 				return err
 			}
 		}
@@ -392,7 +397,8 @@ func changedFields(a, b Recipe) []string {
 		{"tags", a.Tags, b.Tags},
 		{"images", a.Images, b.Images},
 		{"ingredients", a.Ingredients, b.Ingredients},
-		{"steps", a.Steps, b.Steps},
+		{"steps", stepTexts(a.Steps), stepTexts(b.Steps)},
+		{"timing", stepTimings(a.Steps), stepTimings(b.Steps)},
 	}
 	var out []string
 	for _, f := range fields {
@@ -484,17 +490,62 @@ func setIngredients(ctx context.Context, tx *sql.Tx, id string, ings []Ingredien
 	return nil
 }
 
+// updateSteps replaces the steps and their timing from patch. New steps
+// without new timing keep the timing of an unchanged step; new timing
+// without new steps goes on the steps as they are.
+func updateSteps(ctx context.Context, tx *sql.Tx, id string, before []Step, patch RecipePatch) error {
+	steps := make([]Step, len(before))
+	copy(steps, before)
+	if patch.Steps.Set {
+		steps = ParseStepLines(patch.Steps.Value)
+	}
+	if patch.StepTiming.Set {
+		if err := applyTimings(steps, patch.StepTiming.Value); err != nil {
+			return err
+		}
+	} else {
+		carryTimings(before, steps)
+	}
+	return setSteps(ctx, tx, id, steps)
+}
+
 func setSteps(ctx context.Context, tx *sql.Tx, id string, steps []Step) error {
 	if _, err := tx.ExecContext(ctx, `DELETE FROM recipe_steps WHERE recipe_id = ?`, id); err != nil {
 		return err
 	}
 	for i, st := range steps {
-		if _, err := tx.ExecContext(ctx, `INSERT INTO recipe_steps (recipe_id, position, section, text) VALUES (?, ?, ?, ?)`,
-			id, i, st.Section, st.Text); err != nil {
+		var timing *string
+		if !st.Timing.empty() {
+			b, err := json.Marshal(st.Timing)
+			if err != nil {
+				return err
+			}
+			timing = ref(string(b))
+		}
+		if _, err := tx.ExecContext(ctx, `INSERT INTO recipe_steps (recipe_id, position, section, text, timing) VALUES (?, ?, ?, ?, ?)`,
+			id, i, st.Section, st.Text, timing); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// stepTexts and stepTimings split steps for the change summary, so editing
+// only timing reads "timing", not "steps".
+func stepTexts(steps []Step) []Step {
+	out := make([]Step, len(steps))
+	for i, st := range steps {
+		out[i] = Step{Section: st.Section, Text: st.Text}
+	}
+	return out
+}
+
+func stepTimings(steps []Step) []*StepTiming {
+	out := make([]*StepTiming, len(steps))
+	for i, st := range steps {
+		out[i] = st.Timing
+	}
+	return out
 }
 
 // loadRecipe reads the full recipe with username's flags (none for "").
@@ -544,15 +595,23 @@ func loadRecipe(ctx context.Context, tx *sql.Tx, id, username string) (Recipe, e
 	}
 
 	r.Steps = []Step{}
-	rows, err = tx.QueryContext(ctx, `SELECT section, text FROM recipe_steps WHERE recipe_id = ? ORDER BY position`, id)
+	rows, err = tx.QueryContext(ctx, `SELECT section, text, timing FROM recipe_steps WHERE recipe_id = ? ORDER BY position`, id)
 	if err != nil {
 		return Recipe{}, err
 	}
 	for rows.Next() {
 		var st Step
-		if err := rows.Scan(&st.Section, &st.Text); err != nil {
+		var timing *string
+		if err := rows.Scan(&st.Section, &st.Text, &timing); err != nil {
 			rows.Close()
 			return Recipe{}, err
+		}
+		if timing != nil {
+			st.Timing = new(StepTiming)
+			if err := json.Unmarshal([]byte(*timing), st.Timing); err != nil {
+				rows.Close()
+				return Recipe{}, err
+			}
 		}
 		r.Steps = append(r.Steps, st)
 	}

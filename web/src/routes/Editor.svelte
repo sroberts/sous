@@ -1,7 +1,7 @@
 <script>
   import { tick } from 'svelte';
-  import { ArrowLeft, X, ImagePlus, Trash2, Link2 } from '@lucide/svelte';
-  import { go, link, setLeaveGuard } from '../lib/router.svelte.js';
+  import { ArrowLeft, X, ImagePlus, Trash2, Link2, Clock } from '@lucide/svelte';
+  import { go, link, setLeaveGuard, route } from '../lib/router.svelte.js';
   import { api } from '../lib/api.js';
   import { session, asPerson, refreshIndex, toast } from '../lib/session.svelte.js';
   import { getRecipe } from '../lib/library.js';
@@ -9,6 +9,7 @@
   import { amount, ago, personName, readTime, writeTime } from '../lib/format.js';
   import Plate from '../components/Plate.svelte';
   import { stickIfFits } from '../lib/stick.js';
+  import { timingSummary, cleanTiming } from '../lib/meals.js';
 
   // draft: an unsaved recipe from an import. With id and merge, the draft
   // updates that recipe instead (spec.md §14): tags, notes and photos stay.
@@ -40,7 +41,12 @@
     images: [],
     ingredients: [''],
     steps: [''],
+    // One entry per line of steps (null for headings and untimed steps):
+    // how each step fits a meal plan. Kept in line with steps as lines move.
+    timing: [null],
   });
+  // Whether the recipe came with timing, so clearing it all is still sent.
+  let hadTiming = $state(false);
 
   // In import mode, leaving goes back to the import page.
   const back = $derived(draft ? '/import' : id ? `/r/${id}` : '/');
@@ -74,9 +80,25 @@
       images: [...r.images],
       ingredients: lines(r.ingredients, 'raw'),
       steps: lines(r.steps, 'text'),
+      timing: stepTimings(r.steps),
     };
+    hadTiming = r.steps.some((st) => st.timing);
     version = r.version;
     dirty = false;
+  }
+
+  // Each step line's timing, with null for the heading lines lines() adds.
+  function stepTimings(steps) {
+    const out = [];
+    let section = null;
+    for (const st of steps) {
+      if (st.section !== section) {
+        if (st.section) out.push(null);
+        section = st.section;
+      }
+      out.push(st.timing ? { ...st.timing } : null);
+    }
+    return out.length ? out : [null];
   }
 
   function fromDraft(d) {
@@ -96,6 +118,7 @@
       images: [...(d.images ?? [])],
       ingredients: list(d.ingredients),
       steps: list(d.steps),
+      timing: list(d.steps).map(() => null),
     };
   }
 
@@ -113,6 +136,8 @@
       tags: form.tags,
       notes: form.notes,
       images: cover && !form.images.includes(cover) ? [...form.images, cover] : form.images,
+      // Timing follows the steps it was set on.
+      timing: kept.steps === form.steps ? form.timing : next.timing,
     };
     dirty = true;
   }
@@ -131,6 +156,7 @@
         fill(r);
         if (merge && draft) mergeDraft(draft);
         loaded = true;
+        openAskedTiming();
         loadedTitle = r.title;
         document.title = `Editing ${r.title} · Sous`;
       },
@@ -211,6 +237,12 @@
 
   const touch = () => (dirty = true);
 
+  // Lines change only through here, so each step's timing moves with it.
+  function splice(list, i, del, ...items) {
+    form[list].splice(i, del, ...items);
+    if (list === 'steps') form.timing.splice(i, del, ...items.map(() => null));
+  }
+
   // Line lists: Enter adds a line, Backspace on an empty line removes it,
   // and pasting several lines splits them.
   async function focusLine(list, i) {
@@ -223,12 +255,12 @@
     // can hold a line break.
     if (e.key === 'Enter' && (!e.shiftKey || list === 'ingredients')) {
       e.preventDefault();
-      lines.splice(i + 1, 0, '');
+      splice(list, i + 1, 0, '');
       touch();
       focusLine(list, i + 1);
     } else if (e.key === 'Backspace' && !lines[i] && lines.length > 1) {
       e.preventDefault();
-      lines.splice(i, 1);
+      splice(list, i, 1);
       touch();
       focusLine(list, Math.max(0, i - 1));
     }
@@ -239,13 +271,13 @@
     e.preventDefault();
     const pieces = text.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
     const lines = form[list];
-    lines.splice(i, lines[i] ? 0 : 1, ...pieces);
+    splice(list, i, lines[i] ? 0 : 1, ...pieces);
     touch();
     focusLine(list, i + pieces.length - 1);
   }
   function removeLine(list, i) {
-    form[list].splice(i, 1);
-    if (!form[list].length) form[list].push('');
+    splice(list, i, 1);
+    if (!form[list].length) splice(list, 0, 0, '');
     touch();
   }
 
@@ -301,8 +333,97 @@
       images: form.images,
       ingredients: form.ingredients.flatMap((l) => l.split(/\r?\n/)).map((l) => l.trim()).filter(Boolean),
       steps: form.steps.map((l) => l.trim()).filter(Boolean),
+      ...stepTimingBody(),
     };
   }
+
+  // step_timing has one entry per step, headings not counted. It's sent only
+  // when there is some, or was, so recipes never planned save as before.
+  function stepTimingBody() {
+    const timed = form.steps
+      .map((l, i) => [l.trim(), cleanTiming(form.timing[i])])
+      .filter(([l]) => l && !l.startsWith('#'))
+      .map(([, t]) => t);
+    return timed.some(Boolean) || hadTiming ? { step_timing: timed } : {};
+  }
+
+  // Timing for meal planning: one step's open at a time, with what Sous
+  // reads in the step's words offered alongside.
+  let timingOpen = $state(null);
+  let guesses = $state([]);
+  async function openTiming(i) {
+    if (timingOpen === i) return (timingOpen = null);
+    form.timing[i] ??= {};
+    timingOpen = i;
+    const texts = form.steps.map((l) => l.trim());
+    try {
+      const steps = texts.filter((l) => l && !l.startsWith('#'));
+      const got = steps.length ? await api.suggestTiming(steps) : [];
+      let k = 0;
+      guesses = texts.map((l) => (l && !l.startsWith('#') ? got[k++] : null));
+    } catch {
+      guesses = [];
+    }
+  }
+  function useGuess(i) {
+    form.timing[i] = { ...form.timing[i], ...guesses[i] };
+    touch();
+  }
+  let filledFromGuess = $state(null);
+  // Every step without timing, filled from what Sous reads in its words at
+  // once, to check rather than type. An assistant reads them more closely.
+  const untimed = $derived(form ? form.steps.filter((l, i) => stepNumbers[i] != null && l.trim() && !cleanTiming(form.timing[i])).length : 0);
+  let filledAll = $state(0);
+  let filledBare = $state(0);
+  async function fillAllFromGuess() {
+    const texts = form.steps.map((l) => l.trim());
+    const steps = texts.filter((l) => l && !l.startsWith('#'));
+    let got;
+    try {
+      got = steps.length ? await api.suggestTiming(steps) : [];
+    } catch {
+      return;
+    }
+    let k = 0;
+    guesses = texts.map((l) => (l && !l.startsWith('#') ? got[k++] : null));
+    // A step the words say nothing about gets the planner's own default,
+    // 5 minutes of the cook's time, so it's set rather than left guessed.
+    let n = 0;
+    let bare = 0;
+    texts.forEach((l, i) => {
+      if (stepNumbers[i] == null || !l || cleanTiming(form.timing[i])) return;
+      const g = guesses[i] && cleanTiming(guesses[i]);
+      if (!g?.minutes && g?.minutes !== 0) bare++;
+      form.timing[i] = { ...form.timing[i], minutes: 5, ...(g ?? {}) };
+      n++;
+    });
+    filledAll = n;
+    filledBare = bare;
+    if (n) touch();
+  }
+  // A meal plan's "Set its timing" opens the editor at that step (?timing=N).
+  async function openAskedTiming() {
+    const n = +route.search.get('timing');
+    if (!n) return;
+    const i = stepNumbers.indexOf(n);
+    if (i < 0) return;
+    await openTiming(i);
+    // Arriving from a plan whose time for this step was guessed: start from
+    // the guess, so it's checked rather than typed in again.
+    if (!cleanTiming(form.timing[i]) && guesses[i] && cleanTiming(guesses[i])) {
+      useGuess(i);
+      filledFromGuess = i;
+    }
+    await tick();
+    const el = document.getElementById(`timing-${i}`);
+    el?.scrollIntoView({ block: 'center' });
+    el?.querySelector('input, select, button')?.focus({ preventScroll: true });
+  }
+  const EQUIPMENT = ['oven', 'stovetop', 'slow cooker', 'pressure cooker', 'grill', 'smoker', 'air fryer', 'microwave'];
+  const setNum = (i, key, v, scale = 1) => {
+    form.timing[i][key] = v === '' ? null : Math.round(+v * scale);
+    touch();
+  };
 
   async function save(e, overVersion) {
     e?.preventDefault();
@@ -460,10 +581,65 @@
                 <span class="n fig" aria-hidden="true">{n ?? ''}</span>
                 <textarea data-list="steps" data-i={i} rows="2" bind:value={form.steps[i]} onkeydown={(e) => lineKey('steps', i, e)} onpaste={(e) => linePaste('steps', i, e)} aria-label={n === null ? 'Heading' : `Step ${n}`}></textarea>
                 <button type="button" class="rm" onclick={() => removeLine('steps', i)} aria-label={n === null ? 'Remove heading' : `Remove step ${n}`}><X size={16} /></button>
+                {#if n !== null && form.steps[i].trim()}
+                  {@const t = form.timing[i]}
+                  {@const summary = timingSummary(cleanTiming(t))}
+                  <button type="button" class="timing-toggle" class:set={summary} aria-expanded={timingOpen === i} aria-controls="timing-{i}" onclick={() => openTiming(i)}>
+                    <Clock size={14} aria-hidden="true" />{summary || 'Timing for meal plans'}
+                  </button>
+                  {#if timingOpen === i && t}
+                    <div class="timing" id="timing-{i}" role="group" aria-label="Timing for step {n}">
+                      {#if filledFromGuess === i}
+                        <p class="guess">Filled in from what the step says. Check it, then save the recipe.</p>
+                      {:else if guesses[i] && timingSummary(cleanTiming(guesses[i]))}
+                        <p class="guess">Sous reads: {timingSummary(cleanTiming(guesses[i]))} <button type="button" class="link" onclick={() => useGuess(i)}>Use it</button></p>
+                      {/if}
+                      <label class="tf"><span class="label">Minutes{#if t.minutes == null && guesses[i]?.minutes != null}<span class="tf-guess">{` · Sous guesses ${guesses[i].minutes}`}</span>{/if}</span><input type="number" min="0" inputmode="numeric" value={t.minutes ?? ''} oninput={(e) => setNum(i, 'minutes', e.currentTarget.value)} /></label>
+                      <label class="tf check"><input type="checkbox" checked={t.hands_on !== false} onchange={(e) => ((t.hands_on = e.currentTarget.checked ? null : false), touch())} />Needs the cook the whole time</label>
+                      <label class="tf"><span class="label">Uses</span>
+                        <select value={t.equipment ?? ''} onchange={(e) => ((t.equipment = e.currentTarget.value || null), touch())}>
+                          <option value="">Nothing in particular</option>
+                          {#each EQUIPMENT as eq}<option value={eq}>{eq[0].toUpperCase() + eq.slice(1)}</option>{/each}
+                          {#if t.equipment && !EQUIPMENT.includes(t.equipment)}<option value={t.equipment}>{t.equipment}</option>{/if}
+                        </select>
+                      </label>
+                      {#if t.equipment === 'oven'}
+                        <label class="tf"><span class="label">Oven °F</span><input type="number" min="150" max="900" step="5" value={t.oven_temp ?? ''} oninput={(e) => setNum(i, 'oven_temp', e.currentTarget.value)} /></label>
+                      {/if}
+                      {#if t.equipment}
+                        <label class="tf"><span class="label">{t.equipment === 'oven' ? 'Racks' : t.equipment === 'stovetop' ? 'Burners' : 'How many'}</span><input type="number" min="1" max="12" value={t.space ?? ''} placeholder="1" oninput={(e) => setNum(i, 'space', e.currentTarget.value)} /></label>
+                      {/if}
+                      <label class="tf"><span class="label">Can wait after this (hours)</span><input type="number" min="0" step="0.5" value={t.hold_minutes ? t.hold_minutes / 60 : ''} oninput={(e) => setNum(i, 'hold_minutes', e.currentTarget.value, 60)} /></label>
+                      {#if t.hold_minutes}
+                        <label class="tf"><span class="label">Waits in the</span>
+                          <select value={t.hold_in ?? 'counter'} onchange={(e) => ((t.hold_in = e.currentTarget.value), touch())}>
+                            <option value="fridge">Fridge</option><option value="counter">Counter</option><option value="warm">Warm oven or cooler</option>
+                          </select>
+                        </label>
+                        <label class="tf"><span class="label">Reheat, minutes</span><input type="number" min="0" value={t.reheat_minutes ?? ''} oninput={(e) => setNum(i, 'reheat_minutes', e.currentTarget.value)} /></label>
+                        {#if t.reheat_minutes}
+                          <label class="tf"><span class="label">Reheat at °F</span><input type="number" min="150" max="900" step="5" value={t.reheat_temp ?? ''} placeholder="out of the oven" oninput={(e) => setNum(i, 'reheat_temp', e.currentTarget.value)} /></label>
+                        {/if}
+                      {/if}
+                      <p class="t-hint">“Can wait” makes the steps up to here make-ahead: a meal plan can do them earlier, even days before.</p>
+                    </div>
+                  {/if}
+                {/if}
               </li>
             {/each}
           </ol>
-          <button type="button" class="add" onclick={() => (form.steps.push(''), focusLine('steps', form.steps.length - 1))}>Add a step</button>
+          {#if untimed || filledAll}
+            <p class="fill-all" role="status">
+              {#if filledAll}
+                {filledAll === 1 ? '1 step' : `${filledAll} steps`} filled from Sous’s reading{filledBare ? ` (${filledBare === 1 ? 'one says' : `${filledBare} say`} nothing of time, so ${filledBare === 1 ? 'it has' : 'they have'} 5 minutes)` : ''}. Check {filledAll === 1 ? 'it' : 'them'}, then save.
+              {:else}
+                {untimed === 1 ? '1 step has' : `${untimed} steps have`} no timing for meal plans.
+                <button type="button" class="link" onclick={fillAllFromGuess}>Fill {untimed === 1 ? 'it' : 'them'} from Sous’s reading</button>
+              {/if}
+              <a class="link quiet" href="/assistants#timing" use:link>or have an assistant read them</a>
+            </p>
+          {/if}
+          <button type="button" class="add" onclick={() => (splice('steps', form.steps.length, 0, ''), focusLine('steps', form.steps.length - 1))}>Add a step</button>
         </section>
 
         <label class="field">
@@ -775,6 +951,134 @@
   }
   .steps .rm {
     margin-top: 4px;
+  }
+  /* Timing sits under its step, in the step's column. */
+  .timing-toggle,
+  .timing {
+    grid-column: 2;
+  }
+  /* Always there, so a laptop finds it without hovering each step. */
+  .timing-toggle {
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 36px;
+    margin-bottom: var(--space-1);
+    border: 0;
+    background: none;
+    padding: 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--ink-3);
+  }
+  .timing-toggle.set {
+    color: var(--ink-2);
+  }
+  .timing-toggle:hover {
+    color: var(--red);
+  }
+  @media (pointer: coarse) {
+    .timing-toggle {
+      min-height: 44px;
+    }
+  }
+  .timing {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--space-2) var(--space-4);
+    padding: var(--space-2) 0 var(--space-3);
+    border-top: 1.5px dashed var(--perf);
+  }
+  .tf {
+    display: grid;
+    gap: 2px;
+  }
+  .tf .label {
+    color: var(--ink-3);
+  }
+  .tf input[type='number'] {
+    width: 6.5rem;
+    min-height: 40px;
+    border: 0;
+    border-bottom: 1.5px solid var(--field);
+    background: transparent;
+    font-size: max(16px, var(--ui));
+  }
+  .tf input[type='number']:focus {
+    outline: none;
+    border-bottom-color: var(--red);
+  }
+  .tf select {
+    min-height: 40px;
+    font-size: max(16px, var(--ui));
+    background: var(--ticket);
+    border: 2px solid var(--ink);
+    border-radius: 3px;
+  }
+  .tf.check {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: 40px;
+    font-size: var(--ui);
+    font-weight: 600;
+  }
+  .tf.check input {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--red);
+  }
+  .guess,
+  .t-hint {
+    flex: 1 0 100%;
+    font-size: 0.875rem;
+    color: var(--ink-2);
+  }
+  .tf-guess {
+    letter-spacing: 0;
+    text-transform: none;
+    font-weight: 600;
+    color: var(--ink-2);
+  }
+  .fill-all {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 var(--space-2);
+    margin-top: var(--space-2);
+    font-size: var(--ui);
+    color: var(--ink-2);
+  }
+  .fill-all .link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    border: 0;
+    background: none;
+    padding: 0;
+    font-weight: 700;
+    color: var(--ink);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+  .fill-all .link.quiet {
+    font-weight: 600;
+    color: var(--ink-2);
+  }
+  .fill-all .link:hover {
+    color: var(--red);
+  }
+  .guess .link {
+    border: 0;
+    background: none;
+    padding: 0 var(--space-2);
+    min-height: 44px;
+    font-weight: 700;
+    color: var(--red);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
   }
   .add {
     margin-top: var(--space-2);

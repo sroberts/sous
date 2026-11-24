@@ -77,6 +77,8 @@ func register(s *sdk.Server, t *tools) {
 		Description: "Change some fields of a recipe. Pass id and the version from get_recipe, plus only the fields to change: " +
 			"an omitted field is left alone and null clears it. ingredients, steps, tags and images replace the whole list, " +
 			"so send the complete new list (raw lines; a line starting with # is a section heading). " +
+			"step_timing sets each step's timing for meal planning (minutes, hands_on, equipment, oven_temp, hold_minutes for make-ahead…), " +
+			"one entry per step, headings not counted; a step whose text is unchanged keeps its timing when steps are sent without it. " +
 			"If the recipe changed since you read it, the result is a stale error that includes the current recipe; " +
 			"reapply your change to it and retry with its version. Returns the updated recipe.",
 		Annotations: &sdk.ToolAnnotations{DestructiveHint: ptr(true), OpenWorldHint: closedWorld},

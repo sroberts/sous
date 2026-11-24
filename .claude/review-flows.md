@@ -28,8 +28,8 @@ the UI built: `cd web && npm run build && cd .. && go run ./cmd/sous --port
      under the masthead; switching keeps each tab's place. The masthead
      slides away on scroll down and returns on scroll up.
 2. Open the French omelette.
-   - No image: on desktop the letter tile shows instead of a broken image;
-     on phones the photo slot is left out, so Begin cooking moves up.
+   - No image: the photo slot is left out (no broken image, no tile), so
+     the facts and Begin cooking move up, on desktop and phones.
 
 ## 3. Who's cooking
 
@@ -99,3 +99,61 @@ the UI built: `cd web && npm run build && cd .. && go run ./cmd/sous --port
    - It explains ChatGPT can't reach Sous and gives no public-exposure steps.
 4. Open the Check it works row.
    - It gives a question to ask (naming Ada) and four symptoms with causes.
+
+## 11. Your kitchen
+
+1. Open Meals in the masthead (`/meals`), then Your kitchen (`/kitchen`).
+   - One oven with 2 racks, 4 burners, the day 08:00–22:00. The save button
+     reads "Saved" and is disabled until something changes.
+2. Set burners to 6, add a serving dish "Big platter", save.
+   - "The kitchen is saved." toast; the Meals page's kitchen row reads
+     "1 oven, 2 racks, 6 burners, 1 serving dishes".
+
+## 12. Plan a meal
+
+1. On `/meals`, name a meal "Sunday lunch", served next Sunday at 1:00 PM,
+   Plan it.
+   - Opens `/m/<id>`; the menu is empty with a hint; Cook the meal is
+     disabled.
+2. Add the boeuf bourguignon and the flourless chocolate torte with the
+   Add a dish field (type, arrow down, Enter).
+   - The plan lists tasks by day with times; preheats appear before oven
+     steps; "Times guessed from the words · Set its timing" shows under
+     dishes without timing.
+   - At 1280 the lanes chart shows Oven, Stovetop and Hands lanes; Tab
+     reaches the chart once and arrow keys move between bars. At 390 the
+     chart is replaced by a line per oven.
+3. Open Change on the torte, set Served to "1 hr after".
+   - The plan moves; a toast says how many steps moved, with Undo.
+4. Press `?`.
+   - A Keys dialog lists C, D, the lane keys and ?.
+
+## 13. A meal running late, and cooking it
+
+1. Plan a meal served two hours from now with the boeuf bourguignon (it
+   needs about three).
+   - The header leads with "Dinner now lands … late" in red, Planned for in
+     grey; the late block names the dish holding it up and what's in its
+     way, with one red option first (Move dinner to …, with its outcome).
+     Cook the meal is a default button.
+2. Move dinner, then Undo from the toast.
+   - The meal moves and comes back; nothing else changes.
+3. Cook the meal (`/m/<id>/cook`).
+   - The screen stays on; the bar shows the meal and the time.
+   - A due preheat is the first ticket, "Turn the oven on to 325°F", with
+     It's on. Pressing it moves it to a countdown that says "left".
+   - A step's ticket has Start (red) and a quiet Already done. Already
+     done ticks it off with an Undo toast; Undo brings it back.
+   - No horizontal scroll at 820 and 390.
+
+## 14. Fill in step timing
+
+1. Edit the gazpacho (`/r/<id>/edit`).
+   - Below the method: "7 steps have no timing for meal plans. Fill them
+     from Sous's reading", and "or have an assistant read them".
+2. Fill them, then save.
+   - The steps show their timing summaries; the meal plan no longer says
+     the gazpacho's times are guessed.
+3. Follow "or have an assistant read them".
+   - `/assistants#timing` opens with Fill in step timing expanded, showing
+     `/mcp__sous__fill_step_timing`.
