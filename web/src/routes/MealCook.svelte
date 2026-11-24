@@ -7,7 +7,7 @@
   import { session, asPerson, toast } from '../lib/session.svelte.js';
   import { personName } from '../lib/format.js';
   import { clock } from '../lib/timers.svelte.js';
-  import { clockAt, whenAt, span, runOfShow, remaining, cookedMinutes, holdPlace, mealWord, problemText } from '../lib/meals.js';
+  import { clockAt, whenAt, dayWord, span, runOfShow, remaining, cookedMinutes, holdPlace, mealWord, problemText } from '../lib/meals.js';
 
   let { id } = $props();
 
@@ -138,7 +138,10 @@
   const finished = $derived(plan && plan.tasks.length > 0 && (open === 0 || over));
   // When nothing is due, the rail holds the next task, so it is never empty.
   const nextUp = $derived(show && !show.focus.length && !show.timers.length ? show.next.find((t) => t.kind !== 'preheat') : null);
-  const upNext = $derived(show ? show.next.filter((t) => t !== nextUp).slice(0, 8) : []);
+  // One ticket and nothing running: the next step hangs beside it, receding,
+  // so a wide screen's rail shows what's coming instead of empty pass.
+  const queued = $derived(show && show.focus.length === 1 && !show.timers.length ? (show.next.find((t) => t.kind !== 'preheat') ?? null) : null);
+  const upNext = $derived(show ? show.next.filter((t) => t !== nextUp && t !== queued).slice(0, 8) : []);
   const farOff = $derived(nextUp && Date.parse(nextUp.start) - now > 12 * 3600e3);
   const cooked = $derived(plan ? cookedMinutes(plan) : null);
 
@@ -205,7 +208,11 @@
     // Sous has already moved late work to start from now, so a start still
     // ahead is the truth; late wording only once that start has come.
     if (Date.parse(t.start) > now) return `Starts ${until(t.start)}`;
-    if (t.planned_for) return `Start now · was ${clockAt(t.planned_for, tz)}`;
+    if (t.planned_for) {
+      // "was yesterday 4:45 PM", "was Sun 8:00 AM": relative days in lower case, weekdays as names.
+      const d = dayWord(t.planned_for, tz, now);
+      return `Start now · was ${d === 'Today' ? '' : `${/^(Tomorrow|Yesterday)$/.test(d) ? d.toLowerCase() : d} `}${clockAt(t.planned_for, tz)}`;
+    }
     return 'Now';
   };
 </script>
@@ -223,7 +230,7 @@
       {:else}
         <!-- Lead with when dinner now lands; the fixes are one tap away. -->
         <button type="button" class="status behind" aria-expanded={fixesOpen} aria-controls="fixes" onclick={() => (fixesOpen = !fixesOpen)}>
-          {word} {clockAt(new Date(Date.parse(plan.serve_at) + plan.behind_minutes * 60e3).toISOString(), tz)}<span class="late-by">{span(plan.behind_minutes)} late</span><ChevronDown size={18} aria-hidden="true" />
+          {word} <span class="late-at">{clockAt(new Date(Date.parse(plan.serve_at) + plan.behind_minutes * 60e3).toISOString(), tz)}</span><span class="late-by">{span(plan.behind_minutes)} late</span><ChevronDown size={18} aria-hidden="true" />
         </button>
       {/if}
     {/if}
@@ -255,7 +262,7 @@
              moment, without pushing the step in hand down the screen. -->
         <section class="missed" aria-label="Make-ahead still to do">
           <button type="button" class="m-row" aria-expanded={missedOpen} onclick={() => (missedOpen = !missedOpen)}>
-            <span><strong>Make-ahead still to do:</strong> {show.missed.map((m) => m.recipe_title).join(', ')}</span>
+            <span><strong>Make-ahead still to do:</strong> {show.missed.map((m) => `${m.recipe_title} at ${clockAt(m.tasks[0].start, tz)}`).join(', ')}</span>
             <span class="m-sort">{missedOpen ? 'Close' : 'Start or tick off'}<ChevronDown size={18} aria-hidden="true" /></span>
           </button>
           {#if missedOpen}
@@ -295,9 +302,9 @@
       {:else}
         <div class="hung">
           <div class="focus">
-            {#each show.focus.length ? show.focus : nextUp ? [nextUp] : [] as t, i (t.key)}
+            {#each show.focus.length ? [...show.focus, ...(queued ? [queued] : [])] : nextUp ? [nextUp] : [] as t, i (t.key)}
               {@const left = t.status === 'active' ? remaining(t, now) : null}
-              {@const isNext = t === nextUp}
+              {@const isNext = t === nextUp || t === queued}
               <article class="ticket card" class:upcoming={isNext} class:over={left !== null && left <= 0} aria-busy={pending.has(t.key)}>
                 <span class="clip" aria-hidden="true"></span>
                 <div class="c-head">
@@ -396,7 +403,7 @@
               {#each ovens as o}
                 <li>
                   <span class="fig when" class:live={o.live}>{o.figure}</span>
-                  <span class="what">{o.name}<span class="sub">{` · ${o.line}`}</span></span>
+                  <span class="what">{o.name}<span class="sub">{` · ${o.line.replace(/ ([AP]M)/g, '\u00a0$1')}`}</span></span>
                 </li>
               {/each}
             </ul>
@@ -490,19 +497,24 @@
     font-weight: 700;
     color: var(--ink-2);
   }
+  /* Late: an ink-stroked button with only the time it now lands in red,
+     so the rail's Start keeps the one red that asks to be pressed. */
   button.status {
     display: inline-flex;
     align-items: baseline;
     gap: var(--space-2);
     min-height: 52px;
     padding: 0 var(--space-3);
-    border: 2px solid var(--red);
+    border: 2px solid var(--ink);
     border-radius: 3px;
     background: none;
     align-self: center;
     align-items: center;
   }
   .status.behind {
+    color: var(--ink);
+  }
+  .late-at {
     color: var(--red);
   }
   .late-by {

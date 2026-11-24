@@ -278,7 +278,8 @@
   });
   const warnings = $derived((plan?.warnings ?? []).filter((w) => w.code !== 'estimated' && w.code !== 'behind'));
   const handsOn = $derived((plan?.tasks ?? []).filter((t) => t.hands_on && !t.make_ahead).reduce((n, t) => n + t.minutes, 0));
-  const ahead = $derived((plan?.tasks ?? []).filter((t) => t.make_ahead).length);
+  // Made ahead counts what's still ahead of the day, not missed work now on it.
+  const ahead = $derived((plan?.tasks ?? []).filter((t) => t.make_ahead && t.status !== 'missed').length);
   const startDay = $derived(plan?.start ? dayWord(plan.start, tz, now) : '');
   const landsAt = $derived(plan ? new Date(Date.parse(plan.serve_at) + plan.behind_minutes * 60e3).toISOString() : null);
   // Which dishes have their serving fields open.
@@ -301,6 +302,11 @@
   const readyAt = $derived(new Map((plan?.late_dishes ?? []).map((d) => [d.item_id, d.ready_at])));
   const anyPinned = $derived((plan?.tasks ?? []).some((t) => t.pinned));
   const otherZone = $derived(tz !== deviceZone());
+  const missedSteps = $derived((plan?.tasks ?? []).filter((t) => t.status === 'missed').length);
+  // Cook the meal is the step forward only once cooking is near: before
+  // then, the plan is what needs attention.
+  const onTheDay = $derived(plan?.start ? Date.parse(plan.start) - now < 18 * 3600e3 : false);
+  const movedFrom = (t) => `moved from ${dayKey(t.planned_for, tz) === dayKey(t.start, tz) ? '' : `${dayWord(t.planned_for, tz, now)} `}${clockAt(t.planned_for, tz)}`;
   // A dish held for the meal waits until the meal, wherever it now lands.
   function holdUntil(t) {
     const s = plan.serving.find((x) => x.item_id === t.item_id);
@@ -339,10 +345,15 @@
             <p class="lands">{word} now lands <strong class="fig">{clockAt(landsAt, tz)}</strong>{` ${dayWord(landsAt, tz, now).toLowerCase()} · ${span(plan.behind_minutes)} late`}</p>
           {/if}
           <p class="served" class:was={!plan.on_time}>{plan.on_time ? 'Served' : 'Planned for'} {dayWord(meal.serve_at, tz, now)} {clockAt(meal.serve_at, tz)}</p>
+          {#if missedSteps}
+            <!-- Make-ahead whose time passed is replanned from now: say so,
+                 so an early start reads as a fallback, not the plan. -->
+            <p class="missed-note">{missedSteps === 1 ? '1 make-ahead step' : `${missedSteps} make-ahead steps`} didn’t happen when planned; Sous has moved {missedSteps === 1 ? 'it' : 'them'} to start from now.</p>
+          {/if}
         </div>
         {#if plan.tasks.length}
           <!-- One red button in view: while the late block's fix is red, this steps back. -->
-          <a class="btn cook" class:primary={plan.on_time} href="/m/{id}/cook" use:link aria-keyshortcuts="c" title="Cook the meal (C)">Cook the meal</a>
+          <a class="btn cook" class:primary={plan.on_time && onTheDay} href="/m/{id}/cook" use:link aria-keyshortcuts="c" title="Cook the meal (C)">Cook the meal</a>
         {:else}
           <button type="button" class="btn cook" disabled>Cook the meal</button>
         {/if}
@@ -352,7 +363,6 @@
         <div><dt class="label">Starts</dt><dd class="fig">{plan.start ? clockAt(plan.start, tz).replace(/\s?[AP]M$/i, '') : '–'}{#if plan.start}<span class="unit">{clockAt(plan.start, tz).match(/[AP]M$/i)?.[0] ?? ''} {startDay}</span>{/if}</dd></div>
         <div><dt class="label">On the day</dt><dd class="fig">{span(handsOn) || '–'}<span class="unit">hands-on</span></dd></div>
         <div><dt class="label">Made ahead</dt><dd class="fig">{ahead}<span class="unit">{ahead === 1 ? 'step' : 'steps'}</span></dd></div>
-        {#if plan.on_time}<div><dt class="label">{word}</dt><dd class="fig">{clockAt(landsAt, tz).replace(/\s?[AP]M$/i, '')}<span class="unit">{clockAt(landsAt, tz).match(/[AP]M$/i)?.[0] ?? ''} {dayWord(landsAt, tz, now)}</span></dd></div>{/if}
       </dl>
       {#if !plan.on_time && plan.late_dishes.length}
         <div class="late-block">
@@ -509,7 +519,7 @@
                     {#each row as b, k (b.key)}
                       {@const place = placeLabel(b, row, k, lane)}
                       {@const bk = `${lane.name}|${b.key}`}
-                      <button type="button" id={barId(bk)} tabindex={bk === focusKey ? 0 : -1} onfocus={() => (barFocus = bk)} onkeydown={barKey} class="bar" class:hands={lane.hands} class:heat={b.kind === 'preheat'} class:was={b.status === 'done'} style="left: {b.left}%; width: max({b.width}%, 6px); top: calc({r} * var(--row))" title="{clockAt(b.start, tz)} {b.text}{b.recipe_title ? ` · ${b.recipe_title}` : ''}" aria-label="{lane.name}, {clockAt(b.start, tz)} to {clockAt(b.end, tz)}: {b.kind === 'preheat' ? `heating to ${b.oven_temp}°F` : b.text}{b.recipe_title ? `, ${b.recipe_title}` : ''}" onclick={() => showMe({ task: b.key })}>
+                      <button type="button" id={barId(bk)} tabindex={bk === focusKey ? 0 : -1} onfocus={() => (barFocus = bk)} onkeydown={barKey} class="bar" class:hands={lane.hands} class:heat={b.kind === 'preheat'} class:was={b.status === 'done'} style="left: {b.left}%; width: max({b.width}%, 3px); top: calc({r} * var(--row))" title="{clockAt(b.start, tz)} {b.text}{b.recipe_title ? ` · ${b.recipe_title}` : ''}" aria-label="{lane.name}, {clockAt(b.start, tz)} to {clockAt(b.end, tz)}: {b.kind === 'preheat' ? `heating to ${b.oven_temp}°F` : b.text}{b.recipe_title ? `, ${b.recipe_title}` : ''}" onclick={() => showMe({ task: b.key })}>
                         {#if place.at === 'in'}{place.text}{/if}
                       </button>
                       {#if place.at === 'out'}<span class="bar-out" style="left: calc({b.left + b.width}% + 4px); top: calc({r} * var(--row))" aria-hidden="true">{place.text}</span>{/if}
@@ -540,12 +550,12 @@
                     <span>{span(t.minutes)}{t.estimated ? ' (guessed)' : ''}</span>
                     {#if t.oven}<span>{t.oven}{t.oven_temp ? ` ${t.oven_temp}°F` : ''}</span>{:else if t.equipment}<span>{t.equipment}</span>{/if}
                     {#if t.hands_on && t.minutes}<span class="hands"><Hand size={14} aria-hidden="true" />hands-on</span>{/if}
-                    {#if t.planned_for}<span class="flag">{t.status === 'missed' ? `make-ahead, was for ${dayWord(t.planned_for, tz, now)} ${clockAt(t.planned_for, tz)}` : `moved from ${clockAt(t.planned_for, tz)}`}</span>{/if}
+                    {#if t.planned_for}<span class="flag">{t.status === 'missed' ? `make-ahead, was for ${dayWord(t.planned_for, tz, now)} ${clockAt(t.planned_for, tz)}` : movedFrom(t)}</span>{/if}
                   </p>
                   {#if t.hold}<p class="hold">Then it waits {holdPlace(t.hold.in)} until {holdUntil(t)}.</p>{/if}
                 </div>
                 {#if t.kind !== 'preheat'}
-                  <button type="button" class="pin" aria-pressed={t.pinned} onclick={() => pin(t)} aria-label="{t.pinned ? 'Unpin' : 'Pin'} {t.text}"><Pin size={16} aria-hidden="true" />{t.pinned ? 'Pinned' : 'Pin'}</button>
+                  <button type="button" class="pin" aria-pressed={t.pinned} onclick={() => pin(t)} aria-label="{t.pinned ? 'Unpin' : 'Pin'} {t.text}"><Pin size={16} aria-hidden="true" /><span class="pin-word">{t.pinned ? 'Pinned' : 'Pin'}</span></button>
                 {/if}
               </li>
             {/each}
@@ -721,6 +731,12 @@
   /* Running late, the planned time steps back for the time it now lands. */
   .served.was {
     color: var(--ink-3);
+  }
+  .missed-note {
+    margin-top: var(--space-1);
+    font-size: var(--ui);
+    font-weight: 600;
+    color: var(--ink-2);
   }
   .cook {
     min-height: 52px;
@@ -1092,7 +1108,11 @@
     position: absolute;
     height: calc(var(--row) - 4px);
     margin-top: 2px;
-    padding: 0 4px;
+    /* No side padding: a bar is exactly as wide as its time, so short bars
+       side by side never cover each other; the label is indented instead. */
+    padding: 0;
+    text-indent: 4px;
+    box-sizing: border-box;
     border: 0;
     border-radius: 0;
     text-align: left;
@@ -1107,10 +1127,12 @@
     background: repeating-linear-gradient(135deg, var(--pass-deep) 0 3px, var(--ticket-press) 3px 6px);
     box-shadow: inset 0 0 0 1px var(--steel);
   }
+  /* Hands-on bars that meet keep a ticket-white seam, so two tasks never
+     read as one. */
   .bar.hands {
     background: var(--ink);
     color: var(--ticket);
-    box-shadow: none;
+    box-shadow: inset -2px 0 0 var(--ticket);
   }
   /* An oven heating: a thin steel strip along the foot of the row, leading
      into the bake it heats for. */
@@ -1313,7 +1335,19 @@
   .pin[aria-pressed='true'] {
     color: var(--red);
   }
-  /* Pin is always there, quiet, so it can be found without hunting. */
+  /* Pin's icon is always there to be found; at a desk its word shows on
+     the row being pointed at, and once pinned, so twenty rows aren't
+     twenty labels. */
+  @media (hover: hover) and (pointer: fine) {
+    .pin-word {
+      opacity: 0;
+    }
+    .task:hover .pin-word,
+    .task:focus-within .pin-word,
+    .pin[aria-pressed='true'] .pin-word {
+      opacity: 1;
+    }
+  }
   @media (hover: hover) and (pointer: fine) {
     .pin:hover {
       background: var(--pass-deep);

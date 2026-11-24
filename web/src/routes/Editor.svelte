@@ -588,7 +588,7 @@
                       {:else if guesses[i] && timingSummary(cleanTiming(guesses[i]))}
                         <p class="guess">Sous reads: {timingSummary(cleanTiming(guesses[i]))} <button type="button" class="link" onclick={() => useGuess(i)}>Use it</button></p>
                       {/if}
-                      <label class="tf"><span class="label">Minutes</span><input type="number" min="0" inputmode="numeric" value={t.minutes ?? ''} placeholder={`${guesses[i]?.minutes ?? 5} guessed`} oninput={(e) => setNum(i, 'minutes', e.currentTarget.value)} /></label>
+                      <label class="tf"><span class="label">Minutes{#if t.minutes == null && guesses[i]?.minutes != null}<span class="tf-guess">{` · Sous guesses ${guesses[i].minutes}`}</span>{/if}</span><input type="number" min="0" inputmode="numeric" value={t.minutes ?? ''} oninput={(e) => setNum(i, 'minutes', e.currentTarget.value)} /></label>
                       <label class="tf check"><input type="checkbox" checked={t.hands_on !== false} onchange={(e) => ((t.hands_on = e.currentTarget.checked ? null : false), touch())} />Needs the cook the whole time</label>
                       <label class="tf"><span class="label">Uses</span>
                         <select value={t.equipment ?? ''} onchange={(e) => ((t.equipment = e.currentTarget.value || null), touch())}>
@@ -1028,6 +1028,12 @@
   .t-hint {
     flex: 1 0 100%;
     font-size: 0.875rem;
+    color: var(--ink-2);
+  }
+  .tf-guess {
+    letter-spacing: 0;
+    text-transform: none;
+    font-weight: 600;
     color: var(--ink-2);
   }
   .fill-all {

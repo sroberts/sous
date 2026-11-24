@@ -77,10 +77,13 @@ If the meal is running late, the header says when it now lands, which dish
 is holding it up, and what's in its way ("the oven is busy with the pie at
 400°F until 12:20 AM"). Sous works out what would help, planning each in
 full: another cook, the meal without that dish, or the meal served later
-(every dish moves with it, so nothing is rushed). The one that brings the
-meal in soonest comes first, and only options that gain real time are
-offered. A later time past your kitchen's hours says so. If that dish's
-make-ahead didn't happen, you can start it now or mark it already made.
+(every dish moves with it, so nothing is rushed). They're listed with the
+one that brings the meal in soonest first, and only options that gain real
+time are offered; taking a dish off the menu is never the recommended one.
+A later time past your kitchen's hours says so. If that dish's make-ahead
+didn't happen, the first fix is to start it now (or mark it already made).
+When make-ahead work was missed, the header says Sous has moved it to start
+from now, so an early start reads as catching up rather than the plan.
 Serving it on its own later, and any other late dishes (which don't change
 when the meal lands), are under **Other fixes**. Every fix can be undone
 from the message that follows. **To the table** shows when each dish will
@@ -114,8 +117,9 @@ On the day, open the meal and press **Cook the meal**. The screen stays on.
   in a lane beside it, and turn red when they're due out.
 - **Up next** shows what's coming and when, led by anything due that's
   waiting for free hands. **Ovens** shows what each oven is doing.
-- If make-ahead work didn't happen (the pie meant for yesterday), it's
-  listed above the rail: **Start it now** puts it on the rail, **It's
+- If make-ahead work didn't happen (the pie meant for yesterday), Sous
+  replans it from now: when its new time comes it hangs on the rail like
+  any other step. Until then it's listed above the rail, with its time: **Start it now** puts it on the rail, **It's
   already made** ticks it off.
 - If you fall behind, Sous replans from now, giving the oven and your
   hands to the dish in most trouble first, and the bar says when the meal

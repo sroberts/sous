@@ -65,6 +65,15 @@ test('the run of show puts one ticket per cook on the rail', () => {
   assert.deepEqual(runOfShow(plan, now).focus.map((x) => x.key), ['cran:0', 'beans']);
   plan.tasks.pop();
 
+  // Missed make-ahead that Sous has replanned to now is due: it's on the
+  // rail, not in the strip.
+  plan.tasks.push(t('gravy:0', 'gravy', '2026-11-26T16:00:00Z', 20, { status: 'missed', make_ahead: true, hands_on: false }));
+  plan.tasks.push(t('gravy:1', 'gravy', '2026-11-26T16:20:00Z', 20, { status: 'missed', make_ahead: true }));
+  const railed = runOfShow(plan, now);
+  assert.ok(railed.focus.some((x) => x.key === 'gravy:0'), 'its first step is on the rail');
+  assert.ok(!railed.missed.some((m) => m.item_id === 'gravy'), 'and not in the strip');
+  plan.tasks.splice(-2, 2);
+
   // An oven nobody has said is on is a ticket, not a timer.
   plan.tasks.push(t('cold', null, '2026-11-26T16:01:00Z', 15, { kind: 'preheat', item_id: null, hands_on: false }));
   assert.equal(runOfShow(plan, now).focus[0].key, 'cold', 'turning the oven on comes first');
@@ -118,4 +127,12 @@ test('menu changes apply to whatever version of the meal they meet', () => {
   assert.deepEqual(restoreItem(mine.items[0], 0)(withoutItem('a')(theirs)).items.map((x) => x.id), ['a', 'b', 'c']);
   assert.deepEqual(moveItemBy('c', -1)(theirs).items.map((x) => x.id), ['a', 'c', 'b']);
   assert.deepEqual(moveItemBy('a', -1)(theirs).items.map((x) => x.id), ['a', 'b', 'c']);
+});
+
+test('the lanes name the day at midnight', () => {
+  const t = (key, start, mins, extra = {}) => ({ key, start, end: new Date(Date.parse(start) + mins * 60e3).toISOString(), minutes: mins, kind: 'step', ...extra });
+  const plan = { serve_at: '2026-11-26T10:00:00.000Z', tasks: [t('a', '2026-11-26T03:00:00Z', 60, { hands_on: true }), t('b', '2026-11-26T08:00:00Z', 60, { hands_on: true })] };
+  const l = lanes(plan, 'America/New_York', [], Date.parse('2026-11-20T12:00:00Z'));
+  const mid = l.ticks.find((k) => k.iso === '2026-11-26T05:00:00.000Z');
+  assert.ok(mid?.day, 'midnight in New York carries its day');
 });

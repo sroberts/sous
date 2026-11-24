@@ -660,6 +660,12 @@ func (p *planner) placeBack(t *ptask, lfMin int) {
 	s0 := lfMin - t.dur
 	s0 -= mod(s0, gridMin)
 	low := p.floor // nothing starts before now once the plan is live
+	// Nor before the step before it ends, when that's already placed (a
+	// make-ahead step falling back here from placeFwd): a recipe's steps
+	// run in order, so the bake never comes before the crust.
+	if t.prev != nil && t.prev.placed {
+		low = max(low, t.prev.end)
+	}
 	for _, day := range p.dayPasses(t) {
 		for s := s0; s >= low && !p.spent(); s -= gridMin {
 			if oven, ok := p.fits(t, s, day); ok {
@@ -669,7 +675,7 @@ func (p *planner) placeBack(t *ptask, lfMin int) {
 			}
 		}
 	}
-	p.put(t, s0, p.firstOven(t))
+	p.put(t, max(s0, low-mod(low, gridMin)+iff(mod(low, gridMin) != 0, gridMin)), p.firstOven(t))
 	if t.item >= 0 {
 		p.stuck[t.item] = true
 	}

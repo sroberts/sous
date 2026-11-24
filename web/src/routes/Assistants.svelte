@@ -4,6 +4,7 @@
   // where this page was opened and who's cooking, so each set-up can be
   // copied as it stands.
   import { ChevronDown, Copy, Check } from '@lucide/svelte';
+  import { onMount, tick } from 'svelte';
   import { session } from '../lib/session.svelte.js';
 
   const local = ['127.0.0.1', 'localhost', '[::1]', '::1'].includes(location.hostname);
@@ -68,6 +69,15 @@
     clearTimeout(timer);
     timer = setTimeout(() => (copied = null), 2500);
   }
+
+  // Arriving at #timing (from the editor): the section waits on boot, so
+  // scroll to it once it's there.
+  onMount(async () => {
+    if (location.hash !== '#timing') return;
+    for (let n = 0; n < 20 && !document.getElementById('timing'); n++) await new Promise((r) => setTimeout(r, 100));
+    await tick();
+    document.getElementById('timing')?.scrollIntoView({ block: 'start' });
+  });
 </script>
 
 {#snippet copyBtn(id, text)}
@@ -365,6 +375,7 @@
   }
   .way {
     background: var(--ticket);
+    scroll-margin-top: calc(var(--space-6) + 56px);
   }
   summary {
     display: flex;

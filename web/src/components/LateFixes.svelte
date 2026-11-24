@@ -25,6 +25,10 @@
   const tied = $derived(plan.late_dishes.slice(1).filter((d) => d.minutes >= lead.minutes));
   const rest = $derived(plan.late_dishes.slice(1).filter((d) => d.minutes < lead.minutes));
   const options = $derived(plan.options?.length ? plan.options : [{ kind: 'move', lands_at: landsAt, behind_minutes: 0, in_kitchen_day: true }]);
+  // Earliest landing first, as the planner orders them; dropping a dish is
+  // never the red recommendation, wherever it sits.
+  const ordered = $derived(options);
+  const red = $derived(lead.cause === 'missed' ? null : ordered.find((o) => o.kind !== 'without'));
   const CAUSE = {
     missed: 'its make-ahead is still to do',
     late_start: 'its work started later than planned',
@@ -152,24 +156,27 @@
     <strong>{lead.recipe_title}</strong>{tied.length ? ` and ${joinAnd(tied.map((d) => d.recipe_title))}` : ''} {tied.length ? 'are' : 'is'} holding {lower} up: {blocker(lead)}.
   </p>
 
+  <!-- The recommendation fixes the cause where it can (start the missed
+       make-ahead), never drops a dish, and says what each choice does. -->
   <ul class="opts">
-    {#each options as o, i (o.kind)}
+    {#if lead.cause === 'missed'}
       <li>
-        <button type="button" class="btn" class:primary={i === 0} onclick={() => take(o)} disabled={busy}>{label(o)}</button>
-        <p class="hint" class:warn={o.kind === 'move' && !o.in_kitchen_day}>{outcome(o)}</p>
+        <button type="button" class="btn primary" onclick={() => startAhead(lead)} disabled={busy} aria-describedby="opt-ahead">Start its make-ahead now</button>
+        <button type="button" class="btn quiet" onclick={() => doneAhead(lead)} disabled={busy} aria-describedby="opt-made">It’s already made</button>
+        <p class="hint" id="opt-ahead">Started now, {lower} lands at {clockAt(landsAt, tz)} and gets no later.</p>
+        <p class="hint" id="opt-made">If it’s made, Sous ticks it off and replans the rest without it.</p>
+      </li>
+    {/if}
+    {#each ordered as o (o.kind)}
+      <li>
+        <button type="button" class="btn" class:primary={o === red} onclick={() => take(o)} disabled={busy} aria-describedby="opt-{o.kind}">{label(o)}</button>
+        <p class="hint" id="opt-{o.kind}" class:warn={o.kind === 'move' && !o.in_kitchen_day}>{outcome(o)}</p>
       </li>
     {/each}
   </ul>
 
-  {#if lead.cause === 'missed'}
-    <div class="own">
-      <button type="button" class="btn" onclick={() => startAhead(lead)} disabled={busy}>Start its make-ahead now</button>
-      <button type="button" class="btn quiet" onclick={() => doneAhead(lead)} disabled={busy}>It’s already made</button>
-    </div>
-  {/if}
-
   {#if early}
-    <p class="hint">Unless {lower} moves, {joinAnd(early.names)} {early.names.length === 1 ? 'is' : 'are'} ready {span(early.by)} before it lands.</p>
+    <p class="hint">If {lower} isn’t moved, {joinAnd(early.names)} will be ready {span(early.by)} before the rest.</p>
   {/if}
 
   <details class="rest">
@@ -216,6 +223,10 @@
     align-items: center;
     gap: var(--space-1) var(--space-4);
   }
+  /* The make-ahead row: its two buttons, then a line for each underneath. */
+  .opts li:has(#opt-ahead) .hint {
+    flex: 1 0 100%;
+  }
   .opts .btn {
     min-height: 52px;
     padding: 0 var(--space-5);
@@ -229,7 +240,6 @@
     font-weight: 700;
     color: var(--ink);
   }
-  .own,
   .acts {
     display: flex;
     flex-wrap: wrap;

@@ -135,7 +135,8 @@ export function problemText(err) {
  *    turned on, until the work they heat for begins;
  *  - waiting: due work beyond what the cooks can take on, first in line;
  *  - missed: make-ahead work whose time passed before anyone started it,
- *    by dish, for the cook to do now or call done;
+ *    by dish, for the cook to do now or call done; once the time Sous
+ *    replanned it for comes, its first step is due like any other;
  *  - next: everything later; done: what's finished.
  *  A dish's later step never comes up while an earlier one is still open. */
 export function runOfShow(plan, now = Date.now(), { cooks = 1, soonMin = 5 } = {}) {
@@ -152,6 +153,7 @@ export function runOfShow(plan, now = Date.now(), { cooks = 1, soonMin = 5 } = {
     if (t.status !== 'done' && !first.has(t.item_id)) first.set(t.item_id, t.key);
   }
   const missed = new Map();
+  const onRail = new Set();
   const due = [];
   const handsOnActive = [];
   for (const t of plan.tasks) {
@@ -166,6 +168,14 @@ export function runOfShow(plan, now = Date.now(), { cooks = 1, soonMin = 5 } = {
       else out.next.push(t);
     } else if (t.status === 'done') out.done.push(t);
     else if (t.status === 'missed' && !takenUp.has(t.item_id)) {
+      // Sous replans missed make-ahead from now: once its first step's new
+      // time comes, it hangs on the rail like any work that's due, rather
+      // than waiting in the strip for the cook to go looking.
+      if (first.get(t.item_id) === t.key && s <= soon && s >= now - 15 * 60e3) {
+        due.push(t);
+        onRail.add(t.item_id);
+        continue;
+      }
       if (!missed.has(t.item_id)) missed.set(t.item_id, { item_id: t.item_id, recipe_title: t.recipe_title, tasks: [] });
       missed.get(t.item_id).tasks.push(t);
     } else if (t.status === 'active') (t.hands_on ? handsOnActive : out.timers).push(t);
@@ -174,7 +184,7 @@ export function runOfShow(plan, now = Date.now(), { cooks = 1, soonMin = 5 } = {
     else if (first.get(t.item_id) === t.key && s <= soon) due.push(t);
     else out.next.push(t);
   }
-  out.missed = [...missed.values()];
+  out.missed = [...missed.values()].filter((m) => !onRail.has(m.item_id));
   const slots = Math.max(0, cooks - handsOnActive.length);
   const dueHands = due.filter((t) => t.hands_on);
   // An oven to turn on leads: it's the first thing to do, and the work
@@ -206,7 +216,10 @@ export function lanes(plan, tz, ovens = [], now = Date.now()) {
   // The run-up to the meal: day-of work (make-ahead has its own days in
   // the list), and once that's under way, from half an hour before now.
   // Preheats come along only for the work they heat for.
-  const dayOf = (t) => t.kind !== 'preheat' && !t.make_ahead && t.status !== 'missed';
+  // The meal's day: its own work, and make-ahead work that falls on it too
+  // (a pie baked that morning shares the turkey's oven).
+  const serveDay = dayKey(plan.serve_at, tz);
+  const dayOf = (t) => t.kind !== 'preheat' && ((!t.make_ahead && t.status !== 'missed') || dayKey(t.start, tz) === serveDay);
   const keys = new Set(plan.tasks.filter(dayOf).map((t) => t.key));
   const tasks = plan.tasks.filter((t) => t.minutes > 0 && (t.kind === 'preheat' ? keys.has(t.key.split(':').slice(2).join(':')) : dayOf(t)));
   if (!tasks.length) return null;
@@ -244,7 +257,7 @@ export function lanes(plan, tz, ovens = [], now = Date.now()) {
   const every = Math.max(1, Math.ceil(12 / (100 / Math.max(1, (end - start) / hour))));
   const ticks = [];
   // Midnight is labelled with the day it begins, so a chart over two days says which.
-  const midnight = (h) => new Date(h).toLocaleString('en-US', { timeZone: tz, hour: 'numeric', hourCycle: 'h23' }) === '0';
+  const midnight = (h) => +new Date(h).toLocaleString('en-US', { timeZone: tz, hour: 'numeric', hourCycle: 'h23' }) % 24 === 0;
   const weekday = (h) => new Date(h).toLocaleDateString(undefined, { timeZone: tz, weekday: 'short' });
   for (let h = start, n = 0; h <= end; h += hour, n++) ticks.push({ at: pos(h), iso: new Date(h).toISOString(), label: n % every === 0, day: midnight(h) ? weekday(h) : null });
   return { lanes: out, ticks, pos, start, end };

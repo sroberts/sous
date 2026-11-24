@@ -54,7 +54,9 @@
   const past = (m) => Date.parse(m.serve_at) < Date.now() - 864e5;
   // The one meal being cooked today (or soonest within a day) gets the
   // step forward: Cook it.
-  const today = $derived(meals?.find((m) => Math.abs(Date.parse(m.serve_at) - Date.now()) < 18 * 3600e3) ?? null);
+  // Every meal being cooked today gets Cook it; the soonest is the red one.
+  const todays = $derived(meals?.filter((m) => m.items && Math.abs(Date.parse(m.serve_at) - Date.now()) < 18 * 3600e3) ?? []);
+  const today = $derived(todays[0] ?? null);
   // Today's meal says when it's running late, before it's opened.
   let todayPlan = $state(null);
   $effect(() => {
@@ -92,7 +94,7 @@
         <span class="label">Served</span>
         <input type="datetime-local" bind:value={serve} required />
       </label>
-      <button class="btn" class:primary={!today} disabled={saving || isOffline() || !serve}>Plan it</button>
+      <button class="btn" class:primary={!today && title.trim()} disabled={saving || isOffline() || !serve}>Plan it</button>
     </div>
     <p class="hint">Times are in {zone.replace(/_/g, ' ')}. You’ll add the dishes next; prep can start the day before.</p>
   </form>
@@ -120,7 +122,7 @@
                   <span class="t">{m.title}</span>
                   <span class="sub">{whenAt(m.serve_at, m.timezone)} · {m.items === 1 ? '1 dish' : `${m.items} dishes`}{#if lateBy(m)}<strong class="late">{` · ${span(lateBy(m))} late`}</strong>{/if}</span>
                 </a>
-                {#if m === today && m.items}<a class="btn primary cook-it" href="/m/{m.id}/cook" use:link>Cook it</a>{/if}
+                {#if todays.includes(m)}<a class="btn cook-it" class:primary={m === today} href="/m/{m.id}/cook" use:link>Cook it</a>{/if}
               </div>
             </li>
           {/each}
