@@ -28,17 +28,20 @@ func TestPlanBudget(t *testing.T) {
 		in.meal.Items = append(in.meal.Items, MealItem{ID: "i" + strconv.Itoa(i), RecipeID: "r", Title: "Big"})
 		in.recipes = append(in.recipes, r)
 	}
-	start := time.Now()
-	p, err := buildPlan(in)
+	// The bound is on work, not time: CI runs the tests under the race
+	// detector with atomic coverage, which slows the planner many times
+	// over, so a wall-clock limit there says nothing about the code.
+	p, work, err := planWork(in)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !p.OnTime {
-		lateOptions(in, p)
+	t.Logf("work %d of %d", work, planBudget)
+	if work > planBudget+len(p.Tasks)+1 {
+		t.Errorf("planning did %d work, past its budget of %d", work, planBudget)
 	}
-	// Unbounded, this took about 12 seconds; bounded, well under one.
-	if d := time.Since(start); d > 5*time.Second {
-		t.Errorf("planning took %v", d)
+	if !p.OnTime {
+		// Each late option is a plan of its own, under the same budget.
+		lateOptions(in, p)
 	}
 	if len(p.Tasks) < len(in.meal.Items)*len(steps) {
 		t.Errorf("only %d tasks planned", len(p.Tasks))

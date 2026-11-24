@@ -392,13 +392,20 @@ func (p *planner) warn(code, msg string, task *ptask, once string) {
 // the plan is live, anything that should have started already is moved
 // to now and the dishes behind it slip.
 func buildPlan(in planInput) (Plan, error) {
+	plan, _, err := planWork(in)
+	return plan, err
+}
+
+// planWork is buildPlan, also saying how much work the plan took (see
+// planBudget), so a test can check the bound without timing it.
+func planWork(in planInput) (Plan, int, error) {
 	loc, err := time.LoadLocation(in.meal.Timezone)
 	if err != nil {
-		return Plan{}, err
+		return Plan{}, 0, err
 	}
 	serve, err := time.Parse(time.RFC3339, in.meal.ServeAt)
 	if err != nil {
-		return Plan{}, err
+		return Plan{}, 0, err
 	}
 	k := in.kitchen
 	k.fillDefaults()
@@ -478,7 +485,7 @@ func buildPlan(in planInput) (Plan, error) {
 		}
 	}
 
-	return p.result(serve, prepFrom, tasks, dayOf, ahead, deadlines, nowMin), nil
+	return p.result(serve, prepFrom, tasks, dayOf, ahead, deadlines, nowMin), p.work, nil
 }
 
 func maxDeadline(d []int) int {
