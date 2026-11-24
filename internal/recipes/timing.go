@@ -165,6 +165,8 @@ var (
 	tempCRE  = regexp.MustCompile(`(?i)\b(\d{2,3})\s*(?:°|º|degrees?)\s*(?:C\b|celsius)`)
 	tempRE   = regexp.MustCompile(`(?i)\b(\d{3})\s*(?:°|º|degrees)`)
 	preheat  = regexp.MustCompile(`(?i)\b(pre-?heat|heat the oven)\b`)
+	sentence = regexp.MustCompile(`[.;!?]\s+`)
+	orBefore = regexp.MustCompile(`(?i)\bor\s+(?:(?:in|on|use|with)\s+)?(?:(?:the|a|an)\s+)?$`)
 	ovenRE   = regexp.MustCompile(`(?i)\b(bake|baking|roast|roasting|broil|oven)\b`)
 	notOven  = regexp.MustCompile(`(?i)\bdutch oven\b.*\b(over|stovetop|stove|burner)\b|\bover (low|medium|high|medium-high|medium-low)\b`)
 	stoveRE  = regexp.MustCompile(`(?i)\b(simmer|boil|boiling|saut[eé]|fry|frying|sear|skillet|saucepan|frying pan|wok|stovetop|stove|burner|over (low|medium|high|medium-high|medium-low)( heat)?|bring to a)\b`)
@@ -290,15 +292,23 @@ func SuggestTimings(texts []string) []StepTiming {
 			lastTemp = temp
 		}
 		if preheat.MatchString(text) {
-			// The planner preheats ovens itself; the step only sets the temperature.
-			t.Minutes, t.HandsOn = ref(0), ref(false)
-			continue
+			// The planner preheats ovens itself. A step that only preheats
+			// sets the temperature and is left out; one that also does other
+			// work ("Heat the oven. Pat the beef dry and season it.") is read
+			// for that work alone.
+			rest := withoutPreheat(text)
+			if len(strings.Fields(rest)) < 3 {
+				t.Minutes, t.HandsOn = ref(0), ref(false)
+				continue
+			}
+			text = rest
 		}
 		if m, ok := stepMinutes(text); ok {
 			t.Minutes = &m
 		}
 		for _, a := range appls {
-			if a.re.MatchString(text) {
+			// "over simmering water, or in the microwave" offers it, not needs it.
+			if loc := a.re.FindStringIndex(text); loc != nil && !orBefore.MatchString(text[:loc[0]]) {
 				t.Equipment = ref(a.name)
 				break
 			}
@@ -340,3 +350,14 @@ func SuggestTimings(texts []string) []StepTiming {
 
 // ref returns a pointer to a copy of v.
 func ref[T any](v T) *T { return &v }
+
+// withoutPreheat is a step's words with any sentence about preheating taken out.
+func withoutPreheat(text string) string {
+	var keep []string
+	for _, part := range sentence.Split(text, -1) {
+		if part = strings.TrimSpace(part); part != "" && !preheat.MatchString(part) {
+			keep = append(keep, part)
+		}
+	}
+	return strings.Join(keep, ". ")
+}

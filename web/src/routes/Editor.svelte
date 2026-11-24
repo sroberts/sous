@@ -374,6 +374,7 @@
   // once, to check rather than type. An assistant reads them more closely.
   const untimed = $derived(form ? form.steps.filter((l, i) => stepNumbers[i] != null && l.trim() && !cleanTiming(form.timing[i])).length : 0);
   let filledAll = $state(0);
+  let filledBare = $state(0);
   async function fillAllFromGuess() {
     const texts = form.steps.map((l) => l.trim());
     const steps = texts.filter((l) => l && !l.startsWith('#'));
@@ -385,14 +386,19 @@
     }
     let k = 0;
     guesses = texts.map((l) => (l && !l.startsWith('#') ? got[k++] : null));
+    // A step the words say nothing about gets the planner's own default,
+    // 5 minutes of the cook's time, so it's set rather than left guessed.
     let n = 0;
+    let bare = 0;
     texts.forEach((l, i) => {
-      if (stepNumbers[i] != null && l && !cleanTiming(form.timing[i]) && guesses[i] && cleanTiming(guesses[i])) {
-        form.timing[i] = { ...form.timing[i], ...guesses[i] };
-        n++;
-      }
+      if (stepNumbers[i] == null || !l || cleanTiming(form.timing[i])) return;
+      const g = guesses[i] && cleanTiming(guesses[i]);
+      if (!g?.minutes && g?.minutes !== 0) bare++;
+      form.timing[i] = { ...form.timing[i], minutes: 5, ...(g ?? {}) };
+      n++;
     });
     filledAll = n;
+    filledBare = bare;
     if (n) touch();
   }
   // A meal plan's "Set its timing" opens the editor at that step (?timing=N).
@@ -625,7 +631,7 @@
           {#if untimed || filledAll}
             <p class="fill-all" role="status">
               {#if filledAll}
-                {filledAll === 1 ? '1 step' : `${filledAll} steps`} filled from Sous’s reading. Check {filledAll === 1 ? 'it' : 'them'}, then save.
+                {filledAll === 1 ? '1 step' : `${filledAll} steps`} filled from Sous’s reading{filledBare ? ` (${filledBare === 1 ? 'one says' : `${filledBare} say`} nothing of time, so ${filledBare === 1 ? 'it has' : 'they have'} 5 minutes)` : ''}. Check {filledAll === 1 ? 'it' : 'them'}, then save.
               {:else}
                 {untimed === 1 ? '1 step has' : `${untimed} steps have`} no timing for meal plans.
                 <button type="button" class="link" onclick={fillAllFromGuess}>Fill {untimed === 1 ? 'it' : 'them'} from Sous’s reading</button>

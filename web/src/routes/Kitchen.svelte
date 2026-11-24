@@ -1,4 +1,5 @@
 <script>
+  import { tick } from 'svelte';
   import { ArrowLeft, X, Plus } from '@lucide/svelte';
   import { api } from '../lib/api.js';
   import { link } from '../lib/router.svelte.js';
@@ -26,6 +27,13 @@
   }
   api.kitchen().then(fill, (err) => (problem = err.code === 'offline' ? 'The kitchen needs a connection to Sous.' : err.message));
 
+  // Adding a row puts the cursor in its name, ready to type.
+  async function addRow(kind, row) {
+    form[kind].push(row);
+    touch();
+    await tick();
+    document.querySelectorAll(`[data-rows="${kind}"] input:not([type=number])`)?.[form[kind].length - 1]?.focus();
+  }
   const touch = () => (dirty = true);
   const num = (v, min) => Math.max(min, Math.round(+v || 0));
 
@@ -72,7 +80,7 @@
 
   {#if form}
     <form class="panel" onsubmit={save} oninput={touch} novalidate>
-      <fieldset>
+      <fieldset data-rows="ovens">
         <legend class="label">Ovens</legend>
         {#each form.ovens as o, i}
           <div class="row">
@@ -81,7 +89,7 @@
             <button type="button" class="icon" onclick={() => (form.ovens.splice(i, 1), touch())} aria-label="Remove {o.name || `oven ${i + 1}`}"><X size={16} /></button>
           </div>
         {/each}
-        <button type="button" class="add" onclick={() => (form.ovens.push({ name: '', racks: 2 }), touch())}><Plus size={16} aria-hidden="true" />Add an oven</button>
+        <button type="button" class="add" onclick={() => addRow('ovens', { name: '', racks: 2 })}><Plus size={16} aria-hidden="true" />Add an oven</button>
       </fieldset>
 
       <fieldset>
@@ -89,7 +97,7 @@
         <label class="field num"><input type="number" min="0" max="16" bind:value={form.burners} aria-label="Burners" /><span class="unit">burners</span></label>
       </fieldset>
 
-      <fieldset>
+      <fieldset data-rows="appliances">
         <legend class="label">Other appliances</legend>
         <p class="hint">Named as recipe steps name them, such as slow cooker, grill or pressure cooker.</p>
         {#each form.appliances as a, i}
@@ -99,10 +107,10 @@
             <button type="button" class="icon" onclick={() => (form.appliances.splice(i, 1), touch())} aria-label="Remove {a.name || `appliance ${i + 1}`}"><X size={16} /></button>
           </div>
         {/each}
-        <button type="button" class="add" onclick={() => (form.appliances.push({ name: '', count: 1 }), touch())}><Plus size={16} aria-hidden="true" />Add an appliance</button>
+        <button type="button" class="add" onclick={() => addRow('appliances', { name: '', count: 1 })}><Plus size={16} aria-hidden="true" />Add an appliance</button>
       </fieldset>
 
-      <fieldset>
+      <fieldset data-rows="dishes">
         <legend class="label">Serving dishes</legend>
         <p class="hint">So a meal can check every dish has something to go to the table in.</p>
         {#each form.dishes as d, i}
@@ -112,7 +120,7 @@
             <button type="button" class="icon" onclick={() => (form.dishes.splice(i, 1), touch())} aria-label="Remove {d.name || `dish ${i + 1}`}"><X size={16} /></button>
           </div>
         {/each}
-        <button type="button" class="add" onclick={() => (form.dishes.push({ name: '', count: 1 }), touch())}><Plus size={16} aria-hidden="true" />Add a dish</button>
+        <button type="button" class="add" onclick={() => addRow('dishes', { name: '', count: 1 })}><Plus size={16} aria-hidden="true" />Add a dish</button>
       </fieldset>
 
       <fieldset>

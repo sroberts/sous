@@ -575,10 +575,12 @@ func (p *planner) stepTask(it MealItem, i, j int, st Step, g StepTiming) (*ptask
 		tm = *st.Timing
 	}
 	est := false
+	// A step that only preheats is left out (the planner adds preheats
+	// itself), whether its 0 minutes were guessed or set.
+	if preheat.MatchString(st.Text) && len(strings.Fields(withoutPreheat(st.Text))) < 3 && (tm.Minutes == nil || *tm.Minutes == 0) {
+		return nil, false
+	}
 	if tm.Minutes == nil {
-		if g.Minutes != nil && *g.Minutes == 0 && preheat.MatchString(st.Text) {
-			return nil, false
-		}
 		tm.Minutes, est = g.Minutes, true
 	}
 	if st.Timing == nil {

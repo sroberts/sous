@@ -1424,8 +1424,9 @@
   @media (min-width: 761px) {
     .side {
       position: sticky;
-      top: var(--space-3);
-      max-height: calc(100dvh - var(--space-5));
+      /* Below the masthead while it shows (it publishes its height). */
+      top: calc(var(--bar-shown, 0px) + var(--space-3));
+      max-height: calc(100dvh - var(--bar-shown, 0px) - var(--space-5));
       overflow-y: auto;
       overscroll-behavior: contain;
     }

@@ -28,8 +28,8 @@ the UI built: `cd web && npm run build && cd .. && go run ./cmd/sous --port
      under the masthead; switching keeps each tab's place. The masthead
      slides away on scroll down and returns on scroll up.
 2. Open the French omelette.
-   - No image: on desktop the letter tile shows instead of a broken image;
-     on phones the photo slot is left out, so Begin cooking moves up.
+   - No image: the photo slot is left out (no broken image, no tile), so
+     the facts and Begin cooking move up, on desktop and phones.
 
 ## 3. Who's cooking
 
