@@ -27,7 +27,8 @@ Every write is attributed to the person this connection names (the X-Sous-Person
 To edit or delete a recipe, first call get_recipe and pass its version back; if someone changed it since, you get a stale error with the current recipe to retry against.
 Deletes are soft: a deleted recipe goes to the trash and restore_recipe brings it back.
 To plan a meal of several recipes (a holiday dinner), describe the kitchen with get_kitchen and update_kitchen, set step timing on the recipes, create the meal with create_meal, then read its timeline with plan_meal.
-Recipes saved before meal planning have no step timing: list_recipes_needing_timing finds them, get_step_timing shows each step with Sous's guess, and set_step_timing saves timing without touching the steps' words. The fill_step_timing prompt walks through it.`
+Recipes saved before meal planning have no step timing: list_recipes_needing_timing finds them, get_step_timing shows each step with Sous's guess, and set_step_timing saves timing without touching the steps' words. The fill_step_timing prompt walks through it.
+A step graph describes a recipe's method more finely, as atomic actions joined by what they make and use: get_recipe_graph reads one, validate_recipe_graph checks a draft, set_recipe_graph saves it and delete_recipe_graph takes it away. Meal plans don't read step graphs yet; get_recipe_graph shows the step timing a graph comes to.`
 
 const importInstructions = `
 To add a recipe from a web page, call import_recipe with its link; check the draft it returns, then save it with create_recipe, or pass save=true to save it as read.`
@@ -65,6 +66,7 @@ func New(svc *recipes.Service, log *slog.Logger, version string, opts ...Option)
 	register(server, t)
 	registerMeals(server, t)
 	registerTiming(server, t)
+	registerGraph(server, t)
 	if t.importer != nil {
 		registerImport(server, t)
 	}
@@ -162,13 +164,16 @@ func (t *tools) toolError(tool string, err error) error {
 	return errors.New(e.Code + ": " + e.Message)
 }
 
-// staleCurrent is a meal's or the kitchen's current state on a stale error.
+// staleCurrent is a meal's, the kitchen's or a step graph's current state
+// on a stale error.
 func staleCurrent(e *recipes.Error) any {
 	switch {
 	case e.CurrentMeal != nil:
 		return e.CurrentMeal
 	case e.CurrentKitchen != nil:
 		return e.CurrentKitchen
+	case e.CurrentGraph != nil:
+		return e.CurrentGraph
 	}
 	return nil
 }

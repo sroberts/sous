@@ -16,6 +16,11 @@ Open **Meals**, then **Your kitchen**:
   as recipe steps do, since steps are matched to them by name.
 - **Serving dishes**, so a meal can check every dish has something to go to
   the table in.
+- **Pans and containers**: a Dutch oven, sheet pans, a dough container.
+  [Step graphs](agents.md#step-graphs) name them, so two dishes don't plan
+  on the same one.
+- **Counter space**: how many clear places there are to work at once. Leave
+  it at 0 if it doesn't matter.
 - **The kitchen's day**: hands-on work is planned between these hours when it
   can be. Things that look after themselves (a brine, an overnight chill) can
   run outside them.

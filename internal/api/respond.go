@@ -135,6 +135,9 @@ func (a *api) fail(w http.ResponseWriter, r *http.Request, err error, spoken boo
 			case re.CurrentKitchen != nil:
 				w.Header().Set("ETag", etag(re.CurrentKitchen.Version))
 				body = staleKitchenBody{detail, *re.CurrentKitchen}
+			case re.CurrentGraph != nil:
+				w.Header().Set("ETag", etag(re.CurrentGraph.Graph.Version))
+				body = staleGraphBody{detail, *re.CurrentGraph}
 			}
 			if body != nil {
 				w.Header().Set("Cache-Control", "no-store")

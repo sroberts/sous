@@ -27,7 +27,7 @@ the `X-Sous-Person` header. Use an assistant that runs on your own computer.
 The tools are listed in [`spec.md`](../spec.md) §9, and the meal-planning
 tools (`get_kitchen`, `update_kitchen`, `list_meals`, `get_meal`,
 `create_meal`, `update_meal`, `delete_meal`, `restore_meal`, `plan_meal`,
-`update_meal_task`) in §15. An assistant can plan a whole meal: "Plan
+`update_meal_task`) in §15, and the step graph tools in §16. An assistant can plan a whole meal: "Plan
 Thanksgiving for 5pm Thursday with the turkey, stuffing, pie and cranberry
 sauce, and tell me when the turkey goes in." `plan_meal` answers in UTC;
 assistants should give times in the meal's timezone.
@@ -52,6 +52,30 @@ Thanksgiving` for one meal; any assistant can also just be asked, "Fill in
 the step timing for my recipes in Sous." Every change is signed and shows in
 the recipe's history. The Assistants page in Sous has the same, under **Fill
 in step timing**.
+
+### Step graphs
+
+A step graph describes a recipe's method more finely than step timing: each
+step split into single actions (whisk, rub in, chill), joined by what they
+make and use, so it's clear which work can happen side by side. Each action
+says how long it takes as a range, how much of the cook it needs (all of
+them, a check every so often, or none), what it occupies (the oven at a
+temperature, a burner, a sheet pan) and how long what it makes can wait.
+Each of those is labelled with where it came from and how sure that is, so
+review can go where it's needed.
+
+- `get_recipe_graph` reads a recipe's graph, what the checks find in it, and
+  the step timing it comes to.
+- `validate_recipe_graph` checks a draft without saving it: every input
+  comes from the ingredient list or another action, nothing is made twice,
+  there are no loops, every bake has a preheat before it.
+- `set_recipe_graph` saves a graph. Saving one as verified marks every label
+  reviewed by you.
+- `delete_recipe_graph` takes it away.
+
+A graph points at the words each action comes from, so when a step's words
+change, the actions from it show as stale. Meal plans don't read step graphs
+yet; they still plan from step timing.
 
 ## REST API
 

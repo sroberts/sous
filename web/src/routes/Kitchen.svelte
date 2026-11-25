@@ -20,6 +20,8 @@
       burners: kitchen.burners,
       appliances: kitchen.appliances.map((a) => ({ ...a })),
       dishes: kitchen.dishes.map((d) => ({ ...d })),
+      vessels: (kitchen.vessels ?? []).map((v) => ({ ...v })),
+      counter_zones: kitchen.counter_zones ?? 0,
       day_start: kitchen.day_start,
       day_end: kitchen.day_end,
     };
@@ -50,6 +52,8 @@
       burners: num(form.burners, 0),
       appliances: form.appliances.filter((a) => a.name.trim()).map((a) => ({ name: a.name.trim(), count: num(a.count, 1) })),
       dishes: form.dishes.filter((d) => d.name.trim()).map((d) => ({ name: d.name.trim(), count: num(d.count, 1) })),
+      vessels: form.vessels.filter((v) => v.name.trim()).map((v) => ({ name: v.name.trim(), count: num(v.count, 1) })),
+      counter_zones: num(form.counter_zones, 0),
       day_start: form.day_start,
       day_end: form.day_end,
     };
@@ -121,6 +125,25 @@
           </div>
         {/each}
         <button type="button" class="add" onclick={() => addRow('dishes', { name: '', count: 1 })}><Plus size={16} aria-hidden="true" />Add a dish</button>
+      </fieldset>
+
+      <fieldset data-rows="vessels">
+        <legend class="label">Pans and containers</legend>
+        <p class="hint">What a dish sits in while it waits or rises, such as a Dutch oven, sheet pans or a dough container, so two dishes don't plan on the same one.</p>
+        {#each form.vessels as v, i}
+          <div class="row">
+            <label class="field grow"><span class="visually-hidden">Pan or container {i + 1}</span><input bind:value={v.name} placeholder="e.g. Dutch oven" /></label>
+            <label class="field num"><input type="number" min="1" max="50" bind:value={v.count} aria-label="How many {v.name || 'of these'}" /><span class="unit">of them</span></label>
+            <button type="button" class="icon" onclick={() => (form.vessels.splice(i, 1), touch())} aria-label="Remove {v.name || `pan or container ${i + 1}`}"><X size={16} /></button>
+          </div>
+        {/each}
+        <button type="button" class="add" onclick={() => addRow('vessels', { name: '', count: 1 })}><Plus size={16} aria-hidden="true" />Add a pan or container</button>
+      </fieldset>
+
+      <fieldset>
+        <legend class="label">Counter space</legend>
+        <p class="hint">Clear places to work at once, such as the island and beside the stove. Leave at 0 if it doesn't matter.</p>
+        <label class="field num"><input type="number" min="0" max="20" bind:value={form.counter_zones} aria-label="Places to work" /><span class="unit">places</span></label>
       </fieldset>
 
       <fieldset>

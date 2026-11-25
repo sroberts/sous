@@ -26,6 +26,9 @@ type Error struct {
 	Current        *Recipe
 	CurrentMeal    *Meal
 	CurrentKitchen *Kitchen
+	// CurrentGraph is a recipe's step graph as it now stands, with CodeStale
+	// on a graph.
+	CurrentGraph *GraphView
 }
 
 func (e *Error) Error() string { return e.Code + ": " + e.Message }
