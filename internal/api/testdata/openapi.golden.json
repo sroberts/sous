@@ -2651,6 +2651,434 @@
         }
       }
     },
+    "/v1/recipes/{id}/graph": {
+      "delete": {
+        "operationId": "deleteRecipeGraph",
+        "summary": "Take a recipe's step graph away, so it plans by step timing alone. Needs If-Match with the graph's version",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Person"
+          },
+          {
+            "$ref": "#/components/parameters/Via"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "recipe ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "the recipe version being changed, e.g. \"3\"",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "who_are_you (a write from nobody), unknown_person, invalid_identity or gateway_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "cross_origin: a browser request from another site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "stale: the recipe changed since the version in If-Match; current holds it as it now stands",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/staleGraphBody"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "version_required: send If-Match",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "starting, or identity_unavailable: the gateway's keys cannot be fetched",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "getRecipeGraph",
+        "summary": "A recipe's step graph (atomic actions joined by what they make and use, each field labelled with its source and confidence), what the checks find in it now, and the step timing it comes to",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Person"
+          },
+          {
+            "$ref": "#/components/parameters/Via"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "recipe ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphView"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "who_are_you (a write from nobody), unknown_person, invalid_identity or gateway_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "starting, or identity_unavailable: the gateway's keys cannot be fetched",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "setRecipeGraph",
+        "summary": "Save a recipe's step graph, replacing the one at version (0 for its first). A verified graph must pass the checks",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Person"
+          },
+          {
+            "$ref": "#/components/parameters/Via"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "recipe ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/graphPut"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid, invalid_cursor or unknown_image; the message says what is wrong",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "who_are_you (a write from nobody), unknown_person, invalid_identity or gateway_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "cross_origin: a browser request from another site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "exists, or deleted: the recipe is in the trash",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "stale: the recipe changed since the version in If-Match; current holds it as it now stands",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/staleGraphBody"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "too_large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "starting, or identity_unavailable: the gateway's keys cannot be fetched",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/recipes/{id}/graph/check": {
+      "post": {
+        "operationId": "checkRecipeGraph",
+        "summary": "Run the step graph checks on a proposed graph for a recipe without saving it",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Person"
+          },
+          {
+            "$ref": "#/components/parameters/Via"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "recipe ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GraphInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphCheck"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid, invalid_cursor or unknown_image; the message says what is wrong",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "who_are_you (a write from nobody), unknown_person, invalid_identity or gateway_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "cross_origin: a browser request from another site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "too_large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "starting, or identity_unavailable: the gateway's keys cannot be fetched",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/recipes/{id}/mine": {
       "put": {
         "operationId": "setMine",
@@ -3152,6 +3580,392 @@
   },
   "components": {
     "schemas": {
+      "ActionNode": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "letters, digits, - or _; kept across re-saves so labels keep their review"
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceSpan"
+          },
+          "text": {
+            "type": "string",
+            "description": "the action restated on its own, for display"
+          },
+          "action": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string",
+                "description": "where the value came from: author, recipe_text (read from the words), model, jev or user; unset is user"
+              },
+              "confidence": {
+                "type": [
+                  "null",
+                  "number"
+                ],
+                "description": "0 to 1: how sure the source is. Unset is 1 for author, recipe_text and user; model and jev must say"
+              },
+              "reviewed_by": {
+                "type": [
+                  "null",
+                  "string"
+                ],
+                "description": "set by Sous: who confirmed it, by saving the graph as verified"
+              },
+              "reviewed_at": {
+                "type": [
+                  "null",
+                  "string"
+                ],
+                "description": "set by Sous"
+              }
+            },
+            "description": "prep, combine, heat, cool, rest, ferment, transfer, assemble, plate or setup (preheat, boil water)",
+            "required": [
+              "value"
+            ],
+            "additionalProperties": false
+          },
+          "technique": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "what kind of action: dice, sear, fold, knead"
+          },
+          "inputs": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "ids of the items it uses"
+          },
+          "outputs": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "ids of the items it makes"
+          },
+          "duration": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "$ref": "#/components/schemas/Duration"
+              },
+              "source": {
+                "type": "string",
+                "description": "where the value came from: author, recipe_text (read from the words), model, jev or user; unset is user"
+              },
+              "confidence": {
+                "type": [
+                  "null",
+                  "number"
+                ],
+                "description": "0 to 1: how sure the source is. Unset is 1 for author, recipe_text and user; model and jev must say"
+              },
+              "reviewed_by": {
+                "type": [
+                  "null",
+                  "string"
+                ],
+                "description": "set by Sous: who confirmed it, by saving the graph as verified"
+              },
+              "reviewed_at": {
+                "type": [
+                  "null",
+                  "string"
+                ],
+                "description": "set by Sous"
+              }
+            },
+            "description": "minutes; times stated in the recipe win over estimates",
+            "required": [
+              "value"
+            ],
+            "additionalProperties": false
+          },
+          "attention": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string",
+                "description": "where the value came from: author, recipe_text (read from the words), model, jev or user; unset is user"
+              },
+              "confidence": {
+                "type": [
+                  "null",
+                  "number"
+                ],
+                "description": "0 to 1: how sure the source is. Unset is 1 for author, recipe_text and user; model and jev must say"
+              },
+              "reviewed_by": {
+                "type": [
+                  "null",
+                  "string"
+                ],
+                "description": "set by Sous: who confirmed it, by saving the graph as verified"
+              },
+              "reviewed_at": {
+                "type": [
+                  "null",
+                  "string"
+                ],
+                "description": "set by Sous"
+              }
+            },
+            "description": "active (the cook is busy throughout), intermittent (check-ins) or passive (looks after itself)",
+            "required": [
+              "value"
+            ],
+            "additionalProperties": false
+          },
+          "check_interval_min": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "properties": {
+              "value": {
+                "type": "integer"
+              },
+              "source": {
+                "type": "string",
+                "description": "where the value came from: author, recipe_text (read from the words), model, jev or user; unset is user"
+              },
+              "confidence": {
+                "type": [
+                  "null",
+                  "number"
+                ],
+                "description": "0 to 1: how sure the source is. Unset is 1 for author, recipe_text and user; model and jev must say"
+              },
+              "reviewed_by": {
+                "type": [
+                  "null",
+                  "string"
+                ],
+                "description": "set by Sous: who confirmed it, by saving the graph as verified"
+              },
+              "reviewed_at": {
+                "type": [
+                  "null",
+                  "string"
+                ],
+                "description": "set by Sous"
+              }
+            },
+            "description": "minutes between check-ins; needed when attention is intermittent",
+            "required": [
+              "value"
+            ],
+            "additionalProperties": false
+          },
+          "interruptible": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "properties": {
+              "value": {
+                "type": "boolean"
+              },
+              "source": {
+                "type": "string",
+                "description": "where the value came from: author, recipe_text (read from the words), model, jev or user; unset is user"
+              },
+              "confidence": {
+                "type": [
+                  "null",
+                  "number"
+                ],
+                "description": "0 to 1: how sure the source is. Unset is 1 for author, recipe_text and user; model and jev must say"
+              },
+              "reviewed_by": {
+                "type": [
+                  "null",
+                  "string"
+                ],
+                "description": "set by Sous: who confirmed it, by saving the graph as verified"
+              },
+              "reviewed_at": {
+                "type": [
+                  "null",
+                  "string"
+                ],
+                "description": "set by Sous"
+              }
+            },
+            "description": "whether the cook can step away mid-action without harm",
+            "required": [
+              "value"
+            ],
+            "additionalProperties": false
+          },
+          "equipment": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "properties": {
+              "value": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "$ref": "#/components/schemas/EquipmentClaim"
+                }
+              },
+              "source": {
+                "type": "string",
+                "description": "where the value came from: author, recipe_text (read from the words), model, jev or user; unset is user"
+              },
+              "confidence": {
+                "type": [
+                  "null",
+                  "number"
+                ],
+                "description": "0 to 1: how sure the source is. Unset is 1 for author, recipe_text and user; model and jev must say"
+              },
+              "reviewed_by": {
+                "type": [
+                  "null",
+                  "string"
+                ],
+                "description": "set by Sous: who confirmed it, by saving the graph as verified"
+              },
+              "reviewed_at": {
+                "type": [
+                  "null",
+                  "string"
+                ],
+                "description": "set by Sous"
+              }
+            },
+            "description": "what it occupies; unset or an empty list is nothing",
+            "required": [
+              "value"
+            ],
+            "additionalProperties": false
+          },
+          "hold": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "properties": {
+              "value": {
+                "$ref": "#/components/schemas/Hold"
+              },
+              "source": {
+                "type": "string",
+                "description": "where the value came from: author, recipe_text (read from the words), model, jev or user; unset is user"
+              },
+              "confidence": {
+                "type": [
+                  "null",
+                  "number"
+                ],
+                "description": "0 to 1: how sure the source is. Unset is 1 for author, recipe_text and user; model and jev must say"
+              },
+              "reviewed_by": {
+                "type": [
+                  "null",
+                  "string"
+                ],
+                "description": "set by Sous: who confirmed it, by saving the graph as verified"
+              },
+              "reviewed_at": {
+                "type": [
+                  "null",
+                  "string"
+                ],
+                "description": "set by Sous"
+              }
+            },
+            "description": "how long its output can wait before it's used next",
+            "required": [
+              "value"
+            ],
+            "additionalProperties": false
+          },
+          "timing_anchor": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "properties": {
+              "value": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string",
+                "description": "where the value came from: author, recipe_text (read from the words), model, jev or user; unset is user"
+              },
+              "confidence": {
+                "type": [
+                  "null",
+                  "number"
+                ],
+                "description": "0 to 1: how sure the source is. Unset is 1 for author, recipe_text and user; model and jev must say"
+              },
+              "reviewed_by": {
+                "type": [
+                  "null",
+                  "string"
+                ],
+                "description": "set by Sous: who confirmed it, by saving the graph as verified"
+              },
+              "reviewed_at": {
+                "type": [
+                  "null",
+                  "string"
+                ],
+                "description": "set by Sous"
+              }
+            },
+            "description": "asap_after_inputs, flexible or just_before_serve",
+            "required": [
+              "value"
+            ],
+            "additionalProperties": false
+          },
+          "implied": {
+            "type": "boolean",
+            "description": "true for an action the recipe never states, such as a preheat or boiling water"
+          },
+          "stale": {
+            "type": "boolean",
+            "description": "set by Sous: the words its span covered have changed since the graph was saved"
+          }
+        },
+        "required": [
+          "id",
+          "source",
+          "text",
+          "action",
+          "outputs",
+          "duration",
+          "attention"
+        ],
+        "additionalProperties": false
+      },
       "Appliance": {
         "type": "object",
         "properties": {
@@ -3385,6 +4199,54 @@
         ],
         "additionalProperties": false
       },
+      "Duration": {
+        "type": "object",
+        "properties": {
+          "min": {
+            "type": "integer"
+          },
+          "typical": {
+            "type": "integer"
+          },
+          "max": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "min",
+          "typical",
+          "max"
+        ],
+        "additionalProperties": false
+      },
+      "EquipmentClaim": {
+        "type": "object",
+        "properties": {
+          "resource": {
+            "type": "string",
+            "description": "oven, burner, counter, fridge, appliance:\u003cname\u003e or vessel:\u003cname\u003e, named as in the kitchen"
+          },
+          "count": {
+            "type": "integer",
+            "description": "racks, burners, units or places taken at once; unset is 1"
+          },
+          "temp_f": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "oven temperature, °F"
+          },
+          "scope": {
+            "type": "string",
+            "description": "whole_node (unset), start_only or end_only"
+          }
+        },
+        "required": [
+          "resource"
+        ],
+        "additionalProperties": false
+      },
       "Error": {
         "type": "object",
         "properties": {
@@ -3416,6 +4278,209 @@
         "required": [
           "code",
           "message"
+        ],
+        "additionalProperties": false
+      },
+      "GraphCheck": {
+        "type": "object",
+        "properties": {
+          "valid": {
+            "type": "boolean"
+          },
+          "errors": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/GraphProblem"
+            }
+          },
+          "warnings": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/GraphProblem"
+            }
+          }
+        },
+        "required": [
+          "valid",
+          "errors",
+          "warnings"
+        ],
+        "additionalProperties": false
+      },
+      "GraphInput": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "draft (unset), needs_review or verified; verified needs a graph with no errors and marks every label reviewed"
+          },
+          "serve_item_id": {
+            "type": "string",
+            "description": "the final item that goes to the table"
+          },
+          "nodes": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ActionNode"
+            }
+          },
+          "items": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/GraphItem"
+            }
+          }
+        },
+        "required": [
+          "serve_item_id",
+          "nodes",
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "GraphItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "letters, digits, - or _"
+          },
+          "kind": {
+            "type": "string",
+            "description": "ingredient (from the ingredient list), intermediate (made along the way) or final"
+          },
+          "label": {
+            "type": "string",
+            "description": "what it is: butter, the dough, reserved pasta water"
+          },
+          "ingredient": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "for an ingredient, its line in the ingredient list, from 1"
+          },
+          "quantity": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "how much, as written"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "label"
+        ],
+        "additionalProperties": false
+      },
+      "GraphProblem": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "stable: what kind of problem"
+          },
+          "message": {
+            "type": "string"
+          },
+          "node": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "the node it's about"
+          },
+          "item": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "the item it's about"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "GraphView": {
+        "type": "object",
+        "properties": {
+          "graph": {
+            "$ref": "#/components/schemas/RecipeGraph"
+          },
+          "check": {
+            "$ref": "#/components/schemas/GraphCheck"
+          },
+          "projection": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/StepTiming"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "description": "one entry per step (null for a step without nodes): minutes summed, hands-on when most of it is active, the longest-running oven, stovetop or appliance, and the shortest hold"
+          }
+        },
+        "required": [
+          "graph",
+          "check",
+          "projection"
+        ],
+        "additionalProperties": false
+      },
+      "Hold": {
+        "type": "object",
+        "properties": {
+          "max_min": {
+            "type": "integer",
+            "description": "minutes it keeps"
+          },
+          "where": {
+            "type": "string",
+            "description": "fridge, counter or warm"
+          },
+          "reheat_min": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "minutes to bring it back before it's used"
+          },
+          "reheat_temp_f": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "oven temperature to reheat at, °F; unset brings it back out of the oven"
+          }
+        },
+        "required": [
+          "max_min",
+          "where"
         ],
         "additionalProperties": false
       },
@@ -3830,6 +4895,37 @@
             },
             "description": "serving dishes, so a meal can check every dish has one"
           },
+          "vessels": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "as step graphs name it after vessel:, e.g. dutch oven"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "name",
+                "count"
+              ],
+              "additionalProperties": false
+            },
+            "description": "pans and containers a step can occupy while it cooks, waits or rises (Dutch oven, sheet pan, dough container), by the name step graphs use after vessel:; left out of an update, they stay as they are"
+          },
+          "counter_zones": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "clear places to work at once (the island, beside the stove); 0 leaves counter space out of planning; left out of an update, it stays as it is"
+          },
           "day_start": {
             "type": "string",
             "description": "HH:MM, local time: hands-on work isn't planned before this"
@@ -3902,6 +4998,23 @@
               "$ref": "#/components/schemas/Dish"
             },
             "description": "serving dishes, so a meal can check every dish has one"
+          },
+          "vessels": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/Vessel"
+            },
+            "description": "pans and containers a step can occupy while it cooks, waits or rises (Dutch oven, sheet pan, dough container), by the name step graphs use after vessel:; left out of an update, they stay as they are"
+          },
+          "counter_zones": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "clear places to work at once (the island, beside the stove); 0 leaves counter space out of planning; left out of an update, it stays as it is"
           },
           "day_start": {
             "type": "string",
@@ -5117,6 +6230,77 @@
         ],
         "additionalProperties": false
       },
+      "RecipeGraph": {
+        "type": "object",
+        "properties": {
+          "recipe_id": {
+            "type": "string"
+          },
+          "recipe_version": {
+            "type": "integer",
+            "description": "the recipe's version the graph was saved against"
+          },
+          "version": {
+            "type": "integer",
+            "description": "the graph's own version; send it back to change or delete it"
+          },
+          "ontology_version": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "description": "draft, needs_review, verified, or stale when the recipe's words have changed under some nodes"
+          },
+          "serve_item_id": {
+            "type": "string"
+          },
+          "nodes": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ActionNode"
+            }
+          },
+          "items": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/GraphItem"
+            }
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "created_by": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "updated_by": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "recipe_id",
+          "recipe_version",
+          "version",
+          "ontology_version",
+          "status",
+          "serve_item_id",
+          "nodes",
+          "items",
+          "created_at",
+          "created_by",
+          "updated_at",
+          "updated_by"
+        ],
+        "additionalProperties": false
+      },
       "RecipeInput": {
         "type": "object",
         "properties": {
@@ -5470,6 +6654,33 @@
           "recipe_title",
           "dish",
           "serve_at"
+        ],
+        "additionalProperties": false
+      },
+      "SourceSpan": {
+        "type": "object",
+        "properties": {
+          "step": {
+            "type": "integer",
+            "description": "the step's number, from 1, as get_step_timing numbers them"
+          },
+          "start": {
+            "type": "integer",
+            "description": "first character of the span, from 0"
+          },
+          "end": {
+            "type": "integer",
+            "description": "character after the span's last"
+          },
+          "quote": {
+            "type": "string",
+            "description": "set by Sous: the words the span covered when the graph was saved"
+          }
+        },
+        "required": [
+          "step",
+          "start",
+          "end"
         ],
         "additionalProperties": false
       },
@@ -5895,6 +7106,599 @@
             "description": "true ticks it off now; false takes it back"
           }
         },
+        "additionalProperties": false
+      },
+      "Vessel": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "as step graphs name it after vessel:, e.g. dutch oven"
+          },
+          "count": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "count"
+        ],
+        "additionalProperties": false
+      },
+      "graphPut": {
+        "type": "object",
+        "properties": {
+          "recipe_version": {
+            "type": "integer",
+            "description": "the recipe's current version: the graph's spans are read against its words"
+          },
+          "version": {
+            "type": "integer",
+            "description": "the graph's version being replaced, from GET; 0 to make the recipe's first"
+          },
+          "status": {
+            "type": "string",
+            "description": "draft (unset), needs_review or verified; verified needs a graph with no errors and marks every label reviewed"
+          },
+          "serve_item_id": {
+            "type": "string",
+            "description": "the final item that goes to the table"
+          },
+          "nodes": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "letters, digits, - or _; kept across re-saves so labels keep their review"
+                },
+                "source": {
+                  "type": "object",
+                  "properties": {
+                    "step": {
+                      "type": "integer",
+                      "description": "the step's number, from 1, as get_step_timing numbers them"
+                    },
+                    "start": {
+                      "type": "integer",
+                      "description": "first character of the span, from 0"
+                    },
+                    "end": {
+                      "type": "integer",
+                      "description": "character after the span's last"
+                    },
+                    "quote": {
+                      "type": "string",
+                      "description": "set by Sous: the words the span covered when the graph was saved"
+                    }
+                  },
+                  "required": [
+                    "step",
+                    "start",
+                    "end"
+                  ],
+                  "additionalProperties": false
+                },
+                "text": {
+                  "type": "string",
+                  "description": "the action restated on its own, for display"
+                },
+                "action": {
+                  "type": "object",
+                  "properties": {
+                    "value": {
+                      "type": "string"
+                    },
+                    "source": {
+                      "type": "string",
+                      "description": "where the value came from: author, recipe_text (read from the words), model, jev or user; unset is user"
+                    },
+                    "confidence": {
+                      "type": [
+                        "null",
+                        "number"
+                      ],
+                      "description": "0 to 1: how sure the source is. Unset is 1 for author, recipe_text and user; model and jev must say"
+                    },
+                    "reviewed_by": {
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "description": "set by Sous: who confirmed it, by saving the graph as verified"
+                    },
+                    "reviewed_at": {
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "description": "set by Sous"
+                    }
+                  },
+                  "description": "prep, combine, heat, cool, rest, ferment, transfer, assemble, plate or setup (preheat, boil water)",
+                  "required": [
+                    "value"
+                  ],
+                  "additionalProperties": false
+                },
+                "technique": {
+                  "type": [
+                    "null",
+                    "string"
+                  ],
+                  "description": "what kind of action: dice, sear, fold, knead"
+                },
+                "inputs": {
+                  "type": [
+                    "null",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "ids of the items it uses"
+                },
+                "outputs": {
+                  "type": [
+                    "null",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "ids of the items it makes"
+                },
+                "duration": {
+                  "type": "object",
+                  "properties": {
+                    "value": {
+                      "type": "object",
+                      "properties": {
+                        "min": {
+                          "type": "integer"
+                        },
+                        "typical": {
+                          "type": "integer"
+                        },
+                        "max": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "min",
+                        "typical",
+                        "max"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "source": {
+                      "type": "string",
+                      "description": "where the value came from: author, recipe_text (read from the words), model, jev or user; unset is user"
+                    },
+                    "confidence": {
+                      "type": [
+                        "null",
+                        "number"
+                      ],
+                      "description": "0 to 1: how sure the source is. Unset is 1 for author, recipe_text and user; model and jev must say"
+                    },
+                    "reviewed_by": {
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "description": "set by Sous: who confirmed it, by saving the graph as verified"
+                    },
+                    "reviewed_at": {
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "description": "set by Sous"
+                    }
+                  },
+                  "description": "minutes; times stated in the recipe win over estimates",
+                  "required": [
+                    "value"
+                  ],
+                  "additionalProperties": false
+                },
+                "attention": {
+                  "type": "object",
+                  "properties": {
+                    "value": {
+                      "type": "string"
+                    },
+                    "source": {
+                      "type": "string",
+                      "description": "where the value came from: author, recipe_text (read from the words), model, jev or user; unset is user"
+                    },
+                    "confidence": {
+                      "type": [
+                        "null",
+                        "number"
+                      ],
+                      "description": "0 to 1: how sure the source is. Unset is 1 for author, recipe_text and user; model and jev must say"
+                    },
+                    "reviewed_by": {
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "description": "set by Sous: who confirmed it, by saving the graph as verified"
+                    },
+                    "reviewed_at": {
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "description": "set by Sous"
+                    }
+                  },
+                  "description": "active (the cook is busy throughout), intermittent (check-ins) or passive (looks after itself)",
+                  "required": [
+                    "value"
+                  ],
+                  "additionalProperties": false
+                },
+                "check_interval_min": {
+                  "type": [
+                    "null",
+                    "object"
+                  ],
+                  "properties": {
+                    "value": {
+                      "type": "integer"
+                    },
+                    "source": {
+                      "type": "string",
+                      "description": "where the value came from: author, recipe_text (read from the words), model, jev or user; unset is user"
+                    },
+                    "confidence": {
+                      "type": [
+                        "null",
+                        "number"
+                      ],
+                      "description": "0 to 1: how sure the source is. Unset is 1 for author, recipe_text and user; model and jev must say"
+                    },
+                    "reviewed_by": {
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "description": "set by Sous: who confirmed it, by saving the graph as verified"
+                    },
+                    "reviewed_at": {
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "description": "set by Sous"
+                    }
+                  },
+                  "description": "minutes between check-ins; needed when attention is intermittent",
+                  "required": [
+                    "value"
+                  ],
+                  "additionalProperties": false
+                },
+                "interruptible": {
+                  "type": [
+                    "null",
+                    "object"
+                  ],
+                  "properties": {
+                    "value": {
+                      "type": "boolean"
+                    },
+                    "source": {
+                      "type": "string",
+                      "description": "where the value came from: author, recipe_text (read from the words), model, jev or user; unset is user"
+                    },
+                    "confidence": {
+                      "type": [
+                        "null",
+                        "number"
+                      ],
+                      "description": "0 to 1: how sure the source is. Unset is 1 for author, recipe_text and user; model and jev must say"
+                    },
+                    "reviewed_by": {
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "description": "set by Sous: who confirmed it, by saving the graph as verified"
+                    },
+                    "reviewed_at": {
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "description": "set by Sous"
+                    }
+                  },
+                  "description": "whether the cook can step away mid-action without harm",
+                  "required": [
+                    "value"
+                  ],
+                  "additionalProperties": false
+                },
+                "equipment": {
+                  "type": [
+                    "null",
+                    "object"
+                  ],
+                  "properties": {
+                    "value": {
+                      "type": [
+                        "null",
+                        "array"
+                      ],
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "resource": {
+                            "type": "string",
+                            "description": "oven, burner, counter, fridge, appliance:\u003cname\u003e or vessel:\u003cname\u003e, named as in the kitchen"
+                          },
+                          "count": {
+                            "type": "integer",
+                            "description": "racks, burners, units or places taken at once; unset is 1"
+                          },
+                          "temp_f": {
+                            "type": [
+                              "null",
+                              "integer"
+                            ],
+                            "description": "oven temperature, °F"
+                          },
+                          "scope": {
+                            "type": "string",
+                            "description": "whole_node (unset), start_only or end_only"
+                          }
+                        },
+                        "required": [
+                          "resource"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "source": {
+                      "type": "string",
+                      "description": "where the value came from: author, recipe_text (read from the words), model, jev or user; unset is user"
+                    },
+                    "confidence": {
+                      "type": [
+                        "null",
+                        "number"
+                      ],
+                      "description": "0 to 1: how sure the source is. Unset is 1 for author, recipe_text and user; model and jev must say"
+                    },
+                    "reviewed_by": {
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "description": "set by Sous: who confirmed it, by saving the graph as verified"
+                    },
+                    "reviewed_at": {
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "description": "set by Sous"
+                    }
+                  },
+                  "description": "what it occupies; unset or an empty list is nothing",
+                  "required": [
+                    "value"
+                  ],
+                  "additionalProperties": false
+                },
+                "hold": {
+                  "type": [
+                    "null",
+                    "object"
+                  ],
+                  "properties": {
+                    "value": {
+                      "type": "object",
+                      "properties": {
+                        "max_min": {
+                          "type": "integer",
+                          "description": "minutes it keeps"
+                        },
+                        "where": {
+                          "type": "string",
+                          "description": "fridge, counter or warm"
+                        },
+                        "reheat_min": {
+                          "type": [
+                            "null",
+                            "integer"
+                          ],
+                          "description": "minutes to bring it back before it's used"
+                        },
+                        "reheat_temp_f": {
+                          "type": [
+                            "null",
+                            "integer"
+                          ],
+                          "description": "oven temperature to reheat at, °F; unset brings it back out of the oven"
+                        }
+                      },
+                      "required": [
+                        "max_min",
+                        "where"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "source": {
+                      "type": "string",
+                      "description": "where the value came from: author, recipe_text (read from the words), model, jev or user; unset is user"
+                    },
+                    "confidence": {
+                      "type": [
+                        "null",
+                        "number"
+                      ],
+                      "description": "0 to 1: how sure the source is. Unset is 1 for author, recipe_text and user; model and jev must say"
+                    },
+                    "reviewed_by": {
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "description": "set by Sous: who confirmed it, by saving the graph as verified"
+                    },
+                    "reviewed_at": {
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "description": "set by Sous"
+                    }
+                  },
+                  "description": "how long its output can wait before it's used next",
+                  "required": [
+                    "value"
+                  ],
+                  "additionalProperties": false
+                },
+                "timing_anchor": {
+                  "type": [
+                    "null",
+                    "object"
+                  ],
+                  "properties": {
+                    "value": {
+                      "type": "string"
+                    },
+                    "source": {
+                      "type": "string",
+                      "description": "where the value came from: author, recipe_text (read from the words), model, jev or user; unset is user"
+                    },
+                    "confidence": {
+                      "type": [
+                        "null",
+                        "number"
+                      ],
+                      "description": "0 to 1: how sure the source is. Unset is 1 for author, recipe_text and user; model and jev must say"
+                    },
+                    "reviewed_by": {
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "description": "set by Sous: who confirmed it, by saving the graph as verified"
+                    },
+                    "reviewed_at": {
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "description": "set by Sous"
+                    }
+                  },
+                  "description": "asap_after_inputs, flexible or just_before_serve",
+                  "required": [
+                    "value"
+                  ],
+                  "additionalProperties": false
+                },
+                "implied": {
+                  "type": "boolean",
+                  "description": "true for an action the recipe never states, such as a preheat or boiling water"
+                },
+                "stale": {
+                  "type": "boolean",
+                  "description": "set by Sous: the words its span covered have changed since the graph was saved"
+                }
+              },
+              "required": [
+                "id",
+                "source",
+                "text",
+                "action",
+                "outputs",
+                "duration",
+                "attention"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "items": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "letters, digits, - or _"
+                },
+                "kind": {
+                  "type": "string",
+                  "description": "ingredient (from the ingredient list), intermediate (made along the way) or final"
+                },
+                "label": {
+                  "type": "string",
+                  "description": "what it is: butter, the dough, reserved pasta water"
+                },
+                "ingredient": {
+                  "type": [
+                    "null",
+                    "integer"
+                  ],
+                  "description": "for an ingredient, its line in the ingredient list, from 1"
+                },
+                "quantity": {
+                  "type": [
+                    "null",
+                    "string"
+                  ],
+                  "description": "how much, as written"
+                }
+              },
+              "required": [
+                "id",
+                "kind",
+                "label"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "recipe_version",
+          "version",
+          "serve_item_id",
+          "nodes",
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "staleGraphBody": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorDetail"
+          },
+          "current": {
+            "$ref": "#/components/schemas/GraphView",
+            "description": "the step graph as it now stands; its version is the one to send next"
+          }
+        },
+        "required": [
+          "error",
+          "current"
+        ],
         "additionalProperties": false
       }
     },

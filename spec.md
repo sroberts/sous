@@ -954,7 +954,10 @@ marking the task `estimated`.
 One row (`kitchen`, `GET`/`PUT /v1/kitchen`, `If-Match`): ovens with racks,
 burners, appliances with counts, serving dishes with counts, and the day's
 hours (`day_start`, `day_end`, local). Migration 0003 creates it as one oven
-with two racks and four burners, 08:00 to 22:00.
+with two racks and four burners, 08:00 to 22:00. Pans and containers
+(`vessels`, by name with counts, for step graphs' `vessel:` claims) and
+`counter_zones` (places to work at once, 0 for not counted) came later: a
+`PUT` that leaves either out keeps what the kitchen has.
 
 ### Meals
 
@@ -1081,3 +1084,93 @@ recipe (a recipe's steps run in order); moving a task by dragging (pinning
 keeps it where the plan put it); scaling a recipe for the meal's size;
 sounds when a task's time is up.
 
+---
+
+## 16. Step graphs (ontology 2.0)
+
+A step graph describes a recipe's method as a directed acyclic graph of
+atomic actions, so a planner can interleave dishes without reading prose.
+It sits beside step timing (§15) and the recipe's words, which stay the
+record. This is phase 1 of the step-ontology spec: the shape, storage,
+deterministic checks and the step timing projection. Generating graphs from
+recipes, review queues, the app's graph views and planning from graphs are
+later phases.
+
+### Shape
+
+A graph has `nodes`, `items` and a `serve_item_id` (the final item that
+goes to the table). An **item** is anything used or made: `ingredient`
+(with `ingredient`, its 1-based line in the ingredient list), `intermediate`
+or `final`, with a `label` and an optional `quantity`. A **node** is one
+action: `id` (1–64 letters, digits, `-` or `_`, kept across re-saves);
+`source` (`step` from 1, `start` and `end` in characters from 0: the words
+it comes from; Sous stores those words as `quote`); `text`; `technique`;
+`inputs` and `outputs` (item ids: edges come from these, not step order);
+`implied` (an action the words never state, such as a preheat or boiling
+water, which may leave its span empty). Its classified fields are
+**labels**, each `{value, source, confidence, reviewed_by, reviewed_at}`:
+`action` (prep, combine, heat, cool, rest, ferment, transfer, assemble,
+plate, setup), `duration` (`{min, typical, max}` minutes, up to a week),
+`attention` (active, intermittent, passive), `check_interval_min`,
+`interruptible`, `equipment` (claims of `oven`, `burner`, `counter`,
+`fridge`, `appliance:<name>` or `vessel:<name>`, each with `count`, an oven's
+`temp_f` and a `scope` of whole_node, start_only or end_only), `hold`
+(`{max_min, where, reheat_min, reheat_temp_f}`: how long the node's output
+keeps, in the fridge, on the counter or warm) and `timing_anchor`
+(asap_after_inputs, flexible, just_before_serve). A label's `source` is
+author, recipe_text, model, jev or user (unset is user); `confidence` is 0 to
+1, unset only for author, recipe_text and user (then 1). Review stamps are
+Sous's: saving a graph as `verified` stamps every label with the caller, and
+a label keeps its stamp through later saves while its value is unchanged.
+At most 300 nodes and 500 items.
+
+### Storage
+
+Migration 0004: `recipe_graphs` (key `(recipe_id, recipe_version)`, the
+graph's own `version` rising across the recipe's graphs, `status`
+draft, needs_review or verified, soft delete, audit columns),
+`graph_items`, `graph_nodes` (span, quote, inputs and outputs as JSON
+arrays) and `graph_labels` (one row per node and field, with source,
+confidence and review: what a review queue will read). The recipe's graph is
+its newest not deleted; saving a new one retires the older ones. A table of
+review corrections comes with review, in phase 2.
+
+### Checks
+
+Saving refuses what can't be stored (bad ids, enums, ranges, spans outside
+their step, an empty span on a node that isn't implied, a model or jev label
+without a confidence). The checks then find **errors**: an input no node
+makes and no ingredient supplies, an item made twice or an ingredient made
+at all, a cycle, an output nothing uses that isn't served, a served item
+that isn't final or isn't made, an oven node with no setup node heating the
+oven (within 25°F) before it, and intermittent work with no check interval.
+**Warnings** cover what can change under a saved graph: equipment the
+kitchen lacks or has too few of, ingredient lines no item uses, items
+without a line, steps with no nodes, an oven claim without a temperature,
+and **stale** nodes, whose quoted words are no longer at their span (the
+graph's `status` then reads `stale`). A graph saved as `verified` must have
+no errors; drafts may.
+
+### The projection
+
+Each graph comes with `projection`, step timing (§15) per step, for
+planners that schedule by step: minutes are the step's nodes' typical
+minutes summed; hands-on when active minutes are at least half; equipment
+the oven, stovetop or appliance held longest (vessels, the counter and the
+fridge have no step timing equivalent); the shortest hold. Setup nodes that
+heat the oven are left out, since planners add their own preheats. A step
+without nodes is null. The meal planner doesn't read graphs or the
+projection yet; it plans from step timing.
+
+### REST and MCP
+
+`GET /v1/recipes/{id}/graph` gives `{graph, check, projection}` (404 when
+there's none) with the graph's version as `ETag`. `PUT` saves a graph with
+`recipe_version` (the recipe's current version: a stale one is 412 with the
+recipe) and `version` (the graph being replaced, 0 for the first: a stale
+one is 412 with the graph). `DELETE` (with `If-Match`) retires it.
+`POST /v1/recipes/{id}/graph/check` checks a proposed graph without saving
+or needing a person. Saves and deletes are logged as edits to the recipe
+("Edited X: step graph"). MCP: `get_recipe_graph`, `set_recipe_graph`,
+`delete_recipe_graph` and `validate_recipe_graph` (a proposed `graph`, or
+the saved one).

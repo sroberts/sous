@@ -19,8 +19,12 @@ type KitchenProfile struct {
 	Burners    int         `json:"burners" jsonschema:"stovetop burners"`
 	Appliances []Appliance `json:"appliances" jsonschema:"other things a step can occupy, by the name steps use in equipment (slow cooker, grill)"`
 	Dishes     []Dish      `json:"dishes" jsonschema:"serving dishes, so a meal can check every dish has one"`
-	DayStart   string      `json:"day_start" jsonschema:"HH:MM, local time: hands-on work isn't planned before this"`
-	DayEnd     string      `json:"day_end" jsonschema:"HH:MM, local time: hands-on work isn't planned after this"`
+	// Vessels and CounterZones came after the rest: an update that leaves
+	// them out keeps what the kitchen has, so older clients don't wipe them.
+	Vessels      []Vessel `json:"vessels,omitempty" jsonschema:"pans and containers a step can occupy while it cooks, waits or rises (Dutch oven, sheet pan, dough container), by the name step graphs use after vessel:; left out of an update, they stay as they are"`
+	CounterZones *int     `json:"counter_zones,omitempty" jsonschema:"clear places to work at once (the island, beside the stove); 0 leaves counter space out of planning; left out of an update, it stays as it is"`
+	DayStart     string   `json:"day_start" jsonschema:"HH:MM, local time: hands-on work isn't planned before this"`
+	DayEnd       string   `json:"day_end" jsonschema:"HH:MM, local time: hands-on work isn't planned after this"`
 }
 
 // Oven is one oven.
@@ -38,6 +42,12 @@ type Appliance struct {
 // Dish is one kind of serving dish.
 type Dish struct {
 	Name  string `json:"name" jsonschema:"e.g. large white platter"`
+	Count int    `json:"count"`
+}
+
+// Vessel is one kind of pan or container and how many the kitchen has.
+type Vessel struct {
+	Name  string `json:"name" jsonschema:"as step graphs name it after vessel:, e.g. dutch oven"`
 	Count int    `json:"count"`
 }
 
@@ -70,16 +80,26 @@ func (s *Service) UpdateKitchen(ctx context.Context, c identity.Caller, version 
 	if err != nil {
 		return Kitchen{}, err
 	}
-	if err := p.normalise(); err != nil {
-		return Kitchen{}, err
-	}
-	b, err := json.Marshal(p)
-	if err != nil {
-		return Kitchen{}, err
-	}
 	now := s.stamp()
 	var out Kitchen
 	err = s.st.Write(ctx, func(tx *sql.Tx) error {
+		cur, err := loadKitchen(ctx, tx)
+		if err != nil {
+			return err
+		}
+		if p.Vessels == nil {
+			p.Vessels = cur.Vessels
+		}
+		if p.CounterZones == nil {
+			p.CounterZones = cur.CounterZones
+		}
+		if err := p.normalise(); err != nil {
+			return err
+		}
+		b, err := json.Marshal(p)
+		if err != nil {
+			return err
+		}
 		res, err := tx.ExecContext(ctx, `UPDATE kitchen SET profile = ?, version = version + 1, updated_at = ?, updated_by = ?
 			WHERE id = 1 AND version = ?`, string(b), now, who, version)
 		if err != nil {
@@ -129,6 +149,12 @@ func (p *KitchenProfile) fillDefaults() {
 	}
 	if p.Dishes == nil {
 		p.Dishes = []Dish{}
+	}
+	if p.Vessels == nil {
+		p.Vessels = []Vessel{}
+	}
+	if p.CounterZones == nil {
+		p.CounterZones = new(int)
 	}
 	if p.DayStart == "" {
 		p.DayStart = "08:00"
@@ -186,6 +212,32 @@ func (p *KitchenProfile) normalise() error {
 		dishes = append(dishes, d)
 	}
 	p.Dishes = dishes
+	vessels := []Vessel{}
+	seen := map[string]bool{}
+	for _, v := range p.Vessels {
+		v.Name = strings.ToLower(strings.Join(strings.Fields(v.Name), " "))
+		if v.Name == "" {
+			continue
+		}
+		if len(v.Name) > 40 {
+			return Errorf(CodeInvalid, "vessels: %.40s… is over 40 characters", v.Name)
+		}
+		if seen[v.Name] {
+			return Errorf(CodeInvalid, "vessels: %s is listed twice", v.Name)
+		}
+		seen[v.Name] = true
+		if v.Count < 1 || v.Count > 50 {
+			return Errorf(CodeInvalid, "vessels: %s needs a count between 1 and 50", v.Name)
+		}
+		vessels = append(vessels, v)
+	}
+	if len(vessels) > 50 {
+		return Errorf(CodeInvalid, "vessels: at most 50")
+	}
+	p.Vessels = vessels
+	if *p.CounterZones < 0 || *p.CounterZones > 20 {
+		return Errorf(CodeInvalid, "counter_zones must be between 0 and 20")
+	}
 	start, err := clockMinutes(p.DayStart)
 	if err != nil {
 		return Errorf(CodeInvalid, "day_start must be a time such as 08:00")

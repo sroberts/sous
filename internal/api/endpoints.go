@@ -141,7 +141,7 @@ func (a *api) endpoints() []endpoint {
 		{Method: "GET", Path: "/v1/openapi.json", OpID: "getOpenAPI",
 			Summary: "This document",
 			Resp:    openapiPayload, Handle: a.openapi},
-	}, a.mealEndpoints()...)
+	}, append(a.mealEndpoints(), a.graphEndpoints()...)...)
 }
 
 // New returns the handler for every /v1 route, registered from the route

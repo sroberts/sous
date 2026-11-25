@@ -7,6 +7,24 @@ include breaking changes, and they're called out here.
 
 ## [Unreleased]
 
+### Added
+- Step graphs: a finer description of a recipe's method, as single actions
+  joined by what they make and use, each with a time range, how much of the
+  cook it needs (all of them, the odd check, or none), what it occupies and
+  how long what it makes can wait, and each labelled with where that came
+  from and how sure it is. Assistants read, check, save and remove them over
+  MCP (`get_recipe_graph`, `validate_recipe_graph`, `set_recipe_graph`,
+  `delete_recipe_graph`) and REST (`/v1/recipes/{id}/graph`). A graph shows
+  the step timing it comes to; meal plans don't use graphs yet.
+- Your kitchen lists pans and containers (a Dutch oven, sheet pans) and
+  counter space, for step graphs to use. An update that leaves them out
+  keeps them as they are.
+
+### Changed
+- Upgrading runs database migration 4, which adds the step graph tables. As
+  with any migration, take a backup first; an older Sous will refuse to open
+  the upgraded library.
+
 ## [0.6.0] - 2026-11-25
 
 ### Added
