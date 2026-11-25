@@ -7,6 +7,8 @@ include breaking changes, and they're called out here.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-25
+
 ### Added
 - Meals: plan several recipes for one sitting, such as a holiday dinner.
   Sous lays out every step around your ovens (one temperature at a time,
@@ -443,7 +445,8 @@ First release.
 - Running under Outpost, with its login gateway.
 - A script to import a Mela export.
 
-[Unreleased]: https://github.com/sroberts/sous/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/sroberts/sous/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/sroberts/sous/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/sroberts/sous/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/sroberts/sous/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/sroberts/sous/compare/v0.2.0...v0.3.0
