@@ -138,16 +138,31 @@ func (p *planner) graphTasks(it MealItem, i int, r Recipe, g *RecipeGraph) (all,
 	// What each action waits for, looking through the preheats left out.
 	var waitsOn func(j int) []*ptask
 	memo := map[int][]*ptask{}
+	// Each list holds a task once: preheats waiting on preheats would
+	// otherwise multiply the lists layer by layer (50 inputs, five layers
+	// deep, is hundreds of millions of entries). A node is memoised before
+	// its parents are walked, so a cycle (which checkGraph refuses) can't
+	// recurse forever.
 	waitsOn = func(j int) []*ptask {
 		if w, ok := memo[j]; ok {
 			return w
 		}
+		memo[j] = nil
 		var out []*ptask
+		seen := map[*ptask]bool{}
+		add := func(u *ptask) {
+			if !seen[u] {
+				seen[u] = true
+				out = append(out, u)
+			}
+		}
 		for _, pr := range parents[j] {
 			if tasks[pr] != nil {
-				out = append(out, tasks[pr])
+				add(tasks[pr])
 			} else {
-				out = append(out, waitsOn(pr)...)
+				for _, u := range waitsOn(pr) {
+					add(u)
+				}
 			}
 		}
 		memo[j] = out
