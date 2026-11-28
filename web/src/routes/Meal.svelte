@@ -55,7 +55,7 @@
   function graphNote(recipeId) {
     const g = graphOf(recipeId);
     if (g?.status === 'stale') return 'Step graph · the words have changed';
-    return g?.review_count ? `Step graph · ${g.review_count} to review` : null;
+    return g?.review_count ? 'Step graph · actions to check' : null;
   }
   const ungraphed = $derived(graphs && meal ? meal.items.filter((it) => !graphOf(it.recipe_id)).length : 0);
 

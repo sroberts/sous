@@ -38,12 +38,16 @@ type Client struct {
 // while Ollama loads one.
 func NewOutpost(url, token string) *Client {
 	return &Client{BaseURL: strings.TrimRight(url, "/"), GraphModel: "llm", DecisionModel: "system1", Token: token,
-		HTTP: &http.Client{Timeout: 10 * time.Minute}}
+		HTTP: httpClient()}
 }
 
 // Granted asks Outpost which models this app may use, as its model list
 // says. Unreachable, it assumes both, so requests say what's wrong then.
 func (c *Client) Granted(ctx context.Context) (llm, system1 bool) {
+	// Asked at startup: an endpoint that hangs mustn't hold Sous back for
+	// the client's ten-minute model timeout.
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+"/openai/v1/models", nil)
 	if err != nil {
 		return true, true
@@ -54,12 +58,13 @@ func (c *Client) Granted(ctx context.Context) (llm, system1 bool) {
 		return true, true
 	}
 	defer resp.Body.Close()
+	body := io.LimitReader(resp.Body, 1<<20)
 	var out struct {
 		Data []struct {
 			ID string `json:"id"`
 		} `json:"data"`
 	}
-	if resp.StatusCode != http.StatusOK || json.NewDecoder(resp.Body).Decode(&out) != nil {
+	if resp.StatusCode != http.StatusOK || json.NewDecoder(body).Decode(&out) != nil {
 		return true, true
 	}
 	for _, m := range out.Data {
@@ -80,7 +85,28 @@ func (c *Client) auth(req *http.Request) {
 // take a few minutes on a laptop, a decision under a second.
 func New(baseURL, graphModel, decisionModel string) *Client {
 	return &Client{BaseURL: strings.TrimRight(baseURL, "/"), GraphModel: graphModel, DecisionModel: decisionModel,
-		HTTP: &http.Client{Timeout: 10 * time.Minute}}
+		HTTP: httpClient()}
+}
+
+// httpClient follows no redirects: the models are at BaseURL, and a
+// redirect elsewhere would carry the recipe text (and, on the same host,
+// Outpost's token) somewhere it wasn't meant to go.
+func httpClient() *http.Client {
+	return &http.Client{Timeout: 10 * time.Minute, CheckRedirect: func(*http.Request, []*http.Request) error {
+		return http.ErrUseLastResponse
+	}}
+}
+
+// maxErrorText bounds how much of a failed answer is kept: it goes into
+// error responses, logs and a job's record.
+const maxErrorText = 300
+
+func clip(s string) string {
+	s = strings.Join(strings.Fields(s), " ")
+	if r := []rune(s); len(r) > maxErrorText {
+		s = string(r[:maxErrorText]) + "…"
+	}
+	return s
 }
 
 // ErrUnreachable wraps failures to reach Ollama, or a model it doesn't
@@ -114,8 +140,9 @@ func (c *Client) post(ctx context.Context, path string, body, out any) error {
 		}
 		_ = json.Unmarshal(data, &e)
 		if e.Error == "" {
-			e.Error = strings.TrimSpace(string(data))
+			e.Error = string(data)
 		}
+		e.Error = clip(e.Error)
 		// A missing model, one that doesn't fit in memory just now, or
 		// (under Outpost) a model not given to Sous or not available, is a
 		// reason to wait, not the recipe's fault.

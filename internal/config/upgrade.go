@@ -45,6 +45,16 @@ func LoadUpgrade(getenv func(string) string) (Upgrade, error) {
 		u.OutpostAIURL = strings.TrimSpace(getenv("OUTPOST_AI_URL"))
 		u.OutpostAIToken = strings.TrimSpace(getenv("OUTPOST_AI_TOKEN"))
 		if u.Outpost() {
+			// The token goes wherever this points, so it must be a plain
+			// http(s) URL: no credentials, query or fragment to hide a
+			// different destination in. The error doesn't repeat the
+			// value, which could carry a secret.
+			p, err := url.Parse(u.OutpostAIURL)
+			if err != nil || (p.Scheme != "http" && p.Scheme != "https") || p.Host == "" || p.User != nil ||
+				p.RawQuery != "" || p.Fragment != "" {
+				return Upgrade{}, fmt.Errorf("OUTPOST_AI_URL is not a plain http(s) URL (scheme, host and path only)")
+			}
+			u.OutpostAIURL = strings.TrimRight(u.OutpostAIURL, "/")
 			u.DecisionModel = "system1"
 			u.AutoVerify = getenv("SOUS_AUTO_VERIFY") == "true"
 			if v := getenv("SOUS_AUTO_VERIFY"); v != "" && v != "true" && v != "false" {

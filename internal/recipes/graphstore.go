@@ -445,6 +445,9 @@ func fillLabel(n *ActionNode, field, value, source string, conf float64, by, at,
 
 func setLabel[T any](l *Label[T], value, source string, conf float64, by, at, alts *string) error {
 	l.Source, l.Confidence, l.ReviewedBy, l.ReviewedAt = source, &conf, by, at
+	// A value label (action, duration, attention) is set in place, so the
+	// alternatives the model weighed for its old value go with it.
+	l.Alternatives = nil
 	if alts != nil {
 		if err := json.Unmarshal([]byte(*alts), &l.Alternatives); err != nil {
 			return err

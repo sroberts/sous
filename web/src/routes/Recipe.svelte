@@ -860,7 +860,7 @@
         {/if}
 
         {#if graph}
-          <a class="graph-line" href="/r/{recipe.id}/graph" use:link>Step graph · {graph.graph.status === 'verified' ? 'verified' : graph.graph.status === 'stale' ? 'the words have changed' : graph.review_count ? `${graph.review_count} to review` : 'ready to accept'}</a>
+          <a class="graph-line" href="/r/{recipe.id}/graph" use:link>Step graph · {graph.graph.status === 'verified' ? 'verified' : graph.graph.status === 'stale' ? 'the words have changed' : graph.review_count ? 'actions to check' : 'ready to accept'}</a>
         {/if}
         <p class="colophon">
           {#if recipe.created_by === '_sous'}A sample recipe that came with Sous{:else}Added by {person(recipe.created_by)} {ago(recipe.created_at)}{/if}{#if recipe.updated_at !== recipe.created_at}, last edited by {person(recipe.updated_by)} {ago(recipe.updated_at)}{/if}.

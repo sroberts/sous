@@ -74,8 +74,9 @@ review can go where it's needed.
 - `delete_recipe_graph` takes it away.
 
 A graph points at the words each action comes from, so when a step's words
-change, the actions from it show as stale. Meal plans don't read step graphs
-yet; they still plan from step timing.
+change, the actions from it show as stale. Meal plans use a dish's step
+graph once it's past a draft, its words unchanged and without errors;
+otherwise they plan from step timing.
 
 #### Drafting them with an assistant
 

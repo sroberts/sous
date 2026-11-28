@@ -1,28 +1,45 @@
 <script>
-  import { ChevronRight } from '@lucide/svelte';
+  import { onDestroy } from 'svelte';
+  import { ArrowLeft, ChevronRight } from '@lucide/svelte';
   import { api } from '../lib/api.js';
   import { link } from '../lib/router.svelte.js';
   import { asPerson } from '../lib/session.svelte.js';
   import { isOffline } from '../lib/net.svelte.js';
   import { STATUS } from '../lib/graphs.js';
-  import LabelChoice from '../components/LabelChoice.svelte';
+  import ActionReview from '../components/ActionReview.svelte';
 
   let overview = $state(null);
   let queue = $state([]);
-  let remaining = $state(0);
   let kitchen = $state(null);
   let problem = $state('');
-  let chosen = $state({}); // "recipe|node|field" → value
+  let chosen = $state({}); // recipe → { "node|field": value }
+  let graphs = $state({}); // recipe → its graph, for the actions' labels
+  let problems = $state({}); // recipe → its graph's check errors
   let busy = $state(null); // the recipe being saved
   let job = $state(null);
+  let gone = false; // the page has been left: stop following the job
+  onDestroy(() => (gone = true));
 
   async function load() {
     try {
-      const [o, q, k] = await Promise.all([api.graphs(), api.reviewItems({ limit: 100 }), api.kitchen()]);
+      const [o, k] = await Promise.all([api.graphs(), api.kitchen()]);
+      // Every label to check, a page at a time: a household's queue is
+      // small, and counting actions needs all of it.
+      const all = [];
+      for (let cursor = ''; ; ) {
+        const page = await api.reviewItems(cursor ? { limit: 100, cursor } : { limit: 100 });
+        all.push(...page.items);
+        if (!page.next_cursor) break;
+        cursor = page.next_cursor;
+      }
       overview = o;
-      queue = q.items;
-      remaining = q.remaining;
+      queue = all;
       kitchen = k;
+      // The graph of each recipe in the queue, for its actions' sentences.
+      const ids = [...new Set(all.map((it) => it.recipe_id))];
+      const got = await Promise.all(ids.map((rid) => api.recipeGraph(rid).catch(() => null)));
+      graphs = Object.fromEntries(ids.map((rid, i) => [rid, got[i]?.graph]));
+      problems = Object.fromEntries(ids.map((rid, i) => [rid, got[i]?.check.errors ?? []]));
       problem = '';
     } catch (err) {
       problem = err.code === 'offline' ? 'Step graphs need a connection to Sous.' : err.message;
@@ -41,32 +58,61 @@
     }
     return out;
   });
-  const key = (it) => `${it.recipe_id}|${it.node_id}|${it.field}`;
-  // A recipe's whole count, not just the part of it in this page.
-  const reviewCountOf = (g) => overview?.items.find((r) => r.recipe_id === g.id)?.review_count ?? g.items.length;
-  const answeredIn = (g) => g.items.filter((it) => key(it) in chosen);
+  // The unit of review is the action: a recipe's actions with anything
+  // Sous isn't sure of, in the queue's order.
+  const SHOWN = 3;
+  const flaggedIn = (g, nodeID) => g.items.filter((it) => it.node_id === nodeID);
+  const actionsOf = (g) => [...new Set(g.items.map((it) => it.node_id))];
+  const nodeOf = (g, nodeID) => graphs[g.id]?.nodes.find((n) => n.id === nodeID);
+  // A problem naming an action, in words, without its id.
+  const problemOf = (g, nodeID) => {
+    const e = (problems[g.id] ?? []).find((x) => x.node === nodeID);
+    if (!e) return '';
+    const m = e.message.startsWith(`${nodeID} `) ? e.message.slice(nodeID.length + 1) : e.message;
+    return m.replace(/^./, (c) => c.toUpperCase());
+  };
+  const totalActions = $derived(groups.reduce((n, g) => n + actionsOf(g).length, 0));
+  const answeredIn = (g) => Object.keys(chosen[g.id] ?? {}).length;
+  const answered = $derived(groups.reduce((n, g) => n + answeredIn(g), 0));
 
-  async function resolve(g, items) {
-    busy = g.id;
+  function choose(g, it, v) {
+    const k = `${it.node_id}|${it.field}`;
+    const { [k]: _, ...rest } = chosen[g.id] ?? {};
+    chosen = { ...chosen, [g.id]: v === undefined ? rest : { ...rest, [k]: v } };
+  }
+  const FIELDS = { action: 'action', duration: 'duration', attention: 'attention', equipment: 'equipment', hold: 'hold', check_interval_min: 'check_interval_min' };
+  function looksRight(g, n) {
+    const mine = { ...(chosen[g.id] ?? {}) };
+    for (const [field, prop] of Object.entries(FIELDS)) {
+      const k = `${n.id}|${field}`;
+      if (!(k in mine) && n[prop]) mine[k] = n[prop].value;
+    }
+    chosen = { ...chosen, [g.id]: mine };
+  }
+
+  // One save for every recipe checked here, recipe by recipe.
+  async function saveAll() {
+    busy = 'all';
+    problem = '';
     try {
-      const res = await asPerson(() =>
-        api.resolveReview({ recipe_id: g.id, graph_version: g.version, items: items.map((it) => ({ node_id: it.node_id, field: it.field, value: it.value })) }),
-      );
-      if (!res) return;
+      for (const g of groups) {
+        const items = Object.entries(chosen[g.id] ?? {}).map(([k, value]) => {
+          const [node_id, field] = k.split('|');
+          return { node_id, field, value };
+        });
+        if (!items.length) continue;
+        try {
+          const res = await asPerson(() => api.resolveReview({ recipe_id: g.id, graph_version: g.version, items }));
+          if (!res) return;
+        } catch (err) {
+          problem = err.status === 412 ? `Someone changed ${g.title}’s graph meanwhile; check it again.` : err.message;
+        }
+      }
+      chosen = {};
       await load();
-    } catch (err) {
-      problem = err.status === 412 ? `Someone changed ${g.title}’s graph meanwhile; it’s reloaded.` : err.message;
-      if (err.status === 412) await load();
     } finally {
       busy = null;
     }
-  }
-
-  function save(g) {
-    resolve(
-      g,
-      answeredIn(g).map((it) => ({ ...it, value: chosen[key(it)] })),
-    );
   }
 
   async function upgradeAll() {
@@ -78,7 +124,7 @@
     }
   }
   async function follow() {
-    while (job && (job.status === 'queued' || job.status === 'running')) {
+    while (!gone && job && (job.status === 'queued' || job.status === 'running')) {
       await new Promise((r) => setTimeout(r, 5000));
       try {
         job = await api.upgradeJob(job.id);
@@ -86,7 +132,7 @@
         return;
       }
     }
-    load();
+    if (!gone) load();
   }
   const done = $derived(job ? job.items.length - (job.counts.pending ?? 0) - (job.counts.running ?? 0) : 0);
 
@@ -95,19 +141,20 @@
 </script>
 
 <main class="graphs" id="main">
+  <a class="back" href="/meals" use:link><ArrowLeft size={16} aria-hidden="true" />Meals</a>
   <h1>Step graphs</h1>
-  <p class="lede">A step graph splits each step into single actions joined by what they make and use, so meal plans can fit dishes around each other. Sous labels each action and asks you only about what it wasn’t sure of.</p>
+  <p class="lede">A step graph splits each step into single actions joined by what they make and use, so meal plans can fit dishes around each other. Sous labels each action; you check the ones it isn’t sure of.</p>
 
   {#if problem}<p class="problem" role="alert">{problem}</p>{/if}
 
   {#if !overview && !problem}
-    <p class="hint" role="status">Loading…</p>
+    <p class="hint" role="status">Loading step graphs…</p>
   {:else if overview}
     <dl class="counts">
-      <div><dt class="label">To review</dt><dd class="fig">{remaining}</dd></div>
-      <div><dt class="label">Verified</dt><dd class="fig">{overview.counts.verified}</dd></div>
-      <div><dt class="label">Words changed</dt><dd class="fig">{overview.counts.stale}</dd></div>
-      <div><dt class="label">No graph yet</dt><dd class="fig">{overview.counts.none}</dd></div>
+      <div><dt class="label">To check</dt><dd><span class="fig">{groups.length}</span><span class="of">{totalActions} {totalActions === 1 ? 'action' : 'actions'}</span></dd></div>
+      <div><dt class="label">Verified</dt><dd><span class="fig">{overview.counts.verified}</span></dd></div>
+      {#if overview.counts.stale}<div><dt class="label">Edited since</dt><dd><span class="fig">{overview.counts.stale}</span></dd></div>{/if}
+      <div><dt class="label">No graph yet</dt><dd><span class="fig">{overview.counts.none}</span></dd></div>
     </dl>
 
     {#if overview.counts.none}
@@ -130,32 +177,35 @@
 
     {#if groups.length}
       <section aria-labelledby="q-h">
-        <h2 id="q-h" class="label sect">To review{#if remaining > queue.length}{` · the first ${queue.length} of ${remaining}`}{/if}</h2>
+        <h2 id="q-h" class="label sect">To check · {groups.length} {groups.length === 1 ? 'recipe' : 'recipes'}, {totalActions} {totalActions === 1 ? 'action' : 'actions'}</h2>
         <ol class="queue">
           {#each groups as g (g.id)}
             <li class="group">
               <div class="g-head">
-                <a href="/r/{g.id}/graph" use:link><span class="t">{g.title}</span><span class="sub">{reviewCountOf(g)} to review</span><ChevronRight size={18} aria-hidden="true" /></a>
+                <a href="/r/{g.id}/graph" use:link><span class="t">{g.title}</span><span class="sub">{actionsOf(g).length} to check</span><ChevronRight size={18} aria-hidden="true" /></a>
               </div>
               <ul class="items">
-                {#each g.items as it (key(it))}
-                  <li>
-                    <p class="what">{it.node_text}{#if it.quote}<span class="q">“{it.quote}”</span>{/if}</p>
-                    <LabelChoice item={it} chosen={chosen[key(it)]} onchoose={(v) => (chosen = { ...chosen, [key(it)]: v })} {kitchen} />
-                  </li>
+                {#each actionsOf(g).slice(0, SHOWN) as nodeID (nodeID)}
+                  {@const n = nodeOf(g, nodeID)}
+                  {#if n}
+                    <li>
+                      <ActionReview node={n} flagged={flaggedIn(g, nodeID)} chosen={chosen[g.id] ?? {}} onchoose={(it, v) => choose(g, it, v)}
+                        onlooksright={(node) => looksRight(g, node)} {kitchen} quote problem={problemOf(g, nodeID)} />
+                    </li>
+                  {/if}
                 {/each}
               </ul>
-              <div class="g-foot">
-                <button class="btn" class:primary={answeredIn(g).length > 0} onclick={() => save(g)} disabled={!answeredIn(g).length || busy === g.id || isOffline()}>
-                  Save {answeredIn(g).length || ''} {answeredIn(g).length === 1 ? 'answer' : 'answers'}
-                </button>
-              </div>
+              {#if actionsOf(g).length > SHOWN}
+                <div class="g-foot">
+                  <a class="all" href="/r/{g.id}/graph" use:link>All {actionsOf(g).length} actions, beside its steps<ChevronRight size={16} aria-hidden="true" /></a>
+                </div>
+              {/if}
             </li>
           {/each}
         </ol>
       </section>
     {:else if overview.items.length}
-      <p class="empty">Nothing to review. Sous was sure of everything it labelled, or you’ve answered it all.</p>
+      <p class="empty">Nothing to check. Sous was sure of every action, or you’ve checked them all.</p>
     {/if}
 
     {#if others.length}
@@ -168,6 +218,12 @@
         </ul>
       </section>
     {/if}
+  {/if}
+  {#if answered}
+    <div class="save-bar">
+      <p>Not yet saved</p>
+      <button class="btn primary" onclick={saveAll} disabled={busy !== null || isOffline()}>Save</button>
+    </div>
   {/if}
 </main>
 
@@ -213,8 +269,30 @@
   }
   .counts dd {
     margin: 0;
+    display: grid;
+    gap: var(--space-1);
+  }
+  .counts .fig {
     font-size: 2.25rem;
-    line-height: 1;
+  }
+  .counts .of {
+    color: var(--ink-2);
+    font-size: var(--ui);
+  }
+  .back {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: 44px;
+    color: var(--ink-2);
+  }
+  .all {
+    margin-right: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    min-height: 44px;
+    color: var(--ink-2);
   }
   .panel {
     background: var(--ticket);
@@ -283,14 +361,23 @@
     display: grid;
     gap: var(--space-2);
   }
-  .what {
-    font-weight: 700;
+  .save-bar {
+    position: sticky;
+    bottom: 0;
+    margin-top: var(--space-5);
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-5);
+    background: var(--ticket);
+    border-top: 1.5px solid var(--perf);
   }
-  .q {
-    display: block;
-    font-weight: 400;
+  .save-bar p {
+    flex: 1;
     color: var(--ink-2);
-    font-size: var(--ui);
+  }
+  .save-bar .btn {
+    min-height: 52px;
   }
   .g-foot {
     display: flex;
@@ -334,9 +421,6 @@
     .g-foot {
       padding-left: var(--space-4);
       padding-right: var(--space-4);
-    }
-    .g-foot .btn {
-      flex: 1 1 100%;
     }
   }
 </style>

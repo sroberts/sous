@@ -383,6 +383,11 @@ type UpgradeJobItem struct {
 
 const maxJobRecipes = 1000
 
+// maxActiveJobs bounds the upgrade jobs waiting or running at once, so
+// queueing over and over (each up to maxJobRecipes, with force) can't pile
+// up model work without end.
+const maxActiveJobs = 10
+
 // QueueUpgrades starts a bulk upgrade, worked through in the background.
 func (s *Service) QueueUpgrades(ctx context.Context, c identity.Caller, in UpgradeJobRequest) (UpgradeJob, error) {
 	who, err := author(c)
@@ -435,6 +440,13 @@ func (s *Service) QueueUpgrades(ctx context.Context, c identity.Caller, in Upgra
 	id := uuid.NewV7().String()
 	now := s.stamp()
 	err = s.st.Write(ctx, func(tx *sql.Tx) error {
+		var active int
+		if err := tx.QueryRowContext(ctx, `SELECT count(*) FROM upgrade_jobs WHERE status IN ('queued', 'running')`).Scan(&active); err != nil {
+			return err
+		}
+		if active >= maxActiveJobs {
+			return Errorf(CodeInvalid, "%d upgrade jobs are already waiting or running; let them finish or cancel one first", active)
+		}
 		if in.MealID != "" {
 			if _, err := loadMeal(ctx, tx, in.MealID); err != nil {
 				return err
@@ -617,13 +629,16 @@ func (s *Service) upgradeNext(ctx context.Context) (bool, time.Duration) {
 
 	c := identity.Caller{Person: &identity.Person{Username: by}, Route: identity.RouteDirect, Via: identity.Via(via)}
 	res, err := s.upgrade(ctx, c, UpgradeRequest{ID: recipeID, Mode: mode, Force: force})
+	// The result is recorded even if the worker is stopping meanwhile: the
+	// transaction and its statements must outlive ctx alike.
+	keep := context.WithoutCancel(ctx)
 	status, count := "done", (*int)(nil)
 	var msg *string
 	switch {
 	case errors.Is(err, ErrModelsUnavailable), ctx.Err() != nil:
 		// Not the recipe's fault: put it back and wait.
-		_ = s.st.Write(context.WithoutCancel(ctx), func(tx *sql.Tx) error {
-			_, err := tx.ExecContext(ctx, `UPDATE upgrade_job_items SET status = 'pending' WHERE job_id = ? AND position = ?`, jobID, pos)
+		_ = s.st.Write(keep, func(tx *sql.Tx) error {
+			_, err := tx.ExecContext(keep, `UPDATE upgrade_job_items SET status = 'pending' WHERE job_id = ? AND position = ?`, jobID, pos)
 			return err
 		})
 		if ctx.Err() == nil {
@@ -643,12 +658,12 @@ func (s *Service) upgradeNext(ctx context.Context) (bool, time.Duration) {
 		}
 	}
 	now := s.stamp()
-	err = s.st.Write(context.WithoutCancel(ctx), func(tx *sql.Tx) error {
-		if _, err := tx.ExecContext(ctx, `UPDATE upgrade_job_items SET status = ?, review_count = ?, error = ?, finished_at = ?
+	err = s.st.Write(keep, func(tx *sql.Tx) error {
+		if _, err := tx.ExecContext(keep, `UPDATE upgrade_job_items SET status = ?, review_count = ?, error = ?, finished_at = ?
 			WHERE job_id = ? AND position = ?`, status, count, msg, now, jobID, pos); err != nil {
 			return err
 		}
-		_, err := tx.ExecContext(ctx, `UPDATE upgrade_jobs SET status = 'done', finished_at = ?
+		_, err := tx.ExecContext(keep, `UPDATE upgrade_jobs SET status = 'done', finished_at = ?
 			WHERE id = ? AND status = 'running' AND NOT EXISTS (
 				SELECT 1 FROM upgrade_job_items WHERE job_id = ? AND status IN ('pending', 'running'))`, now, jobID, jobID)
 		return err
@@ -735,6 +750,11 @@ func (s *Service) ReviewItems(ctx context.Context, c identity.Caller, q ReviewQu
 		where = append(where, "l.field = ?")
 		args = append(args, q.Field)
 	}
+	// A graph whose words have changed can't be reviewed until it's
+	// drafted again, so its questions are left out.
+	where = append(where, `NOT EXISTS (SELECT 1 FROM graph_nodes sn LEFT JOIN recipe_steps st ON st.recipe_id = sn.recipe_id AND st.position = sn.step - 1
+		WHERE sn.recipe_id = g.recipe_id AND sn.recipe_version = g.recipe_version
+		AND (st.text IS NULL OR substr(st.text, sn.span_start + 1, sn.span_end - sn.span_start) IS NOT sn.quote))`)
 	from := `FROM graph_labels l
 		JOIN recipe_graphs g ON g.recipe_id = l.recipe_id AND g.recipe_version = l.recipe_version AND g.deleted_at IS NULL
 		JOIN graph_nodes n ON n.recipe_id = l.recipe_id AND n.recipe_version = l.recipe_version AND n.id = l.node_id
@@ -846,8 +866,12 @@ func (s *Service) ResolveReview(ctx context.Context, c identity.Caller, in Resol
 			e.CurrentGraph = &cur
 			return e
 		}
-		prev := *g
-		prev.Nodes = slices.Clone(g.Nodes)
+		// The graph as it stands, read again rather than copied: its labels
+		// are shared by pointer, and saving clears the copy's review stamps.
+		prev, err := loadGraph(ctx, tx, in.RecipeID)
+		if err != nil {
+			return err
+		}
 		if markStale(g, r) {
 			return Errorf(CodeInvalid, "the recipe's words have changed under this graph; upgrade it again before reviewing")
 		}
@@ -941,7 +965,7 @@ func (s *Service) ResolveReview(ctx context.Context, c identity.Caller, in Resol
 			in2.Status = GraphVerified
 		}
 		summary := fmt.Sprintf("Reviewed %d labels of %s's step graph", len(in.Items), r.Title)
-		if err := s.saveGraph(ctx, tx, c, r, &prev, in2, stamp, summary); err != nil {
+		if err := s.saveGraph(ctx, tx, c, r, prev, in2, stamp, summary); err != nil {
 			return err
 		}
 		out.Graph, err = graphView(ctx, tx, in.RecipeID, who)

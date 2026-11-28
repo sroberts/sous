@@ -434,7 +434,8 @@ func (s *Service) ResetProgress(ctx context.Context, c identity.Caller, mealID s
 // "<item>:<step index>" or "<item>:reheat", or a preheat for one of those.
 // Anything else would only leave a row the plan never reads.
 func taskKnown(m Meal, task string) bool {
-	// A preheat is "preheat:<oven>:<the task it heats for>".
+	// A preheat is "preheat:<oven>:<the task it heats for>"; a task is
+	// "<item>:<step>", "<item>:reheat" or "<item>:g:<graph action>".
 	if after, ok := strings.CutPrefix(task, "preheat:"); ok {
 		oven, heated, ok := strings.Cut(after, ":")
 		if n, err := strconv.Atoi(oven); !ok || err != nil || n < 0 || n >= maxOvens || strconv.Itoa(n) != oven {
@@ -446,7 +447,12 @@ func taskKnown(m Meal, task string) bool {
 	if !ok {
 		return false
 	}
-	if rest != "reheat" {
+	// An action of a dish planned from its step graph: "<item>:g:<node>".
+	if node, ok := strings.CutPrefix(rest, "g:"); ok {
+		if len(node) == 0 || len(node) > graphIDChars || !graphID.MatchString(node) {
+			return false
+		}
+	} else if rest != "reheat" {
 		n, err := strconv.Atoi(rest)
 		if err != nil || n < 0 || n >= maxMealSteps || strconv.Itoa(n) != rest {
 			return false

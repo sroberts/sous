@@ -145,8 +145,31 @@ others within about 20 seconds.
 ## Things it doesn't do yet
 
 - Fridge space, and a warm hold that ties up an oven.
-- Steps inside one recipe happening side by side: a recipe's steps run in
-  order (but different dishes overlap freely).
+- Steps inside one recipe happening side by side, unless the recipe has a
+  step graph (see below): a recipe's steps run in order (but different
+  dishes overlap freely).
 - Dragging a task to a new time; pinning keeps it where the plan put it.
 - Scaling recipes up for the number of guests.
 - Meals need a connection to Sous; they aren't kept for offline use.
+
+## Dishes with step graphs
+
+A dish whose recipe has a step graph (see
+[Connecting an assistant](agents.md#step-graphs) and **Meals → Step
+graphs**) is planned from its actions rather than its steps, once the graph
+is past a draft:
+
+- Work that doesn't depend on other work happens side by side: the rice
+  boils while the curry simmers, rather than after it.
+- An action that only needs a check now and then takes a little of a cook,
+  so one cook can keep an eye on two simmering pots; one that needs them the
+  whole time takes all of them.
+- Pans and containers, and counter space if you've said how much there is,
+  are planned around like the oven and burners.
+- Anything that leads up to something that keeps (a dressing that keeps two
+  days) is made ahead.
+
+A meal that plans some dishes from graphs says which it plans from their
+steps, and why: no graph, a draft, or a graph whose recipe's words have
+changed since.
+

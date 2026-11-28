@@ -157,3 +157,64 @@ the UI built: `cd web && npm run build && cd .. && go run ./cmd/sous --port
 3. Follow "or have an assistant read them".
    - `/assistants#timing` opens with Fill in step timing expanded, showing
      `/mcp__sous__fill_step_timing`.
+
+## 15. Step graphs: the household page
+
+Needs Sous's decision model (Laya on Ollama). Seed the gate graphs first:
+`uv run scripts/seed_step_graphs.py http://127.0.0.1:8099 ann` (each says
+"needs_review, N to review").
+
+1. Open Meals (`/meals`).
+   - Under Your kitchen, a "Step graphs" row: "N to review · 0 verified, 7
+     without".
+2. Follow it (`/graphs`).
+   - Counts: To review N, Verified 0, Words changed 0, No graph yet 7.
+   - "The rest of the library" says an assistant drafts each graph and
+     links "Set that up" to `/assistants#graphs`, which opens Draft step
+     graphs expanded.
+   - The review queue ("To review · N recipes, N questions") shows three
+     questions per recipe, each header saying how many in all, with "All N
+     questions, beside its steps" when there are more. Each question is
+     "How hands-on?", "What does it use?" or "Can it wait?"; when Sous is
+     60% sure or more its answer is dashed and first, with percentages,
+     otherwise the answers come in natural order without them. "What does
+     it use?" always offers Nothing, A burner and Oven.
+3. Answer two questions (pressing a chosen answer again clears it), then
+   Save 2 answers in the sticky foot.
+   - The two questions go; the recipe's count drops by two. "Edited since"
+     appears in the counts only when a graph's words have changed.
+
+## 16. A recipe's step graph
+
+1. Open the French omelette and scroll to the end of its method.
+   - "Step graph · N to review" links to `/r/<id>/graph`.
+2. Follow it.
+   - Each step's words beside its actions; pointing at an action washes its
+     words. Implied actions say "Added by Sous". The bar reads "0 of N
+     answered", Accept as verified disabled. Keys 1–4 pick an answer and
+     move focus to the next question; Change opens any action's labels.
+   - If the graph has a problem (an action marked as using the oven
+     without a preheat), the bar says "fix its problem to accept", leading
+     to that action; change what it uses to clear it.
+3. Answer every question (Use at once for any "Can it wait?", or Looks
+   right on an action), then Accept as verified.
+   - "… step graph is verified." toast; the badge reads Verified; no
+     questions remain.
+4. At 390px: steps stack words over actions; the bar's two buttons share a
+   row under the count; no horizontal scroll.
+
+## 17. A meal planned from step graphs
+
+1. Plan a meal (`/meals`) with the chicken curry and the boeuf bourguignon.
+   - The menu notes "Step graph · N to review" under the curry, and "1 dish
+     has no step graph yet" at its foot (the bourguignon).
+2. Read the plan.
+   - If the curry's graph has a problem, a warning says it's planned from
+     its steps because its step graph has problems to fix: fix it as in
+     flow 16. Then the curry's tasks are its actions ("Boil the rice",
+     "Juice the lemons"…), overlapping where they can, and a warning says
+     the bourguignon is planned from its steps because it has no step
+     graph. (What's made ahead depends on the labels Sous gave.)
+3. Open Your kitchen, add a pan "dutch oven" (1) and 2 places of counter
+   space, save, and reload.
+   - Both are kept.

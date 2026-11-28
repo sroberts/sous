@@ -39,6 +39,13 @@ include breaking changes, and they're called out here.
   came from marked, and asks only the unsure labels, one tap each, with
   Something else for any other answer; then Accept as verified. A meal's
   menu says which dishes have graphs to review or none yet.
+- Meal plans use step graphs: a dish whose graph is past a draft is planned
+  from its actions, so a recipe's independent work happens side by side
+  (the rice boils while the curry simmers), an action needing only the odd
+  check takes a little of a cook rather than all of one, and pans,
+  containers and counter space are planned around. Dishes without a usable
+  graph plan from their steps as before, and a meal mixing the two says
+  which.
 - Your kitchen lists pans and containers (a Dutch oven, sheet pans) and
   counter space, for step graphs to use. An update that leaves them out
   keeps them as they are.
@@ -48,6 +55,10 @@ include breaking changes, and they're called out here.
   review and upgrade job tables. As
   with any migration, take a backup first; an older Sous will refuse to open
   the upgraded library.
+- At most 10 background upgrade jobs wait or run at once; queueing another
+  is refused until one finishes or is cancelled. Sous doesn't follow
+  redirects from its models' endpoint, and refuses an `OUTPOST_AI_URL` that
+  isn't a plain http(s) URL.
 
 ## [0.6.0] - 2026-11-25
 
