@@ -129,7 +129,7 @@
 
       <fieldset data-rows="vessels">
         <legend class="label">Pans and containers</legend>
-        <p class="hint">What a dish sits in while it waits or rises, such as a Dutch oven, sheet pans or a dough container, so two dishes don't plan on the same one.</p>
+        <p class="hint">What a dish sits in while it waits or rises, such as a Dutch oven, sheet pans or a dough container, so two dishes don’t plan on the same one.</p>
         {#each form.vessels as v, i}
           <div class="row">
             <label class="field grow"><span class="visually-hidden">Pan or container {i + 1}</span><input bind:value={v.name} placeholder="e.g. Dutch oven" /></label>
@@ -142,7 +142,7 @@
 
       <fieldset>
         <legend class="label">Counter space</legend>
-        <p class="hint">Clear places to work at once, such as the island and beside the stove. Leave at 0 if it doesn't matter.</p>
+        <p class="hint">Clear places to work at once, such as the island and beside the stove. Leave at 0 if it doesn’t matter.</p>
         <label class="field num"><input type="number" min="0" max="20" bind:value={form.counter_zones} aria-label="Places to work" /><span class="unit">places</span></label>
       </fieldset>
 

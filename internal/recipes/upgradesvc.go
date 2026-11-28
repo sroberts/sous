@@ -866,8 +866,12 @@ func (s *Service) ResolveReview(ctx context.Context, c identity.Caller, in Resol
 			e.CurrentGraph = &cur
 			return e
 		}
-		prev := *g
-		prev.Nodes = slices.Clone(g.Nodes)
+		// The graph as it stands, read again rather than copied: its labels
+		// are shared by pointer, and saving clears the copy's review stamps.
+		prev, err := loadGraph(ctx, tx, in.RecipeID)
+		if err != nil {
+			return err
+		}
 		if markStale(g, r) {
 			return Errorf(CodeInvalid, "the recipe's words have changed under this graph; upgrade it again before reviewing")
 		}
@@ -961,7 +965,7 @@ func (s *Service) ResolveReview(ctx context.Context, c identity.Caller, in Resol
 			in2.Status = GraphVerified
 		}
 		summary := fmt.Sprintf("Reviewed %d labels of %s's step graph", len(in.Items), r.Title)
-		if err := s.saveGraph(ctx, tx, c, r, &prev, in2, stamp, summary); err != nil {
+		if err := s.saveGraph(ctx, tx, c, r, prev, in2, stamp, summary); err != nil {
 			return err
 		}
 		out.Graph, err = graphView(ctx, tx, in.RecipeID, who)

@@ -262,11 +262,17 @@ func TestPlanGraphMixed(t *testing.T) {
 			t.Errorf("a stale graph was used: %s", dump(task))
 		}
 	}
-	// With no dish planned from a graph, nothing is said about graphs.
+	// A graph that can't be used is named even when no dish plans from a
+	// graph, so the stew isn't quietly planned from its steps; dishes with
+	// no graph at all aren't, as nothing in the meal uses graphs.
+	var named []string
 	for _, w := range p.Warnings {
 		if w.Code == "no_graph" {
-			t.Errorf("no_graph warning with no graph in use: %s", w.Message)
+			named = append(named, w.Message)
 		}
+	}
+	if len(named) != 2 || !strings.Contains(strings.Join(named, " "), "words have changed") || !strings.Contains(strings.Join(named, " "), "still a draft") {
+		t.Errorf("no_graph warnings: %q", named)
 	}
 }
 

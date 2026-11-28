@@ -617,12 +617,16 @@ func (p *planner) buildTasks(serve time.Time) (all []*ptask, dayOf, ahead [][]*p
 		}
 		all = append(all, steps...)
 	}
-	// A meal planning some dishes from step graphs says which aren't.
-	if slices.ContainsFunc(p.in.graphs, func(g *RecipeGraph) bool { return g != nil }) {
-		for i, it := range p.in.meal.Items {
-			if p.graph(i) == nil && i < len(p.in.whyNoGraph) && len(p.in.recipes[i].Steps) > 0 {
-				p.warnItem("no_graph", p.in.recipes[i].Title+" is planned from its steps, one after another: "+p.in.whyNoGraph[i]+".", it.ID)
-			}
+	// A meal planning some dishes from step graphs says which aren't; and a
+	// dish whose graph can't be used (a draft, changed words, problems) says
+	// so whatever the rest do, rather than being quietly planned from steps.
+	anyGraph := slices.ContainsFunc(p.in.graphs, func(g *RecipeGraph) bool { return g != nil })
+	for i, it := range p.in.meal.Items {
+		if p.graph(i) != nil || i >= len(p.in.whyNoGraph) || len(p.in.recipes[i].Steps) == 0 {
+			continue
+		}
+		if why := p.in.whyNoGraph[i]; anyGraph || why != noGraph {
+			p.warnItem("no_graph", p.in.recipes[i].Title+" is planned from its steps, one after another: "+why+".", it.ID)
 		}
 	}
 	return all, dayOf, ahead, deadlines

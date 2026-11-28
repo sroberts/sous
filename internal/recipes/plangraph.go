@@ -266,13 +266,16 @@ func (p *planner) claimFor(t *ptask, n ActionNode) {
 	}
 }
 
+// noGraph is why a dish with no step graph at all plans from its steps.
+const noGraph = "it has no step graph"
+
 // planGraph is a recipe's step graph when a meal plan can use it: not a
 // draft, its words unchanged and without errors. why says, when it can't,
 // for the warning on a meal that plans other dishes from graphs.
 func planGraph(g *RecipeGraph, r Recipe, k KitchenProfile) (use *RecipeGraph, why string) {
 	switch {
 	case g == nil:
-		return nil, "it has no step graph"
+		return nil, noGraph
 	case g.Status == GraphDraft:
 		return nil, "its step graph is still a draft"
 	case markStale(g, r):

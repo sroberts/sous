@@ -35,3 +35,39 @@ func TestReviewQueueSkipsStale(t *testing.T) {
 		t.Errorf("stale graph still queued: %v %s", err, dump(page))
 	}
 }
+
+// A confirmed label held by pointer (equipment) keeps its review when a
+// later save answers something else: the "before" graph used to carry
+// stamps over shared its labels with the one being saved.
+func TestReviewStampSurvivesLaterSave(t *testing.T) {
+	answers := toastAnswers()
+	answers["Toast the"]["equipment"] = ranked{"oven", 0.5}
+	s := upgradeService(t, &fakeGen{drafts: []StructureDraft{toastDraft()}}, &fakeDec{answers: answers})
+	ann := person(t, s, "Ann")
+	r := tinyRecipe(t, s, ann)
+	res, err := s.UpgradeRecipe(ctx, ann, UpgradeRequest{ID: r.ID})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var eq any
+	for _, n := range res.Graph.Graph.Nodes {
+		if n.ID == "toast" {
+			eq = n.Equipment.Value
+		}
+	}
+	out, err := s.ResolveReview(ctx, ann, ResolveRequest{RecipeID: r.ID, GraphVersion: res.Graph.Graph.Version,
+		Items: []ResolveChoice{{NodeID: "toast", Field: "equipment", Value: eq}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err = s.ResolveReview(ctx, ann, ResolveRequest{RecipeID: r.ID, GraphVersion: out.Graph.Graph.Version,
+		Items: []ResolveChoice{{NodeID: "toast", Field: "attention", Value: "passive"}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, n := range out.Graph.Graph.Nodes {
+		if n.ID == "toast" && n.Equipment.ReviewedBy == nil {
+			t.Errorf("the confirmed equipment lost its review: %s", dump(n.Equipment))
+		}
+	}
+}

@@ -252,7 +252,7 @@
 
     {#if view.graph.status !== 'verified' || review.length}
       <div class="bar">
-        <p>{#if review.length}{answered} of {review.length} answered{:else}Nothing left to answer{/if}{#if extra}{` · ${extra} changed`}{/if}</p>
+        <p>{#if review.length}{answered} of {review.length} answered{:else}Nothing left to answer{/if}{#if extra}{` · ${extra} changed`}{/if}{#if errors.length}{' · '}<button type="button" class="to-node" onclick={() => goTo(errors[0].node)}>fix {errors.length === 1 ? 'its problem' : `its ${errors.length} problems`} to accept</button>{/if}</p>
         {#if review.length || extra}<button class="btn" onclick={() => save(false)} disabled={saving || !unsaved || stale || isOffline()}>Save answers</button>{/if}
         <button class="btn" class:primary={canAccept} onclick={() => save(true)} disabled={saving || !canAccept || isOffline()}>Accept as verified</button>
       </div>
