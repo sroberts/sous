@@ -128,6 +128,13 @@ export const api = {
   /** Start, tick off or pin one task; answers with the new plan. */
   updateTask: (id, key, body) => request('PUT', `/v1/meals/${id}/tasks/${encodeURIComponent(key)}`, { body }),
   resetMeal: (id) => request('POST', `/v1/meals/${id}/reset`),
+  graphs: () => request('GET', '/v1/graphs'),
+  recipeGraph: (id) => request('GET', `/v1/recipes/${id}/graph`),
+  upgradeRecipe: (id, body = {}) => request('POST', `/v1/recipes/${id}/graph/upgrade`, { body }),
+  queueUpgrades: (body) => request('POST', '/v1/upgrades', { body }),
+  upgradeJob: (id) => request('GET', `/v1/upgrades/${id}`),
+  reviewItems: (params = {}) => request('GET', `/v1/review?${new URLSearchParams(params)}`),
+  resolveReview: (body) => request('POST', '/v1/review', { body }),
 };
 
 // The widths Sous scales a photo to (GET /v1/images/{hash}?w=). Without w,

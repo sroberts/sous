@@ -28,6 +28,14 @@ include breaking changes, and they're called out here.
   (`upgrade_recipe`, `upgrade_recipes`, `get_upgrade_job`,
   `cancel_upgrade_job`). Set up with `SOUS_OLLAMA_URL`,
   `SOUS_DECISION_MODEL` and `SOUS_AUTO_VERIFY`.
+- Step graphs in the app: **Step graphs** (from Meals) counts recipes by
+  status, explains how to get the rest drafted, and lists what Sous wasn't
+  sure of across the library, by recipe, with Accept the likely answers
+  (80% sure or more, with Undo). Each recipe's graph (linked at the end of
+  its method) shows its steps beside their actions, the words each action
+  came from marked, and asks only the unsure labels, one tap each, with
+  Something else for any other answer; then Accept as verified. A meal's
+  menu says which dishes have graphs to review or none yet.
 - Your kitchen lists pans and containers (a Dutch oven, sheet pans) and
   counter space, for step graphs to use. An update that leaves them out
   keeps them as they are.

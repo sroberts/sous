@@ -15,6 +15,13 @@
 
   let { id } = $props();
   let recipe = $state(null);
+  // The recipe's step graph, if it has one: fetched quietly, so a recipe
+  // read offline or without a graph shows nothing extra.
+  let graph = $state(null);
+  $effect(() => {
+    if (!recipe?.id || recipe.deleted_at || isOffline()) return;
+    api.recipeGraph(recipe.id).then((v) => (graph = v), () => (graph = null));
+  });
   let error = $state(null);
   let asWritten = $state(false);
 
@@ -852,6 +859,9 @@
           {/if}
         {/if}
 
+        {#if graph}
+          <a class="graph-line" href="/r/{recipe.id}/graph" use:link>Step graph · {graph.graph.status === 'verified' ? 'verified' : graph.graph.status === 'stale' ? 'the words have changed' : graph.review_count ? `${graph.review_count} to review` : 'ready to accept'}</a>
+        {/if}
         <p class="colophon">
           {#if recipe.created_by === '_sous'}A sample recipe that came with Sous{:else}Added by {person(recipe.created_by)} {ago(recipe.created_at)}{/if}{#if recipe.updated_at !== recipe.created_at}, last edited by {person(recipe.updated_by)} {ago(recipe.updated_at)}{/if}.
         </p>
@@ -1772,6 +1782,14 @@
       transition: none;
       animation: none;
     }
+  }
+  .graph-line {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin-top: var(--space-4);
+    color: var(--ink-2);
+    font-size: var(--ui);
   }
   .colophon {
     margin-top: var(--space-7);

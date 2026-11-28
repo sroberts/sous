@@ -101,6 +101,8 @@ The `upgrade_step_graphs` prompt drafts the library, or one meal's dishes
 (`/mcp__sous__upgrade_step_graphs Thanksgiving` in Claude Code), and reviews
 them with you; `review_session` goes through the queue ten at a time.
 Every correction is kept, to make the models' answers better over time.
+The same review is in the app: **Meals → Step graphs**, or the link at the
+end of a recipe's method.
 
 ## REST API
 

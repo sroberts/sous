@@ -467,11 +467,23 @@ func TestReviewQueue(t *testing.T) {
 		t.Errorf("corrections: %d %s %s %s", corrections, field, model, user)
 	}
 
-	// Stale version, bad field, bad value.
-	if _, err := s.ResolveReview(ctx, ann, ResolveRequest{RecipeID: r.ID, GraphVersion: v, Accept: true}); !isCode(err, CodeStale) {
-		t.Errorf("stale: %v", err)
+	// "Use at once" takes a hold away, and counts as a correction.
+	v = out.Graph.Graph.Version
+	out, err = s.ResolveReview(ctx, ann, ResolveRequest{RecipeID: r.ID, GraphVersion: v, Items: []ResolveChoice{{NodeID: "butter", Field: "hold", Value: nil}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, n := range out.Graph.Graph.Nodes {
+		if n.ID == "butter" && n.Hold != nil {
+			t.Errorf("hold kept: %s", dump(n.Hold))
+		}
 	}
 	v = out.Graph.Graph.Version
+
+	// Stale version, bad field, bad value.
+	if _, err := s.ResolveReview(ctx, ann, ResolveRequest{RecipeID: r.ID, GraphVersion: v - 1, Accept: true}); !isCode(err, CodeStale) {
+		t.Errorf("stale: %v", err)
+	}
 	for _, bad := range []ResolveChoice{
 		{NodeID: "toast", Field: "colour", Value: "red"},
 		{NodeID: "toast", Field: "attention", Value: "sometimes"},
@@ -652,5 +664,52 @@ func TestRecipesWithoutGraph(t *testing.T) {
 	}
 	if _, err := s.RecipesWithoutGraph(ctx, ann, GraphTodoQuery{MealID: "nope"}); !isCode(err, CodeNotFound) {
 		t.Errorf("unknown meal: %v", err)
+	}
+}
+
+// The overview agrees with what each graph says of itself.
+func TestGraphOverview(t *testing.T) {
+	s := newTestService(t)
+	ann := person(t, s, "Ann")
+	o, err := s.GraphOverview(ctx, ann)
+	if err != nil || o.Upgrades.Labels || o.Counts["none"] != 0 {
+		t.Fatalf("empty, upgrades off: %v %s", err, dump(o))
+	}
+	s.SetUpgrader(&Upgrader{Dec: &fakeDec{answers: toastAnswers()}, AutoVerify: true})
+	a := tinyRecipe(t, s, ann)
+	b := create(t, s, ann, RecipeInput{Title: "Butter toast", Ingredients: []string{"2 slices bread", "1 tbsp butter"},
+		Steps: []string{"Heat the oven to 400°F.", "Toast the bread for 5 minutes, then butter it."}})
+	create(t, s, ann, RecipeInput{Title: "Apple", Steps: []string{"Eat it."}})
+	create(t, s, ann, RecipeInput{Title: "No steps"})
+	ra, err := s.DraftRecipeGraph(ctx, ann, DraftRequest{ID: a.ID, RecipeVersion: a.Version, Mode: UpgradeApply, StructureDraft: toastDraft()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.DraftRecipeGraph(ctx, ann, DraftRequest{ID: b.ID, RecipeVersion: b.Version, StructureDraft: toastDraft()}); err != nil {
+		t.Fatal(err)
+	}
+	// b's toasting words change under its graph.
+	if _, err := s.Update(ctx, ann, b.ID, b.Version, RecipePatch{Steps: Some([]string{"Heat the oven to 400°F.", "Grill the bread for 5 minutes, then butter it."})}); err != nil {
+		t.Fatal(err)
+	}
+	o, err = s.GraphOverview(ctx, ann)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !o.Upgrades.Labels || o.Upgrades.GraphModel || !o.Upgrades.AutoVerify {
+		t.Errorf("upgrades: %s", dump(o.Upgrades))
+	}
+	if o.Counts["none"] != 1 || o.Counts[GraphNeedsReview] != 1 || o.Counts[GraphStale] != 1 || len(o.Items) != 2 {
+		t.Fatalf("counts: %s", dump(o))
+	}
+	got := map[string]GraphStatusRow{}
+	for _, it := range o.Items {
+		got[it.RecipeID] = it
+	}
+	if got[a.ID].ReviewCount != ra.Graph.ReviewCount || got[a.ID].Version != ra.Graph.Graph.Version || got[b.ID].Status != GraphStale {
+		t.Errorf("rows: %s, want a's review count %d", dump(o.Items), ra.Graph.ReviewCount)
+	}
+	if v, _ := s.RecipeGraph(ctx, ann, b.ID); v.Graph.Status != GraphStale {
+		t.Errorf("the graph itself says %s", v.Graph.Status)
 	}
 }

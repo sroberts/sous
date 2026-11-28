@@ -98,6 +98,13 @@ func TestUpgradeAPI(t *testing.T) {
 		t.Errorf("cancel = %s", r.body)
 	}
 	h.want(h.do("GET", "/v1/upgrades/nope", nil), 404, "not_found")
+
+	r = h.do("GET", "/v1/graphs", nil)
+	h.want(r, 200, "")
+	o := r.json(t)
+	if o["counts"].(map[string]any)["needs_review"] != 1.0 || o["upgrades"].(map[string]any)["graph_model"] != true {
+		t.Errorf("overview = %s", r.body)
+	}
 }
 
 // Without models, upgrading says so with a 503.
