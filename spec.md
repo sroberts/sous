@@ -1164,8 +1164,9 @@ minutes summed; hands-on when active minutes are at least half; equipment
 the oven, stovetop or appliance held longest (vessels, the counter and the
 fridge have no step timing equivalent); the shortest hold. Setup nodes that
 heat the oven are left out, since planners add their own preheats. A step
-without nodes is null. The meal planner doesn't read graphs or the
-projection yet; it plans from step timing.
+without nodes is null. The meal planner doesn't read the projection: it
+plans a dish from its graph's actions (see Planning from graphs below) or
+from its step timing.
 
 ### REST and MCP
 
