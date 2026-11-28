@@ -364,7 +364,31 @@ func findQuote(text, q string) (int, int, bool) {
 // Duration buckets for an action with no stated time, in minutes.
 var durationBuckets = []int{1, 3, 5, 10, 20, 30, 60, 120, 240, 480}
 
-// The questions asked about every action.
+// actionQuestion asks what kind of action a node is. It's asked on its own,
+// about only the action's words: given the whole step, the decision model
+// read "whisk in the cream" over medium heat as heat. Short verb lists
+// worked better than descriptions (45% to 65% right on the gate recipes),
+// and a question's choices must fit the model's 176-token budget.
+var actionQuestion = Question{"action", "Which best describes the quoted action itself?", []Choice{
+	{"prep", "cut, chop, slice, peel, roll out, knead, shape"},
+	{"combine", "mix things: whisk, beat, stir in, toss"},
+	{"heat", "fry, brown, simmer, boil, bake, roast, melt"},
+	{"cool", "cool down, chill"},
+	{"rest", "rest, set, soak"},
+	{"ferment", "rise, prove"},
+	{"transfer", "drain, move, put in a bowl or on a tray"},
+	{"assemble", "fill, layer, top, fold over, scatter on"},
+	{"plate", "serve, put on the plate, garnish"},
+	{"setup", "preheat the oven, heat a pan, boil water"},
+}}
+
+// actionState is all the action question reads: the action's own words,
+// or for an implied action, what it is.
+func actionState(n ActionNode) string {
+	return strconv.Quote(cmpOr(n.Source.Quote, n.Text))
+}
+
+// The questions asked about every action, beside actionQuestion.
 func nodeQuestions(k KitchenProfile) []Question {
 	durs := []Choice{}
 	for _, m := range durationBuckets {
@@ -379,20 +403,12 @@ func nodeQuestions(k KitchenProfile) []Question {
 		equip = append(equip, Choice{resVessel + v.Name, "a " + v.Name})
 	}
 	return []Question{
-		{"action", "What kind of action is this?", []Choice{
-			{"prep", "cutting, measuring, shaping, rolling, kneading"}, {"combine", "mixing, stirring or whisking things together"},
-			{"heat", "cooking with heat: frying, simmering, baking, roasting"}, {"cool", "cooling or chilling"},
-			{"rest", "leaving it to rest, set or soak"}, {"ferment", "rising, proving or fermenting"},
-			{"transfer", "moving it to another pan, bowl or place"}, {"assemble", "putting parts together, layering, filling"},
-			{"plate", "serving or plating"}, {"setup", "preheating the oven or bringing water to the boil"}}},
 		{"attention", "How much of the cook does this action need?", []Choice{
 			{AttentionActive, "the cook is busy the whole time"}, {AttentionIntermittent, "the cook checks in every so often"},
 			{AttentionPassive, "it looks after itself"}}},
 		{"check", "If the cook has to check on it, how often?", []Choice{
 			{"2", "every 2 minutes"}, {"5", "every 5 minutes"}, {"10", "every 10 minutes"}, {"15", "every 15 minutes"},
 			{"30", "every 30 minutes"}, {"60", "every hour"}}},
-		{"interruptible", "Can the cook step away in the middle without harm?", []Choice{
-			{"yes", "yes, it can be left"}, {"no", "no, it must be watched or it spoils"}}},
 		{"anchor", "When should this action happen?", []Choice{
 			{"asap_after_inputs", "as soon as what it needs is ready"}, {"flexible", "any time before it's needed"},
 			{"just_before_serve", "right before serving"}}},
@@ -508,14 +524,21 @@ func (u *Upgrader) classify(ctx context.Context, r Recipe, k KitchenProfile, g *
 		if err != nil {
 			return err
 		}
-		n.Action = decided(rank(ans["action"]), func(s string) (string, bool) { return s, slices.Contains(graphActions, s) })
+		act, err := u.Dec.Decide(ctx, actionState(*n), []Question{actionQuestion})
+		if err != nil {
+			return err
+		}
+		n.Action = decided(rank(act["action"]), func(s string) (string, bool) { return s, slices.Contains(graphActions, s) })
 		n.Attention = decided(rank(ans["attention"]), func(s string) (string, bool) { return s, slices.Contains(graphAttention, s) })
 		if n.Attention.Value == AttentionIntermittent {
 			c := decided(rank(ans["check"]), asInt)
 			n.CheckInterval = &c
 		}
-		in := decided(rank(ans["interruptible"]), func(s string) (bool, bool) { return s == "yes", s == "yes" || s == "no" })
-		n.Interruptible = &in
+		// Interruptible is left unset: the decision model couldn't answer
+		// it (it said "can be left" to every action that can't), and it
+		// follows from attention anyway, since active work is what can't
+		// be left. Unset reads that way, and follows attention when review
+		// corrects it.
 		a := decided(rank(ans["anchor"]), func(s string) (string, bool) { return s, slices.Contains(graphAnchors, s) })
 		n.TimingAnchor = &a
 

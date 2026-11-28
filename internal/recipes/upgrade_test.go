@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -44,20 +45,25 @@ type fakeDec struct {
 	answers map[string]map[string]ranked
 	err     error
 	calls   int
+	states  []string
 }
 
 var defaultAnswers = map[string]ranked{
-	"action": {"prep", 0.9}, "attention": {"active", 0.95}, "check": {"5", 0.9}, "interruptible": {"no", 0.9},
+	"action": {"prep", 0.9}, "attention": {"active", 0.95}, "check": {"5", 0.9},
 	"anchor": {"asap_after_inputs", 0.9}, "hold": {"none", 0.95}, "where": {"counter", 0.9},
 	"duration": {"5", 0.9}, "equipment": {"none", 0.95},
 }
 
 func (f *fakeDec) Decide(ctx context.Context, state string, qs []Question) (map[string]Answer, error) {
 	f.calls++
+	f.states = append(f.states, state)
 	if f.err != nil {
 		return nil, f.err
 	}
-	_, action, _ := strings.Cut(state, "Action: ")
+	action := state // the action question reads only the action's words
+	if _, after, ok := strings.Cut(state, "Action: "); ok {
+		action = after
+	}
 	out := map[string]Answer{}
 	for _, q := range qs {
 		top := defaultAnswers[q.ID]
@@ -146,6 +152,11 @@ func TestUpgradeRecipe(t *testing.T) {
 	}
 	if pre.Action.Value != "setup" || pre.Duration.Source != "jev" || pre.Duration.Value != (Duration{5, 10, 20}) {
 		t.Errorf("preheat %s", dump(pre))
+	}
+	// The action question reads only the action's words; interruptible
+	// is left to follow attention.
+	if !slices.Contains(dec.states, `"Toast the bread for 5 minutes"`) || toast.Interruptible != nil {
+		t.Errorf("action states %q, interruptible %s", dec.states, dump(toast.Interruptible))
 	}
 	if toast.CheckInterval == nil || toast.CheckInterval.Value != 2 || len(toast.Attention.Alternatives) != 2 {
 		t.Errorf("toast attention %s, check %s", dump(toast.Attention), dump(toast.CheckInterval))

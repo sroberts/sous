@@ -1209,13 +1209,21 @@ and background jobs write the structure too. Either way the steps are:
    `recipe_version` must be the recipe's current one (412 otherwise). A
    graph model's errors go back to it once; a graph still in error is
    saved anyway, for review.
-4. **Classify.** One decision call per action, nine questions: action,
-   attention, check interval, interruptible, timing anchor, hold (none, 15
+4. **Classify.** Two decision calls per action. The action question
+   (prep, combine, heat, cool, rest, ferment, transfer, assemble, plate,
+   setup, each as a short list of verbs) reads only the action's own words:
+   given the whole step, the model took "whisk in the cream" over medium
+   heat for heat (45% right on the gate recipes; 69% this way, 82% when
+   sure). The other call reads the recipe title, the step and the action,
+   and asks attention, check interval, timing anchor, hold (none, 15
    minutes, an hour, a few hours, a day, a few days), where it waits,
-   duration (1 minute to 8 hours) and equipment (none, oven, burner, fridge,
-   the kitchen's appliances and vessels). A label's confidence is its top
-   answer's probability, with the next two as `alternatives`. Source `jev`
-   marks the decision model's labels.
+   duration (1 minute to 8 hours) and equipment (none, oven, burner,
+   fridge, the kitchen's appliances and vessels). A label's confidence is
+   its top answer's probability, with the next two as `alternatives`.
+   Source `jev` marks the decision model's labels. `interruptible` is left
+   unset: the model said "can be left" to every action that can't, and it
+   follows from attention (active work can't be left). The model's
+   choices for one question must fit its 176-token budget.
 5. **The words win.** A stated time ("40 to 45 minutes") is the duration,
    as a range, source `recipe_text`; an oven claim takes the temperature
    its step, or the latest step before, states; make-ahead wording ("keeps
