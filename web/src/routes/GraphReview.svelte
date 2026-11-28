@@ -5,8 +5,8 @@
   import { link } from '../lib/router.svelte.js';
   import { asPerson, toast } from '../lib/session.svelte.js';
   import { isOffline } from '../lib/net.svelte.js';
-  import { STATUS, show, bySteps } from '../lib/graphs.js';
-  import LabelChoice from '../components/LabelChoice.svelte';
+  import { STATUS, bySteps } from '../lib/graphs.js';
+  import ActionReview from '../components/ActionReview.svelte';
 
   let { id } = $props();
 
@@ -54,17 +54,20 @@
   load();
 
   const steps = $derived(recipe && view ? bySteps(recipe, view.graph) : []);
-  // An action's questions in one order everywhere, so a habit can form.
+  // An action's unsure labels in one order everywhere, so a habit can form.
   const ORDER = ['action', 'duration', 'equipment', 'attention', 'check_interval_min', 'hold', 'timing_anchor', 'interruptible'];
   const byNode = $derived(
     review.reduce((m, it) => ((m[it.node_id] ??= []).push(it), m), Object.create(null)),
   );
-  const ordered = (items) => [...(items ?? [])].sort((a, b) => ORDER.indexOf(a.field) - ORDER.indexOf(b.field));
+  const flaggedOf = (nodeID) => [...(byNode[nodeID] ?? [])].sort((a, b) => ORDER.indexOf(a.field) - ORDER.indexOf(b.field));
   const key = (it) => `${it.node_id}|${it.field}`;
-  const answered = $derived(review.filter((it) => key(it) in chosen).length);
-  // Answers given to labels Sous was sure of, changed from "Change its labels".
-  const extra = $derived(Object.keys(chosen).filter((k) => !review.some((it) => key(it) === k)).length);
-  const unsaved = $derived(answered + extra > 0);
+
+  // The unit of review is the action: those with anything Sous isn't sure
+  // of, and how many of them are checked (every unsure label answered).
+  const toCheck = $derived(view ? view.graph.nodes.filter((n) => byNode[n.id]) : []);
+  const isChecked = (n) => (byNode[n.id] ?? []).every((it) => key(it) in chosen);
+  const checkedCount = $derived(toCheck.filter(isChecked).length);
+  const unsaved = $derived(Object.keys(chosen).length > 0);
 
   // Answers live only on the page until saved: say so before leaving.
   function guard(e) {
@@ -73,53 +76,58 @@
   window.addEventListener('beforeunload', guard);
   onDestroy(() => window.removeEventListener('beforeunload', guard));
 
-  // "Looks right" for one action: Sous's answers to its open questions,
-  // kept once the cook has read its words and labels.
-  function looksRight(nodeID) {
+  // Looks right: the action's labels as they stand, every one, confirmed.
+  const FIELDS = { action: 'action', duration: 'duration', attention: 'attention', equipment: 'equipment', hold: 'hold', check_interval_min: 'check_interval_min' };
+  function looksRight(n) {
     const next = { ...chosen };
-    for (const it of byNode[nodeID] ?? []) if (!(key(it) in next)) next[key(it)] = it.value;
+    for (const [field, prop] of Object.entries(FIELDS)) {
+      const k = `${n.id}|${field}`;
+      if (k in next || !n[prop]) continue;
+      next[k] = n[prop].value;
+    }
     chosen = next;
-  }
-  const openOn = (nodeID) => (byNode[nodeID] ?? []).filter((it) => !(key(it) in chosen)).length;
-
-  // The labels a reviewer may change on an action, beyond those asked
-  // about: each as a question, at its own confidence.
-  const FIELDS = ['action', 'duration', 'attention', 'equipment', 'hold'];
-  const fieldOf = { action: 'action', duration: 'duration', attention: 'attention', equipment: 'equipment', hold: 'hold' };
-  let changing = $state(new Set());
-  function labelItems(n) {
-    const asked = new Set((byNode[n.id] ?? []).map((it) => it.field));
-    return FIELDS.filter((f) => !asked.has(f)).map((f) => {
-      const l = n[fieldOf[f]];
-      return {
-        node_id: n.id, field: f, implied: false,
-        value: f === 'hold' ? (l?.value ?? null) : f === 'equipment' ? (l?.value ?? []) : l.value,
-        confidence: l?.confidence ?? 1,
-        alternatives: l?.alternatives ?? [],
-      };
-    });
-  }
-  function toggleChange(nodeID) {
-    const s = new Set(changing);
-    s.has(nodeID) ? s.delete(nodeID) : s.add(nodeID);
-    changing = s;
+    nextAction(n.id);
   }
 
-  // A problem names an action by its words, not its id, and leads to it.
+  // Which actions are open for fixing.
+  let fixing = $state({});
+
+  // J and K move between the actions still to check; focus lands on its
+  // Looks right.
+  function nextAction(fromID, dir = 1) {
+    const ids = toCheck.filter((n) => !isChecked(n) || n.id === fromID).map((n) => n.id);
+    const at = ids.indexOf(fromID);
+    const to = ids[at < 0 ? 0 : at + dir];
+    if (!to) return;
+    const el = document.querySelector(`[data-node="${CSS.escape(to)}"]`);
+    el?.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    el?.querySelector('.looks, .fix')?.focus({ preventScroll: true });
+  }
+  function keys(e) {
+    if (e.metaKey || e.ctrlKey || e.altKey || e.target.matches('input, select, textarea')) return;
+    const k = e.key.toLowerCase();
+    if (k !== 'j' && k !== 'k') return;
+    e.preventDefault();
+    const here = document.activeElement?.closest('[data-node]')?.dataset.node ?? null;
+    nextAction(here, k === 'j' ? 1 : -1);
+  }
+
+  // A problem names an action by its words, not its id, and leads to it,
+  // opened for fixing.
   const nodeText = (nodeID) => view?.graph.nodes.find((n) => n.id === nodeID)?.text ?? nodeID;
   function problemText(e) {
     return e.node ? e.message.replaceAll(e.node, `“${nodeText(e.node)}”`) : e.message;
   }
   function goTo(nodeID) {
+    fixing = { ...fixing, [nodeID]: true };
     const el = document.getElementById(`node-${nodeID}`);
     if (!el) return;
     el.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
     active = nodeID;
-    if (!changing.has(nodeID)) toggleChange(nodeID);
   }
   const errors = $derived(view?.check.errors ?? []);
   const stale = $derived(view?.graph.status === 'stale');
-  const canAccept = $derived(view && !stale && !errors.length && answered === review.length && view.graph.status !== 'verified');
+  const canAccept = $derived(view && !stale && !errors.length && checkedCount === toCheck.length && view.graph.status !== 'verified');
 
   function choose(it, v) {
     const { [key(it)]: _, ...rest } = chosen;
@@ -135,12 +143,13 @@
       });
       const res = await asPerson(() => api.resolveReview({ recipe_id: id, graph_version: view.graph.version, items, accept }));
       if (!res) return;
-      toast(accept ? `${recipe.title}’s step graph is verified.` : `Saved ${items.length === 1 ? '1 answer' : `${items.length} answers`}.`);
+      toast(accept ? `${recipe.title}’s step graph is verified.` : 'Saved.');
+      fixing = {};
       await load();
     } catch (err) {
       if (err.status === 412) {
         await load();
-        problem = 'Someone changed this graph while you were reviewing it. Their version is loaded; answer again.';
+        problem = 'Someone changed this graph while you were reviewing it. Their version is loaded; check it again.';
       } else problem = err.message;
     } finally {
       saving = false;
@@ -159,13 +168,6 @@
     } finally {
       drafting = false;
     }
-  }
-
-  function labels(n) {
-    const bits = [show('action', n.action.value), show('duration', n.duration.value), show('attention', n.attention.value)];
-    if (n.equipment?.value.length) bits.push(show('equipment', n.equipment.value));
-    if (n.hold) bits.push(`waits ${show('hold', n.hold.value).replace(/^Up to/, 'up to')}`);
-    return bits.join(' · ');
   }
 </script>
 
@@ -192,14 +194,14 @@
   {:else if view}
     <p class="status">
       <span class="badge" data-status={view.graph.status}>{STATUS[view.graph.status]}</span>
-      {view.graph.nodes.length} actions{#if review.length}{' · '}<strong>{review.length - answered} to review</strong>{/if}
+      {view.graph.nodes.length} actions{#if toCheck.length}{' · '}<strong>{toCheck.length - checkedCount} to check</strong>{/if}
     </p>
-    {#if review.length}
-      <p class="hint">Sous labelled each action and asks about what it wasn’t sure of. Where it’s fairly sure, its guess is dashed, with how likely it thinks each answer is.<span class="keys">{' '}Keys 1–4 pick an answer and move on.</span></p>
+    {#if toCheck.length}
+      <p class="hint">Read each action as Sous labelled it. The parts it isn’t sure of are marked ?; if it reads right, say so, or fix any part.<span class="keys">{' '}J and K move between them.</span></p>
     {/if}
 
     {#if stale}
-      <p class="notice"><TriangleAlert size={18} aria-hidden="true" />The recipe’s words have changed under some actions. Have it drafted again before reviewing.</p>
+      <p class="notice"><TriangleAlert size={18} aria-hidden="true" />The recipe’s words have changed under some actions. Have it drafted again before checking it.</p>
     {/if}
     {#if errors.length}
       <div class="notice">
@@ -211,15 +213,16 @@
               <li>{#if e.node}<button type="button" class="to-node" onclick={() => goTo(e.node)}>{problemText(e)}</button>{:else}{e.message}{/if}</li>
             {/each}
           </ul>
-          <p>Usually an action is marked as using the oven by mistake: open it and change what it uses. Otherwise have the graph drafted again.</p>
+          <p>Usually an action is marked as using the oven by mistake: open it and fix what it uses. Otherwise have the graph drafted again.</p>
         </div>
       </div>
     {/if}
-    {#if !review.length && !errors.length && !stale && view.graph.status !== 'verified'}
-      <p class="hint">Sous was sure of every label. Look the actions over, then accept the graph.</p>
+    {#if !toCheck.length && !errors.length && !stale && view.graph.status !== 'verified'}
+      <p class="hint">Sous was sure of every action. Read them over, then accept the graph.</p>
     {/if}
 
-    <ol class="steps">
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+    <ol class="steps" onkeydown={keys}>
       {#each steps as st (st.number)}
         <li class="step">
           {#if st.section}<h2 class="section">{st.section}</h2>{/if}
@@ -227,20 +230,9 @@
             <p class="words"><span class="n fig">{st.number}</span>{#each st.runs as r, i (i)}{#if r.node}<mark class:on={active === r.node}>{r.text}</mark>{:else}{r.text}{/if}{/each}</p>
             <ul class="nodes">
               {#each st.nodes as n (n.id)}
-                <li class="node" id="node-{n.id}" class:implied={n.implied} class:on={active === n.id} onpointerenter={() => (active = n.id)} onpointerleave={() => (active = null)} onfocusin={() => (active = n.id)} onfocusout={() => (active = null)}>
-                  <p class="t">{n.text}{#if n.implied}<span class="added">Added by Sous</span>{/if}</p>
-                  <p class="meta">{labels(n)}{#if !stale}{' '}<button type="button" class="change" aria-expanded={changing.has(n.id)} onclick={() => toggleChange(n.id)}>{changing.has(n.id) ? 'Done' : 'Change'}</button>{/if}</p>
-                  {#each ordered(byNode[n.id]) as it (it.field)}
-                    <LabelChoice item={it} chosen={chosen[key(it)]} onchoose={(v) => choose(it, v)} {kitchen} />
-                  {/each}
-                  {#if openOn(n.id) > 1 && !stale}
-                    <button type="button" class="change looks" onclick={() => looksRight(n.id)}>Looks right: keep Sous’s {openOn(n.id)} answers here</button>
-                  {/if}
-                  {#if changing.has(n.id)}
-                    {#each labelItems(n) as it (it.field)}
-                      <LabelChoice item={it} chosen={chosen[key(it)]} onchoose={(v) => choose(it, v)} {kitchen} />
-                    {/each}
-                  {/if}
+                <li class="node" id="node-{n.id}" class:needs={byNode[n.id] && !isChecked(n)} class:on={active === n.id} onpointerenter={() => (active = n.id)} onpointerleave={() => (active = null)} onfocusin={() => (active = n.id)} onfocusout={() => (active = null)}>
+                  <ActionReview node={n} flagged={flaggedOf(n.id)} {chosen} onchoose={choose} onlooksright={looksRight} {kitchen}
+                    bind:open={() => !!fixing[n.id], (v) => (fixing = { ...fixing, [n.id]: v })} disabled={stale} />
                 </li>
               {/each}
               {#if !st.nodes.length}<li class="node none">No actions from this step.</li>{/if}
@@ -250,10 +242,10 @@
       {/each}
     </ol>
 
-    {#if view.graph.status !== 'verified' || review.length}
+    {#if view.graph.status !== 'verified' || unsaved}
       <div class="bar">
-        <p>{#if review.length}{answered} of {review.length} answered{:else}Nothing left to answer{/if}{#if extra}{` · ${extra} changed`}{/if}{#if errors.length}{' · '}<button type="button" class="to-node" onclick={() => goTo(errors[0].node)}>fix {errors.length === 1 ? 'its problem' : `its ${errors.length} problems`} to accept</button>{/if}</p>
-        {#if review.length || extra}<button class="btn" onclick={() => save(false)} disabled={saving || !unsaved || stale || isOffline()}>Save answers</button>{/if}
+        <p>{#if toCheck.length}{checkedCount} of {toCheck.length} {toCheck.length === 1 ? 'action' : 'actions'} checked{:else}Nothing left to check{/if}{#if errors.length}{' · '}<button type="button" class="to-node" onclick={() => goTo(errors[0].node)}>fix {errors.length === 1 ? 'its problem' : `its ${errors.length} problems`} to accept</button>{/if}</p>
+        <button class="btn" onclick={() => save(false)} disabled={saving || !unsaved || stale || isOffline()}>Save</button>
         <button class="btn" class:primary={canAccept} onclick={() => save(true)} disabled={saving || !canAccept || isOffline()}>Accept as verified</button>
       </div>
     {/if}
@@ -402,44 +394,17 @@
   .node.none {
     color: var(--ink-3);
   }
-  .t {
-    font-weight: 700;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: var(--space-2);
-  }
-  .implied .t {
-    color: var(--ink-2);
-  }
-  .added {
-    font-weight: 400;
-    font-size: 0.875rem;
-    color: var(--ink-3);
-  }
-  .meta {
-    margin-top: calc(-1 * var(--space-2));
-    color: var(--ink-2);
-    font-size: var(--ui);
-  }
-  .change,
   .to-node {
     min-height: 44px;
     padding: 0;
     border: 0;
     background: none;
-    color: var(--ink-2);
     font: inherit;
     text-align: left;
     text-decoration: underline;
     text-underline-offset: 3px;
     cursor: pointer;
-  }
-  .to-node {
     color: inherit;
-  }
-  .looks {
-    justify-self: start;
   }
   /* No keys to press on a phone. */
   @media (max-width: 900px) {

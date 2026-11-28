@@ -545,6 +545,35 @@ func TestReviewPolicy(t *testing.T) {
 	}
 }
 
+// A label the action's words contradict is asked about however sure the
+// model was, with the words' answer offered first.
+func TestWordsContradict(t *testing.T) {
+	answers := toastAnswers()
+	answers["Toast the"]["equipment"] = ranked{"none", 0.95}       // "toast the bread": no oven word, left alone
+	answers["Heat the oven"]["equipment"] = ranked{"burner", 0.95} // "Heat the oven": the words say oven
+	s := upgradeService(t, &fakeGen{drafts: []StructureDraft{toastDraft()}}, &fakeDec{answers: answers})
+	ann := person(t, s, "Ann")
+	r := create(t, s, ann, RecipeInput{Title: "Toast", Ingredients: []string{"2 slices bread", "1 tbsp butter"},
+		Steps: []string{"Heat the oven to 400°F.", "Toast the bread for 5 minutes, then butter it."}})
+	res, err := s.UpgradeRecipe(ctx, ann, UpgradeRequest{ID: r.ID})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, n := range res.Graph.Graph.Nodes {
+		if n.ID != "preheat" {
+			continue
+		}
+		e := n.Equipment
+		if *e.Confidence != 0.4 || len(e.Alternatives) == 0 || e.Alternatives[0].Value[0].Resource != ResOven {
+			t.Errorf("contradicted equipment: %s", dump(e))
+		}
+	}
+	page, err := s.ReviewItems(ctx, ann, ReviewQuery{RecipeID: r.ID, Field: "equipment"})
+	if err != nil || page.Remaining != 1 || page.Items[0].NodeID != "preheat" {
+		t.Errorf("contradiction not asked: %v %s", err, dump(page))
+	}
+}
+
 func TestAssemble(t *testing.T) {
 	r := Recipe{Title: "Purée", Ingredients: []Ingredient{{Raw: "1 lb carrots"}},
 		Steps: []Step{{Text: "Boil the carrots\nuntil soft, 20 to 25 minutes."}, {Text: "Purée with a stick blender."}}}

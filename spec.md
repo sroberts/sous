@@ -1249,7 +1249,17 @@ was almost never right (3 of 45), and no hold (use at once) is the safe
 default. When the action's own words agree with the model (oven, stovetop
 and appliance words for equipment; resting, chilling and baking words for a
 passive action) its confidence rises halfway to certain, as a second,
-independent reading.
+independent reading. When they contradict it (the words name the oven or a burner and the
+model chose otherwise; they say the action looks after itself and the
+model says active), its confidence drops to 0.4, under every threshold,
+whatever the model said, and the words' answer leads its alternatives, so
+the model's confident mistakes are asked about too. A time the words state
+in seconds counts as a stated time (at least a minute).
+
+In the app, review is by action: an action needing review shows its labels
+as a sentence with the unsure ones marked, confirmed whole with Looks right
+(which resolves every label of the action as it stands) or opened with Fix
+to change any of them. The API stays per label.
 
 The save checks the recipe and graph haven't changed while the models
 worked (412 for the recipe, 409 for a graph saved meanwhile). An upgrade of

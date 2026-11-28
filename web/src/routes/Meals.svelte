@@ -114,7 +114,7 @@
     {@const toReview = graphs.items.filter((r) => r.review_count > 0).length}
     <a class="kitchen-row" href="/graphs" use:link>
       <span class="k-name">Step graphs</span>
-      <span class="k-line">{toReview ? `${toReview} ${toReview === 1 ? 'recipe' : 'recipes'} to review · ` : ''}{graphs.counts.verified} verified, {graphs.counts.none} without</span>
+      <span class="k-line">{toReview ? `${toReview} ${toReview === 1 ? 'recipe' : 'recipes'} to check · ` : ''}{graphs.counts.verified} verified, {graphs.counts.none} without</span>
       <ChevronRight size={18} aria-hidden="true" />
     </a>
   {/if}

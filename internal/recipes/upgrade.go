@@ -564,8 +564,14 @@ func (u *Upgrader) classify(ctx context.Context, r Recipe, k KitchenProfile, g *
 		n.Action = decided(rank(act["action"]), func(s string) (string, bool) { return s, slices.Contains(graphActions, s) })
 		n.Attention = decided(rank(ans["attention"]), func(s string) (string, bool) { return s, slices.Contains(graphAttention, s) })
 		heard := SuggestTimings([]string{cmpOr(n.Source.Quote, n.Text)})[0]
-		if heard.HandsOn != nil && !*heard.HandsOn && n.Attention.Value == AttentionPassive {
+		switch {
+		case heard.HandsOn != nil && !*heard.HandsOn && n.Attention.Value == AttentionPassive:
 			wordsAgree(n.Attention.Confidence)
+		case heard.HandsOn != nil && !*heard.HandsOn && n.Attention.Value == AttentionActive:
+			// The words say it looks after itself (bake, simmer, chill) but
+			// the model says busy throughout: however sure the model was, a
+			// person should look, with the words' answer offered first.
+			wordsDisagree(&n.Attention, AttentionPassive)
 		}
 		if n.Attention.Value == AttentionIntermittent {
 			c := decided(rank(ans["check"]), asInt)
@@ -610,11 +616,17 @@ func (u *Upgrader) classify(ctx context.Context, r Recipe, k KitchenProfile, g *
 			return []EquipmentClaim{c}
 		}
 		eq := Label[[]EquipmentClaim]{Value: claim(e.Value), Source: "jev", Confidence: e.Confidence}
-		if wordRes := equipFromWords(cmpOr(n.Source.Quote, n.Text)); wordRes != "" && wordRes == e.Value {
-			wordsAgree(eq.Confidence)
-		}
 		for _, alt := range e.Alternatives {
 			eq.Alternatives = append(eq.Alternatives, Alternative[[]EquipmentClaim]{Value: claim(alt.Value), Probability: alt.Probability})
+		}
+		switch wordRes := equipFromWords(cmpOr(n.Source.Quote, n.Text)); {
+		case wordRes == "":
+		case wordRes == e.Value:
+			wordsAgree(eq.Confidence)
+		default:
+			// The words name other equipment ("simmer" is a burner) than
+			// the model chose: a person should look, whatever its confidence.
+			wordsDisagree(&eq, claim(wordRes))
 		}
 		n.Equipment = &eq
 
@@ -645,6 +657,31 @@ func (u *Upgrader) classify(ctx context.Context, r Recipe, k KitchenProfile, g *
 		}
 	}
 	return nil
+}
+
+// wordsDisagree marks a label the action's own words contradict: its
+// confidence drops below every review threshold, and the words' answer
+// leads the alternatives, so review asks and offers it.
+func wordsDisagree[T any](l *Label[T], heard T) {
+	c := min(*l.Confidence, round3(contradicted))
+	l.Confidence = &c
+	alts := []Alternative[T]{{Value: heard, Probability: c}}
+	for _, a := range l.Alternatives {
+		if !sameJSON(a.Value, heard) {
+			alts = append(alts, a)
+		}
+	}
+	l.Alternatives = alts[:min(len(alts), 3)]
+}
+
+// contradicted is the confidence of a label the words contradict: under
+// every review threshold.
+const contradicted = 0.4
+
+func sameJSON(a, b any) bool {
+	x, _ := json.Marshal(a)
+	y, _ := json.Marshal(b)
+	return string(x) == string(y)
 }
 
 // equipFromWords is the resource an action's own words name (an oven
