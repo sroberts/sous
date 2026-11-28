@@ -383,6 +383,11 @@ type UpgradeJobItem struct {
 
 const maxJobRecipes = 1000
 
+// maxActiveJobs bounds the upgrade jobs waiting or running at once, so
+// queueing over and over (each up to maxJobRecipes, with force) can't pile
+// up model work without end.
+const maxActiveJobs = 10
+
 // QueueUpgrades starts a bulk upgrade, worked through in the background.
 func (s *Service) QueueUpgrades(ctx context.Context, c identity.Caller, in UpgradeJobRequest) (UpgradeJob, error) {
 	who, err := author(c)
@@ -435,6 +440,13 @@ func (s *Service) QueueUpgrades(ctx context.Context, c identity.Caller, in Upgra
 	id := uuid.NewV7().String()
 	now := s.stamp()
 	err = s.st.Write(ctx, func(tx *sql.Tx) error {
+		var active int
+		if err := tx.QueryRowContext(ctx, `SELECT count(*) FROM upgrade_jobs WHERE status IN ('queued', 'running')`).Scan(&active); err != nil {
+			return err
+		}
+		if active >= maxActiveJobs {
+			return Errorf(CodeInvalid, "%d upgrade jobs are already waiting or running; let them finish or cancel one first", active)
+		}
 		if in.MealID != "" {
 			if _, err := loadMeal(ctx, tx, in.MealID); err != nil {
 				return err

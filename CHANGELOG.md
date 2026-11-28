@@ -55,6 +55,10 @@ include breaking changes, and they're called out here.
   review and upgrade job tables. As
   with any migration, take a backup first; an older Sous will refuse to open
   the upgraded library.
+- At most 10 background upgrade jobs wait or run at once; queueing another
+  is refused until one finishes or is cancelled. Sous doesn't follow
+  redirects from its models' endpoint, and refuses an `OUTPOST_AI_URL` that
+  isn't a plain http(s) URL.
 
 ## [0.6.0] - 2026-11-25
 
