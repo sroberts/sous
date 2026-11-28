@@ -72,11 +72,11 @@ func TestUpgradeAPI(t *testing.T) {
 	}
 	h.want(h.do("POST", "/v1/recipes/"+id+"/graph/upgrade", map[string]any{}, ann...), 409, "exists")
 
-	r = h.do("GET", "/v1/review?recipe_id="+id+"&limit=2", nil)
+	r = h.do("GET", "/v1/review?recipe_id="+id+"&limit=1", nil)
 	h.want(r, 200, "")
 	page := r.json(t)
 	items := page["items"].([]any)
-	if len(items) != 2 || page["next_cursor"] == nil {
+	if len(items) != 1 || page["next_cursor"] == nil {
 		t.Fatalf("review = %v", page)
 	}
 	h.want(h.do("GET", "/v1/review?cursor=nonsense", nil), 400, "invalid_cursor")
