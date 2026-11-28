@@ -16,12 +16,27 @@ include breaking changes, and they're called out here.
   MCP (`get_recipe_graph`, `validate_recipe_graph`, `set_recipe_graph`,
   `delete_recipe_graph`) and REST (`/v1/recipes/{id}/graph`). A graph shows
   the step timing it comes to; meal plans don't use graphs yet.
+- Assistants can draft step graphs and Sous labels them locally: the
+  assistant writes the actions and what joins them (`draft_recipe_graph`,
+  with `list_recipes_without_graph` to work through the library), and a
+  small decision model on Ollama (Laya) classifies each action and says how
+  sure it is. Review only what it wasn't sure of, most consequential first;
+  corrections are kept to learn from (`list_review_items`,
+  `resolve_review_items`, and the `upgrade_step_graphs` and `review_session`
+  prompts; REST too). With a local graph model (`SOUS_GRAPH_MODEL`), Sous
+  can draft by itself, one recipe or many in the background
+  (`upgrade_recipe`, `upgrade_recipes`, `get_upgrade_job`,
+  `cancel_upgrade_job`). Set up with `SOUS_OLLAMA_URL`,
+  `SOUS_DECISION_MODEL` and `SOUS_AUTO_VERIFY`; under Outpost, Sous uses
+  the installation's own models (`outpost ai`): the System 1 model to
+  label, and the LLM, when Outpost gives it to Sous, to draft by itself.
 - Your kitchen lists pans and containers (a Dutch oven, sheet pans) and
   counter space, for step graphs to use. An update that leaves them out
   keeps them as they are.
 
 ### Changed
-- Upgrading runs database migration 4, which adds the step graph tables. As
+- Upgrading runs database migrations 4 and 5, which add the step graph,
+  review and upgrade job tables. As
   with any migration, take a backup first; an older Sous will refuse to open
   the upgraded library.
 

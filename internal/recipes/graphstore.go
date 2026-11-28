@@ -32,7 +32,6 @@ func (s *Service) SetRecipeGraph(ctx context.Context, c identity.Caller, recipeI
 	if err != nil {
 		return GraphView{}, err
 	}
-	now := s.stamp()
 	var out GraphView
 	err = s.st.Write(ctx, func(tx *sql.Tx) error {
 		r, err := loadRecipe(ctx, tx, recipeID, who)
@@ -63,45 +62,55 @@ func (s *Service) SetRecipeGraph(ctx context.Context, c identity.Caller, recipeI
 			e.CurrentGraph = &cur
 			return e
 		}
-		if err := normaliseGraph(&in, r); err != nil {
-			return err
-		}
-		k, err := loadKitchen(ctx, tx)
-		if err != nil {
-			return err
-		}
-		g := RecipeGraph{
-			RecipeID: recipeID, RecipeVersion: recipeVersion, OntologyVersion: OntologyVersion,
-			Status: in.Status, ServeItemID: in.ServeItemID, Nodes: in.Nodes, Items: in.Items,
-			CreatedAt: now, CreatedBy: who, UpdatedAt: now, UpdatedBy: who,
-		}
-		if in.Status == GraphVerified {
-			if chk := checkGraph(&g, r, k.KitchenProfile); !chk.Valid {
-				msgs := make([]string, 0, 3)
-				for _, p := range chk.Errors[:min(3, len(chk.Errors))] {
-					msgs = append(msgs, p.Message)
-				}
-				return Errorf(CodeInvalid, "a verified graph can't have errors, and this one has %d: %s", len(chk.Errors), strings.Join(msgs, "; "))
-			}
-		}
-		stampReviews(&g, prev, in.Status == GraphVerified, who, now)
-		if prev != nil && prev.RecipeVersion == recipeVersion {
-			g.CreatedAt, g.CreatedBy = prev.CreatedAt, prev.CreatedBy
-		}
-		if err := tx.QueryRowContext(ctx, `SELECT coalesce(max(version), 0) + 1 FROM recipe_graphs WHERE recipe_id = ?`, recipeID).
-			Scan(&g.Version); err != nil {
-			return err
-		}
-		if err := storeGraph(ctx, tx, g); err != nil {
-			return err
-		}
-		if err := s.logChange(ctx, tx, c, now, "recipe", recipeID, "update", "Edited "+r.Title+": step graph"); err != nil {
+		if err := s.saveGraph(ctx, tx, c, r, prev, in, nil, "Edited "+r.Title+": step graph"); err != nil {
 			return err
 		}
 		out, err = graphView(ctx, tx, recipeID, who)
 		return err
 	})
 	return out, err
+}
+
+// saveGraph normalises in, checks a verified one, stamps reviews (carried
+// over from prev, every label when verified, and the labels in stamp) and
+// stores it as the recipe's graph, logging summary. The caller has checked
+// the recipe and graph versions.
+func (s *Service) saveGraph(ctx context.Context, tx *sql.Tx, c identity.Caller, r Recipe, prev *RecipeGraph, in GraphInput,
+	stamp map[graphLabelRef]bool, summary string) error {
+	who, now := c.Username(), s.stamp()
+	if err := normaliseGraph(&in, r); err != nil {
+		return err
+	}
+	k, err := loadKitchen(ctx, tx)
+	if err != nil {
+		return err
+	}
+	g := RecipeGraph{
+		RecipeID: r.ID, RecipeVersion: r.Version, OntologyVersion: OntologyVersion,
+		Status: in.Status, ServeItemID: in.ServeItemID, Nodes: in.Nodes, Items: in.Items,
+		CreatedAt: now, CreatedBy: who, UpdatedAt: now, UpdatedBy: who,
+	}
+	if in.Status == GraphVerified {
+		if chk := checkGraph(&g, r, k.KitchenProfile); !chk.Valid {
+			msgs := make([]string, 0, 3)
+			for _, p := range chk.Errors[:min(3, len(chk.Errors))] {
+				msgs = append(msgs, p.Message)
+			}
+			return Errorf(CodeInvalid, "a verified graph can't have errors, and this one has %d: %s", len(chk.Errors), strings.Join(msgs, "; "))
+		}
+	}
+	stampReviews(&g, prev, in.Status == GraphVerified, who, now, stamp)
+	if prev != nil && prev.RecipeVersion == r.Version {
+		g.CreatedAt, g.CreatedBy = prev.CreatedAt, prev.CreatedBy
+	}
+	if err := tx.QueryRowContext(ctx, `SELECT coalesce(max(version), 0) + 1 FROM recipe_graphs WHERE recipe_id = ?`, r.ID).
+		Scan(&g.Version); err != nil {
+		return err
+	}
+	if err := storeGraph(ctx, tx, g); err != nil {
+		return err
+	}
+	return s.logChange(ctx, tx, c, now, "recipe", r.ID, "update", summary)
 }
 
 // DeleteRecipeGraph takes a recipe's step graph away (into the trash with
@@ -189,22 +198,23 @@ func graphView(ctx context.Context, tx *sql.Tx, recipeID, username string) (Grap
 	if markStale(g, r) {
 		g.Status = GraphStale
 	}
-	return GraphView{Graph: *g, Check: checkGraph(g, r, k.KitchenProfile), Projection: project(*g, len(r.Steps))}, nil
+	return GraphView{Graph: *g, ReviewCount: reviewCount(g.Nodes), Check: checkGraph(g, r, k.KitchenProfile), Projection: project(*g, len(r.Steps))}, nil
 }
 
 // stampReviews carries review stamps over from prev for labels whose value
-// hasn't changed, and with verify stamps every label still unreviewed.
-func stampReviews(g *RecipeGraph, prev *RecipeGraph, verify bool, who, now string) {
-	type stamp struct {
+// hasn't changed, and stamps every label still unreviewed with verify, or
+// those named in stamp.
+func stampReviews(g *RecipeGraph, prev *RecipeGraph, verify bool, who, now string, stamp map[graphLabelRef]bool) {
+	type kept struct {
 		value  string
 		by, at *string
 	}
-	old := map[graphLabelRef]stamp{}
+	old := map[graphLabelRef]kept{}
 	if prev != nil {
 		for i := range prev.Nodes {
 			for _, l := range labelsOf(&prev.Nodes[i]) {
 				if *l.by != nil {
-					old[graphLabelRef{prev.Nodes[i].ID, l.field}] = stamp{l.json(), *l.by, *l.at}
+					old[graphLabelRef{prev.Nodes[i].ID, l.field}] = kept{l.json(), *l.by, *l.at}
 				}
 			}
 		}
@@ -213,7 +223,7 @@ func stampReviews(g *RecipeGraph, prev *RecipeGraph, verify bool, who, now strin
 		for _, l := range labelsOf(&g.Nodes[i]) {
 			if o, ok := old[graphLabelRef{g.Nodes[i].ID, l.field}]; ok && o.value == l.json() {
 				*l.by, *l.at = o.by, o.at
-			} else if verify {
+			} else if verify || stamp[graphLabelRef{g.Nodes[i].ID, l.field}] {
 				by, at := who, now
 				*l.by, *l.at = &by, &at
 			}
@@ -226,6 +236,7 @@ func stampReviews(g *RecipeGraph, prev *RecipeGraph, verify bool, who, now strin
 type labelRow struct {
 	field  string
 	value  any
+	alts   any
 	source *string
 	conf   **float64
 	by, at **string
@@ -237,7 +248,11 @@ func (l labelRow) json() string {
 }
 
 func rowOf[T any](field string, l *Label[T]) labelRow {
-	return labelRow{field, l.Value, &l.Source, &l.Confidence, &l.ReviewedBy, &l.ReviewedAt}
+	var alts any
+	if len(l.Alternatives) > 0 {
+		alts = l.Alternatives
+	}
+	return labelRow{field, l.Value, alts, &l.Source, &l.Confidence, &l.ReviewedBy, &l.ReviewedAt}
 }
 
 // labelsOf lists a node's labels that are set.
@@ -295,9 +310,15 @@ func storeGraph(ctx context.Context, tx *sql.Tx, g RecipeGraph) error {
 			return err
 		}
 		for _, l := range labelsOf(n) {
+			var alts *string
+			if l.alts != nil {
+				b, _ := json.Marshal(l.alts)
+				a := string(b)
+				alts = &a
+			}
 			if _, err := tx.ExecContext(ctx, `INSERT INTO graph_labels (recipe_id, recipe_version, node_id, field, value, source,
-				confidence, reviewed_by, reviewed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-				g.RecipeID, g.RecipeVersion, n.ID, l.field, l.json(), *l.source, **l.conf, *l.by, *l.at); err != nil {
+				confidence, reviewed_by, reviewed_at, alternatives) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+				g.RecipeID, g.RecipeVersion, n.ID, l.field, l.json(), *l.source, **l.conf, *l.by, *l.at, alts); err != nil {
 				return err
 			}
 		}
@@ -362,7 +383,7 @@ func loadGraph(ctx context.Context, tx *sql.Tx, recipeID string) (*RecipeGraph, 
 		return nil, err
 	}
 
-	rows, err = tx.QueryContext(ctx, `SELECT node_id, field, value, source, confidence, reviewed_by, reviewed_at
+	rows, err = tx.QueryContext(ctx, `SELECT node_id, field, value, source, confidence, reviewed_by, reviewed_at, alternatives
 		FROM graph_labels WHERE recipe_id = ? AND recipe_version = ?`, key...)
 	if err != nil {
 		return nil, err
@@ -370,8 +391,8 @@ func loadGraph(ctx context.Context, tx *sql.Tx, recipeID string) (*RecipeGraph, 
 	for rows.Next() {
 		var node, field, value, source string
 		var conf float64
-		var by, at *string
-		if err := rows.Scan(&node, &field, &value, &source, &conf, &by, &at); err != nil {
+		var by, at, alts *string
+		if err := rows.Scan(&node, &field, &value, &source, &conf, &by, &at, &alts); err != nil {
 			rows.Close()
 			return nil, err
 		}
@@ -379,7 +400,7 @@ func loadGraph(ctx context.Context, tx *sql.Tx, recipeID string) (*RecipeGraph, 
 		if !ok {
 			continue
 		}
-		if err := fillLabel(&g.Nodes[i], field, value, source, conf, by, at); err != nil {
+		if err := fillLabel(&g.Nodes[i], field, value, source, conf, by, at, alts); err != nil {
 			rows.Close()
 			return nil, err
 		}
@@ -395,34 +416,39 @@ func closeRows(rows *sql.Rows) error {
 }
 
 // fillLabel sets one stored label on its node.
-func fillLabel(n *ActionNode, field, value, source string, conf float64, by, at *string) error {
+func fillLabel(n *ActionNode, field, value, source string, conf float64, by, at, alts *string) error {
 	switch field {
 	case "action":
-		return setLabel(&n.Action, value, source, conf, by, at)
+		return setLabel(&n.Action, value, source, conf, by, at, alts)
 	case "duration":
-		return setLabel(&n.Duration, value, source, conf, by, at)
+		return setLabel(&n.Duration, value, source, conf, by, at, alts)
 	case "attention":
-		return setLabel(&n.Attention, value, source, conf, by, at)
+		return setLabel(&n.Attention, value, source, conf, by, at, alts)
 	case "check_interval_min":
 		n.CheckInterval = new(Label[int])
-		return setLabel(n.CheckInterval, value, source, conf, by, at)
+		return setLabel(n.CheckInterval, value, source, conf, by, at, alts)
 	case "interruptible":
 		n.Interruptible = new(Label[bool])
-		return setLabel(n.Interruptible, value, source, conf, by, at)
+		return setLabel(n.Interruptible, value, source, conf, by, at, alts)
 	case "equipment":
 		n.Equipment = new(Label[[]EquipmentClaim])
-		return setLabel(n.Equipment, value, source, conf, by, at)
+		return setLabel(n.Equipment, value, source, conf, by, at, alts)
 	case "hold":
 		n.Hold = new(Label[Hold])
-		return setLabel(n.Hold, value, source, conf, by, at)
+		return setLabel(n.Hold, value, source, conf, by, at, alts)
 	case "timing_anchor":
 		n.TimingAnchor = new(Label[string])
-		return setLabel(n.TimingAnchor, value, source, conf, by, at)
+		return setLabel(n.TimingAnchor, value, source, conf, by, at, alts)
 	}
 	return nil
 }
 
-func setLabel[T any](l *Label[T], value, source string, conf float64, by, at *string) error {
+func setLabel[T any](l *Label[T], value, source string, conf float64, by, at, alts *string) error {
 	l.Source, l.Confidence, l.ReviewedBy, l.ReviewedAt = source, &conf, by, at
+	if alts != nil {
+		if err := json.Unmarshal([]byte(*alts), &l.Alternatives); err != nil {
+			return err
+		}
+	}
 	return json.Unmarshal([]byte(value), &l.Value)
 }

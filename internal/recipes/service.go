@@ -31,6 +31,8 @@ type Service struct {
 	st  *storage.Store
 	log *slog.Logger
 	now func() time.Time
+	up  *Upgrader     // nil: upgrades are off
+	job chan struct{} // wakes the upgrade worker
 }
 
 // Service is the people directory the identity resolver consults.

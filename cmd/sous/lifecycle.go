@@ -19,6 +19,7 @@ import (
 	"github.com/sroberts/sous/internal/identity"
 	"github.com/sroberts/sous/internal/importer"
 	"github.com/sroberts/sous/internal/mcp"
+	"github.com/sroberts/sous/internal/ollama"
 	"github.com/sroberts/sous/internal/recipes"
 	"github.com/sroberts/sous/internal/safefetch"
 	"github.com/sroberts/sous/internal/samples"
@@ -51,6 +52,11 @@ func run(args []string, getenv func(string) string, stdout io.Writer) int {
 		return 1
 	}
 	level.Set(cfg.LogLevel)
+	upCfg, err := config.LoadUpgrade(getenv)
+	if err != nil {
+		log.Error("invalid configuration", "error", err.Error())
+		return 1
+	}
 	auth := "none"
 	if cfg.Gateway() {
 		auth = "gateway"
@@ -95,6 +101,27 @@ func run(args []string, getenv func(string) string, stdout io.Writer) int {
 			return
 		}
 		svc := recipes.New(st, log)
+		switch {
+		case upCfg.Outpost():
+			// The operator's models: whichever of llm and system1 Outpost
+			// gives Sous. Labels need system1; drafting by itself, llm.
+			oc := ollama.NewOutpost(upCfg.OutpostAIURL, upCfg.OutpostAIToken)
+			if llm, system1 := oc.Granted(base); system1 {
+				up := &recipes.Upgrader{Dec: oc, AutoVerify: upCfg.AutoVerify}
+				if llm {
+					up.Gen = oc
+				}
+				svc.SetUpgrader(up)
+				log.Info("step graph models from Outpost", "llm", llm, "system1", system1)
+			}
+		case upCfg.On():
+			oc := ollama.New(upCfg.OllamaURL, upCfg.GraphModel, upCfg.DecisionModel)
+			up := &recipes.Upgrader{Dec: oc, AutoVerify: upCfg.AutoVerify}
+			if upCfg.GraphModel != "" {
+				up.Gen = oc
+			}
+			svc.SetUpgrader(up)
+		}
 		if !cfg.NoSamples {
 			// The samples are a welcome, not data anyone relies on, so
 			// failing to add them doesn't stop Sous starting. Once base is
@@ -171,6 +198,7 @@ func run(args []string, getenv func(string) string, stdout io.Writer) int {
 	app.Handle("/", ui.Handler(log))
 	s.setApp(app)
 	s.ready.Store(true)
+	go svc.RunUpgrades(base)
 	log.Info("ready", "port", cfg.Port, "storage", cfg.StorageDir, "version", version,
 		"schema_version", store.SchemaVersion(), "auth", auth)
 

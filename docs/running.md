@@ -85,3 +85,31 @@ Delete them and they stay deleted. Sous only adds them to a library that has
 never been used, so a restore that brings recipes or history never gets them
 (restoring a never-used library can), and `SOUS_SAMPLES=false` skips them on
 that start.
+
+## Step graphs with local models
+
+Sous labels step graphs (see [Connecting an assistant](agents.md#step-graphs))
+with Laya, a small decision model on [Ollama](https://ollama.com) on the same
+machine, which classifies each action and says how sure it is; an assistant
+writes the structure. Optionally a local graph model writes the structure
+too, so Sous can upgrade recipes by itself in the background, though the
+small models tried so far didn't do it well.
+
+| Setting | Default | |
+|---|---|---|
+| `SOUS_OLLAMA_URL` | `http://127.0.0.1:11434` | `off` turns upgrades off |
+| `SOUS_GRAPH_MODEL` | unset | a local model to write structure too; unset leaves it to assistants |
+| `SOUS_DECISION_MODEL` | `laya` | |
+| `SOUS_AUTO_VERIFY` | `false` | `true` saves an upgrade that's sure of everything as verified, without review |
+
+**Under Outpost** none of this is needed: Sous uses the models you've chosen
+for the whole installation (`outpost ai`), the System 1 model to label and,
+if Outpost gives Sous the LLM, the LLM to draft graphs by itself in the
+background. Choose them with `outpost ai set llm …` and
+`outpost ai set system1 laya`, and limit the LLM to Sous with
+`outpost ai apps llm sous` if it's a hosted one. Setting `SOUS_OLLAMA_URL`
+points Sous at an Ollama of its own instead. Sous starts
+whether or not Ollama is there; upgrades say the models can't be reached
+until they can, and a background upgrade waits for them rather than giving
+up.
+

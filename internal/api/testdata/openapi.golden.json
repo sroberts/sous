@@ -112,6 +112,98 @@
         }
       }
     },
+    "/v1/graphs/todo": {
+      "get": {
+        "operationId": "listRecipesWithoutGraph",
+        "summary": "Recipes with steps and no step graph, by title, with how many remain",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Person"
+          },
+          {
+            "$ref": "#/components/parameters/Via"
+          },
+          {
+            "name": "meal_id",
+            "in": "query",
+            "description": "only the dishes on this meal",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "default 20, at most 100",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphTodos"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid, invalid_cursor or unknown_image; the message says what is wrong",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "who_are_you (a write from nobody), unknown_person, invalid_identity or gateway_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "starting, or identity_unavailable: the gateway's keys cannot be fetched",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/images": {
       "post": {
         "operationId": "uploadImage",
@@ -3079,6 +3171,276 @@
         }
       }
     },
+    "/v1/recipes/{id}/graph/draft": {
+      "post": {
+        "operationId": "draftRecipeGraph",
+        "summary": "Send a step graph's structure for Sous to check, classify with its decision model and save; a draft with problems is 400 with them listed",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Person"
+          },
+          {
+            "$ref": "#/components/parameters/Via"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "recipe ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/draftBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpgradeResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid, invalid_cursor or unknown_image; the message says what is wrong",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "who_are_you (a write from nobody), unknown_person, invalid_identity or gateway_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "cross_origin: a browser request from another site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "exists, or deleted: the recipe is in the trash",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "stale: the recipe changed since the version in If-Match; current holds it as it now stands",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaleError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "too_large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "starting, or identity_unavailable: the gateway's keys cannot be fetched",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/recipes/{id}/graph/upgrade": {
+      "post": {
+        "operationId": "upgradeRecipe",
+        "summary": "Turn a recipe into a step graph with Sous's local models. Takes tens of seconds; 503 when the models are off or unreachable",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Person"
+          },
+          {
+            "$ref": "#/components/parameters/Via"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "recipe ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/upgradeBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpgradeResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid, invalid_cursor or unknown_image; the message says what is wrong",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "who_are_you (a write from nobody), unknown_person, invalid_identity or gateway_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "cross_origin: a browser request from another site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "exists, or deleted: the recipe is in the trash",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "stale: the recipe changed since the version in If-Match; current holds it as it now stands",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaleError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "too_large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "starting, or identity_unavailable: the gateway's keys cannot be fetched",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/recipes/{id}/mine": {
       "put": {
         "operationId": "setMine",
@@ -3256,6 +3618,236 @@
           },
           "404": {
             "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "starting, or identity_unavailable: the gateway's keys cannot be fetched",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/review": {
+      "get": {
+        "operationId": "listReviewItems",
+        "summary": "Step graph labels to confirm or correct, most consequential first",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Person"
+          },
+          {
+            "$ref": "#/components/parameters/Via"
+          },
+          {
+            "name": "recipe_id",
+            "in": "query",
+            "description": "only this recipe",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "meal_id",
+            "in": "query",
+            "description": "only the dishes on this meal",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "field",
+            "in": "query",
+            "description": "only this field: action, duration, attention, check_interval_min, interruptible, equipment, hold or timing_anchor",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "at most this many; default 20, at most 100",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "from the last page's next_cursor",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid, invalid_cursor or unknown_image; the message says what is wrong",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "who_are_you (a write from nobody), unknown_person, invalid_identity or gateway_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "starting, or identity_unavailable: the gateway's keys cannot be fetched",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "resolveReviewItems",
+        "summary": "Confirm or correct labels of one recipe's step graph, and optionally accept it as verified",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Person"
+          },
+          {
+            "$ref": "#/components/parameters/Via"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResolveResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid, invalid_cursor or unknown_image; the message says what is wrong",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "who_are_you (a write from nobody), unknown_person, invalid_identity or gateway_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "cross_origin: a browser request from another site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "exists, or deleted: the recipe is in the trash",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "stale: the recipe changed since the version in If-Match; current holds it as it now stands",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaleError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "too_large",
             "content": {
               "application/json": {
                 "schema": {
@@ -3576,6 +4168,262 @@
           }
         }
       }
+    },
+    "/v1/upgrades": {
+      "post": {
+        "operationId": "queueUpgrades",
+        "summary": "Queue recipes to be upgraded to step graphs in the background",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Person"
+          },
+          {
+            "$ref": "#/components/parameters/Via"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpgradeJobRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpgradeJob"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid, invalid_cursor or unknown_image; the message says what is wrong",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "who_are_you (a write from nobody), unknown_person, invalid_identity or gateway_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "cross_origin: a browser request from another site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "too_large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "starting, or identity_unavailable: the gateway's keys cannot be fetched",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/upgrades/{id}": {
+      "get": {
+        "operationId": "getUpgradeJob",
+        "summary": "A background upgrade and how far it has got",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Person"
+          },
+          {
+            "$ref": "#/components/parameters/Via"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "recipe ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpgradeJob"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "who_are_you (a write from nobody), unknown_person, invalid_identity or gateway_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "starting, or identity_unavailable: the gateway's keys cannot be fetched",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/upgrades/{id}/cancel": {
+      "post": {
+        "operationId": "cancelUpgradeJob",
+        "summary": "Stop a background upgrade; recipes not started are skipped",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Person"
+          },
+          {
+            "$ref": "#/components/parameters/Via"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "recipe ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpgradeJob"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "who_are_you (a write from nobody), unknown_person, invalid_identity or gateway_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "cross_origin: a browser request from another site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "starting, or identity_unavailable: the gateway's keys cannot be fetched",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3624,6 +4472,29 @@
                   "string"
                 ],
                 "description": "set by Sous"
+              },
+              "alternatives": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "value": {
+                      "type": "string"
+                    },
+                    "probability": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "value",
+                    "probability"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "other answers the source weighed, most likely first, with their probabilities"
               }
             },
             "description": "prep, combine, heat, cool, rest, ferment, transfer, assemble, plate or setup (preheat, boil water)",
@@ -3689,6 +4560,29 @@
                   "string"
                 ],
                 "description": "set by Sous"
+              },
+              "alternatives": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "value": {
+                      "$ref": "#/components/schemas/Duration"
+                    },
+                    "probability": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "value",
+                    "probability"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "other answers the source weighed, most likely first, with their probabilities"
               }
             },
             "description": "minutes; times stated in the recipe win over estimates",
@@ -3727,6 +4621,29 @@
                   "string"
                 ],
                 "description": "set by Sous"
+              },
+              "alternatives": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "value": {
+                      "type": "string"
+                    },
+                    "probability": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "value",
+                    "probability"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "other answers the source weighed, most likely first, with their probabilities"
               }
             },
             "description": "active (the cook is busy throughout), intermittent (check-ins) or passive (looks after itself)",
@@ -3768,6 +4685,29 @@
                   "string"
                 ],
                 "description": "set by Sous"
+              },
+              "alternatives": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "value": {
+                      "type": "integer"
+                    },
+                    "probability": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "value",
+                    "probability"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "other answers the source weighed, most likely first, with their probabilities"
               }
             },
             "description": "minutes between check-ins; needed when attention is intermittent",
@@ -3809,6 +4749,29 @@
                   "string"
                 ],
                 "description": "set by Sous"
+              },
+              "alternatives": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "value": {
+                      "type": "boolean"
+                    },
+                    "probability": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "value",
+                    "probability"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "other answers the source weighed, most likely first, with their probabilities"
               }
             },
             "description": "whether the cook can step away mid-action without harm",
@@ -3856,6 +4819,35 @@
                   "string"
                 ],
                 "description": "set by Sous"
+              },
+              "alternatives": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "value": {
+                      "type": [
+                        "null",
+                        "array"
+                      ],
+                      "items": {
+                        "$ref": "#/components/schemas/EquipmentClaim"
+                      }
+                    },
+                    "probability": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "value",
+                    "probability"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "other answers the source weighed, most likely first, with their probabilities"
               }
             },
             "description": "what it occupies; unset or an empty list is nothing",
@@ -3897,6 +4889,29 @@
                   "string"
                 ],
                 "description": "set by Sous"
+              },
+              "alternatives": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "value": {
+                      "$ref": "#/components/schemas/Hold"
+                    },
+                    "probability": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "value",
+                    "probability"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "other answers the source weighed, most likely first, with their probabilities"
               }
             },
             "description": "how long its output can wait before it's used next",
@@ -3938,6 +4953,29 @@
                   "string"
                 ],
                 "description": "set by Sous"
+              },
+              "alternatives": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "value": {
+                      "type": "string"
+                    },
+                    "probability": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "value",
+                    "probability"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "other answers the source weighed, most likely first, with their probabilities"
               }
             },
             "description": "asap_after_inputs, flexible or just_before_serve",
@@ -4418,11 +5456,62 @@
         ],
         "additionalProperties": false
       },
+      "GraphTodo": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer"
+          },
+          "steps": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "version",
+          "steps"
+        ],
+        "additionalProperties": false
+      },
+      "GraphTodos": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/GraphTodo"
+            }
+          },
+          "remaining": {
+            "type": "integer",
+            "description": "recipes without a step graph in all, this batch included"
+          }
+        },
+        "required": [
+          "items",
+          "remaining"
+        ],
+        "additionalProperties": false
+      },
       "GraphView": {
         "type": "object",
         "properties": {
           "graph": {
             "$ref": "#/components/schemas/RecipeGraph"
+          },
+          "review_count": {
+            "type": "integer",
+            "description": "labels to confirm or correct: those below their field's threshold, and implied actions, not yet reviewed"
           },
           "check": {
             "$ref": "#/components/schemas/GraphCheck"
@@ -4447,6 +5536,7 @@
         },
         "required": [
           "graph",
+          "review_count",
           "check",
           "projection"
         ],
@@ -6630,6 +7720,167 @@
         },
         "additionalProperties": false
       },
+      "ResolveChoice": {
+        "type": "object",
+        "properties": {
+          "node_id": {
+            "type": "string"
+          },
+          "field": {
+            "type": "string"
+          },
+          "value": {
+            "description": "the value in the field's own shape: a string for action, attention and timing_anchor; {min, typical, max} for duration; a number for check_interval_min; true or false for interruptible; a list of claims for equipment; {max_min, where, …} for hold"
+          }
+        },
+        "required": [
+          "node_id",
+          "field",
+          "value"
+        ],
+        "additionalProperties": false
+      },
+      "ResolveRequest": {
+        "type": "object",
+        "properties": {
+          "recipe_id": {
+            "type": "string"
+          },
+          "graph_version": {
+            "type": "integer",
+            "description": "from list_review_items or get_recipe_graph; a stale one is refused"
+          },
+          "items": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ResolveChoice"
+            }
+          },
+          "accept": {
+            "type": "boolean",
+            "description": "also save the graph as verified, which needs nothing left to review and no errors"
+          }
+        },
+        "required": [
+          "recipe_id",
+          "graph_version",
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "ResolveResult": {
+        "type": "object",
+        "properties": {
+          "graph": {
+            "$ref": "#/components/schemas/GraphView"
+          },
+          "remaining": {
+            "type": "integer",
+            "description": "labels on this graph still to review"
+          }
+        },
+        "required": [
+          "graph",
+          "remaining"
+        ],
+        "additionalProperties": false
+      },
+      "ReviewItem": {
+        "type": "object",
+        "properties": {
+          "recipe_id": {
+            "type": "string"
+          },
+          "recipe_title": {
+            "type": "string"
+          },
+          "graph_version": {
+            "type": "integer",
+            "description": "what resolve_review_items needs"
+          },
+          "node_id": {
+            "type": "string"
+          },
+          "node_text": {
+            "type": "string"
+          },
+          "quote": {
+            "type": "string",
+            "description": "the recipe's words the action comes from; empty for an implied action"
+          },
+          "implied": {
+            "type": "boolean"
+          },
+          "field": {
+            "type": "string"
+          },
+          "critical": {
+            "type": "boolean",
+            "description": "whether the field decides when things happen: attention, hold, timing_anchor or equipment"
+          },
+          "value": {
+            "description": "the label's value, in the field's own shape"
+          },
+          "source": {
+            "type": "string"
+          },
+          "confidence": {
+            "type": "number"
+          },
+          "alternatives": {
+            "description": "other answers weighed, most likely first, each {value, probability}; null for none"
+          }
+        },
+        "required": [
+          "recipe_id",
+          "recipe_title",
+          "graph_version",
+          "node_id",
+          "node_text",
+          "quote",
+          "implied",
+          "field",
+          "critical",
+          "value",
+          "source",
+          "confidence",
+          "alternatives"
+        ],
+        "additionalProperties": false
+      },
+      "ReviewPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ReviewItem"
+            }
+          },
+          "remaining": {
+            "type": "integer",
+            "description": "labels to review in all that match, this page included"
+          },
+          "next_cursor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "remaining",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
       "ServingDish": {
         "type": "object",
         "properties": {
@@ -7108,6 +8359,164 @@
         },
         "additionalProperties": false
       },
+      "UpgradeJob": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "description": "queued, running, done or cancelled"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "force": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "created_by": {
+            "type": "string"
+          },
+          "finished_at": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "counts": {
+            "type": "object",
+            "description": "recipes by status: pending, running, done, needs_review, failed, skipped",
+            "additionalProperties": {
+              "type": "integer"
+            }
+          },
+          "items": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/UpgradeJobItem"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "mode",
+          "force",
+          "created_at",
+          "created_by",
+          "finished_at",
+          "counts",
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "UpgradeJobItem": {
+        "type": "object",
+        "properties": {
+          "recipe_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "description": "pending, running, done (saved, nothing to review), needs_review, failed or skipped (deleted, or already has a graph)"
+          },
+          "review_count": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "error": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "recipe_id",
+          "title",
+          "status",
+          "review_count",
+          "error"
+        ],
+        "additionalProperties": false
+      },
+      "UpgradeJobRequest": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "recipe IDs; or leave out and filter"
+          },
+          "tag": {
+            "type": "string",
+            "description": "only recipes with this tag"
+          },
+          "meal_id": {
+            "type": "string",
+            "description": "only the dishes on this meal"
+          },
+          "without_graph": {
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "description": "only recipes with no step graph yet; unset is true"
+          },
+          "mode": {
+            "type": "string",
+            "description": "draft (unset) or apply, as for upgrade_recipe"
+          },
+          "force": {
+            "type": "boolean",
+            "description": "redo recipes that already have a graph"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "at most this many recipes, by title; unset is all that match, up to 1000"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpgradeResult": {
+        "type": "object",
+        "properties": {
+          "graph": {
+            "$ref": "#/components/schemas/GraphView"
+          },
+          "attempts": {
+            "type": "integer",
+            "description": "1, or 2 when the first graph had errors and was sent back to be fixed"
+          },
+          "unplaced_quotes": {
+            "type": "integer",
+            "description": "actions whose quoted words weren't found in their step; they point at the whole step"
+          }
+        },
+        "required": [
+          "graph",
+          "attempts",
+          "unplaced_quotes"
+        ],
+        "additionalProperties": false
+      },
       "Vessel": {
         "type": "object",
         "properties": {
@@ -7122,6 +8531,130 @@
         "required": [
           "name",
           "count"
+        ],
+        "additionalProperties": false
+      },
+      "draftBody": {
+        "type": "object",
+        "properties": {
+          "recipe_version": {
+            "type": "integer",
+            "description": "the recipe's version the quotes were read from"
+          },
+          "mode": {
+            "type": "string",
+            "description": "draft (unset) or apply"
+          },
+          "force": {
+            "type": "boolean",
+            "description": "replace the recipe's step graph if it has one"
+          },
+          "items": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "short lowercase words joined with -"
+                },
+                "kind": {
+                  "type": "string",
+                  "description": "ingredient, intermediate or final"
+                },
+                "label": {
+                  "type": "string",
+                  "description": "what it is: butter, the dough, reserved pasta water"
+                },
+                "line": {
+                  "type": "integer",
+                  "description": "for an ingredient, its line of the ingredient list, from 1"
+                }
+              },
+              "required": [
+                "id",
+                "kind",
+                "label"
+              ],
+              "additionalProperties": false
+            },
+            "description": "every ingredient line as an ingredient item with its line; things made along the way as intermediates; the dish that's served as the one final item"
+          },
+          "nodes": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "short lowercase words joined with -"
+                },
+                "step": {
+                  "type": "integer",
+                  "description": "the step it comes from (or, implied, serves), from 1"
+                },
+                "quote": {
+                  "type": "string",
+                  "description": "the step's words for this action, copied exactly; empty for an implied action"
+                },
+                "text": {
+                  "type": "string",
+                  "description": "the action on its own, a few words"
+                },
+                "inputs": {
+                  "type": [
+                    "null",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "ids of the items it uses"
+                },
+                "outputs": {
+                  "type": [
+                    "null",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "ids of the items it makes"
+                },
+                "implied": {
+                  "type": "boolean",
+                  "description": "true for an action the words assume but never state: a preheat, boiling water, chopping what the list says is chopped"
+                }
+              },
+              "required": [
+                "id",
+                "step",
+                "quote",
+                "text",
+                "inputs",
+                "outputs",
+                "implied"
+              ],
+              "additionalProperties": false
+            },
+            "description": "the single actions, in the order they're written"
+          },
+          "serve": {
+            "type": "string",
+            "description": "the id of the final item that goes to the table"
+          }
+        },
+        "required": [
+          "recipe_version",
+          "items",
+          "nodes",
+          "serve"
         ],
         "additionalProperties": false
       },
@@ -7217,6 +8750,29 @@
                         "string"
                       ],
                       "description": "set by Sous"
+                    },
+                    "alternatives": {
+                      "type": [
+                        "null",
+                        "array"
+                      ],
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "value": {
+                            "type": "string"
+                          },
+                          "probability": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "value",
+                          "probability"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "description": "other answers the source weighed, most likely first, with their probabilities"
                     }
                   },
                   "description": "prep, combine, heat, cool, rest, ferment, transfer, assemble, plate or setup (preheat, boil water)",
@@ -7299,6 +8855,46 @@
                         "string"
                       ],
                       "description": "set by Sous"
+                    },
+                    "alternatives": {
+                      "type": [
+                        "null",
+                        "array"
+                      ],
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "value": {
+                            "type": "object",
+                            "properties": {
+                              "min": {
+                                "type": "integer"
+                              },
+                              "typical": {
+                                "type": "integer"
+                              },
+                              "max": {
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "min",
+                              "typical",
+                              "max"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "probability": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "value",
+                          "probability"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "description": "other answers the source weighed, most likely first, with their probabilities"
                     }
                   },
                   "description": "minutes; times stated in the recipe win over estimates",
@@ -7337,6 +8933,29 @@
                         "string"
                       ],
                       "description": "set by Sous"
+                    },
+                    "alternatives": {
+                      "type": [
+                        "null",
+                        "array"
+                      ],
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "value": {
+                            "type": "string"
+                          },
+                          "probability": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "value",
+                          "probability"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "description": "other answers the source weighed, most likely first, with their probabilities"
                     }
                   },
                   "description": "active (the cook is busy throughout), intermittent (check-ins) or passive (looks after itself)",
@@ -7378,6 +8997,29 @@
                         "string"
                       ],
                       "description": "set by Sous"
+                    },
+                    "alternatives": {
+                      "type": [
+                        "null",
+                        "array"
+                      ],
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "value": {
+                            "type": "integer"
+                          },
+                          "probability": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "value",
+                          "probability"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "description": "other answers the source weighed, most likely first, with their probabilities"
                     }
                   },
                   "description": "minutes between check-ins; needed when attention is intermittent",
@@ -7419,6 +9061,29 @@
                         "string"
                       ],
                       "description": "set by Sous"
+                    },
+                    "alternatives": {
+                      "type": [
+                        "null",
+                        "array"
+                      ],
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "value": {
+                            "type": "boolean"
+                          },
+                          "probability": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "value",
+                          "probability"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "description": "other answers the source weighed, most likely first, with their probabilities"
                     }
                   },
                   "description": "whether the cook can step away mid-action without harm",
@@ -7491,6 +9156,60 @@
                         "string"
                       ],
                       "description": "set by Sous"
+                    },
+                    "alternatives": {
+                      "type": [
+                        "null",
+                        "array"
+                      ],
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "value": {
+                            "type": [
+                              "null",
+                              "array"
+                            ],
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "resource": {
+                                  "type": "string",
+                                  "description": "oven, burner, counter, fridge, appliance:\u003cname\u003e or vessel:\u003cname\u003e, named as in the kitchen"
+                                },
+                                "count": {
+                                  "type": "integer",
+                                  "description": "racks, burners, units or places taken at once; unset is 1"
+                                },
+                                "temp_f": {
+                                  "type": [
+                                    "null",
+                                    "integer"
+                                  ],
+                                  "description": "oven temperature, °F"
+                                },
+                                "scope": {
+                                  "type": "string",
+                                  "description": "whole_node (unset), start_only or end_only"
+                                }
+                              },
+                              "required": [
+                                "resource"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "probability": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "value",
+                          "probability"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "description": "other answers the source weighed, most likely first, with their probabilities"
                     }
                   },
                   "description": "what it occupies; unset or an empty list is nothing",
@@ -7561,6 +9280,58 @@
                         "string"
                       ],
                       "description": "set by Sous"
+                    },
+                    "alternatives": {
+                      "type": [
+                        "null",
+                        "array"
+                      ],
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "value": {
+                            "type": "object",
+                            "properties": {
+                              "max_min": {
+                                "type": "integer",
+                                "description": "minutes it keeps"
+                              },
+                              "where": {
+                                "type": "string",
+                                "description": "fridge, counter or warm"
+                              },
+                              "reheat_min": {
+                                "type": [
+                                  "null",
+                                  "integer"
+                                ],
+                                "description": "minutes to bring it back before it's used"
+                              },
+                              "reheat_temp_f": {
+                                "type": [
+                                  "null",
+                                  "integer"
+                                ],
+                                "description": "oven temperature to reheat at, °F; unset brings it back out of the oven"
+                              }
+                            },
+                            "required": [
+                              "max_min",
+                              "where"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "probability": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "value",
+                          "probability"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "description": "other answers the source weighed, most likely first, with their probabilities"
                     }
                   },
                   "description": "how long its output can wait before it's used next",
@@ -7602,6 +9373,29 @@
                         "string"
                       ],
                       "description": "set by Sous"
+                    },
+                    "alternatives": {
+                      "type": [
+                        "null",
+                        "array"
+                      ],
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "value": {
+                            "type": "string"
+                          },
+                          "probability": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "value",
+                          "probability"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "description": "other answers the source weighed, most likely first, with their probabilities"
                     }
                   },
                   "description": "asap_after_inputs, flexible or just_before_serve",
@@ -7699,6 +9493,20 @@
           "error",
           "current"
         ],
+        "additionalProperties": false
+      },
+      "upgradeBody": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "description": "draft (unset) or apply"
+          },
+          "force": {
+            "type": "boolean",
+            "description": "redo a recipe that already has a step graph"
+          }
+        },
         "additionalProperties": false
       }
     },
