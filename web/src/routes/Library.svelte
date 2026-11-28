@@ -676,7 +676,7 @@
     padding: 0 var(--space-2) 0 var(--space-3);
     background: var(--ticket);
     border: 2px solid var(--field);
-    border-radius: 3px;
+    border-radius: var(--radius);
     align-self: center;
   }
   .using:focus-within {
@@ -691,7 +691,7 @@
     gap: 2px;
     padding-left: var(--space-2);
     border: 2px solid var(--ink);
-    border-radius: 3px;
+    border-radius: var(--radius);
     font-size: 0.875rem;
     font-weight: 700;
   }
@@ -881,7 +881,7 @@
       flex: none;
       margin: 0;
       padding: 6px 12px;
-      border-radius: 3px;
+      border-radius: var(--radius);
       background: var(--ticket);
       gap: var(--space-2);
     }

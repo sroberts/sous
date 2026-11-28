@@ -220,6 +220,8 @@ A cool, near-monochrome kitchen palette (grey counter, white paper, black print)
 
 **The Thermal Paper Rule.** Every reading surface is `ticket` white on the `pass` grey. There are no tinted cards, gradients or overlays on paper; only the rail and its clips carry a gradient.
 
+**The Outpost Theme Rule.** Under Outpost, Sous wears the theme the operator picked for the portal (Outpost's service spec §18). `index.html` links `/.outpost/theme.css` ahead of the build's CSS, and `tokens.css` is the one place its `--op-*` properties are taken: `pass` from `bg`, `ticket` from `surface`, `ticket-press` from `surface-raised`, `ink` from `text`, `ink-2` and `ink-3` from `text-dim`, `perf` from `rule`, `field` from `field-edge`, `red` from `accent`, and the fonts and the control radius from the theme's. Three tokens stand in for red where the theme tells them apart: `on-red` (a label on a red fill, from `on-accent`), `focus` (the ring and the caret, from `focus`) and `danger` (an error's text and an invalid field's edge, from `danger-ink`). `pass-deep`, `red-press` and `red-wash` have no token of their own and are mixed from the theme's. Without Outpost every value falls back to the palette above, so the theme changes nothing. The rail, its clips and the steel stay steel, tickets stay square, and badges keep their 2px: they are the pass itself, not chrome. New colours go in `tokens.css` with a token or a mix, never as a literal in a component.
+
 ## Typography
 
 **Display Font:** Archivo Variable (with Archivo, system-ui)

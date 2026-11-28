@@ -808,7 +808,7 @@
     border-bottom-color: var(--red);
   }
   .field-error {
-    color: var(--red);
+    color: var(--danger);
     font-size: 0.875rem;
     font-weight: 600;
     margin-top: var(--space-2);
@@ -922,7 +922,7 @@
     width: 36px;
     height: 36px;
     border: 0;
-    border-radius: 3px;
+    border-radius: var(--radius);
     background: none;
     color: var(--ink-3);
     opacity: 0;
@@ -1015,7 +1015,7 @@
     font-size: max(16px, var(--ui));
     background: var(--ticket);
     border: 2px solid var(--ink);
-    border-radius: 3px;
+    border-radius: var(--radius);
   }
   .tf.check {
     display: flex;
@@ -1164,7 +1164,7 @@
     align-items: center;
     padding-left: var(--space-3);
     border: 2px solid var(--ink);
-    border-radius: 3px;
+    border-radius: var(--radius);
     font-size: 0.875rem;
     font-weight: 700;
   }

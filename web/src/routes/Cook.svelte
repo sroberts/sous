@@ -418,7 +418,7 @@
     width: 56px;
     height: 56px;
     border: 0;
-    border-radius: 3px;
+    border-radius: var(--radius);
     background: none;
   }
   .icon-btn:hover {
@@ -527,7 +527,7 @@
     width: 26px;
     height: 26px;
     border: 2px solid var(--ink);
-    border-radius: 3px;
+    border-radius: var(--radius);
     margin-top: -1px;
   }
   .amt {

@@ -7,6 +7,11 @@ include breaking changes, and they're called out here.
 
 ## [Unreleased]
 
+### Added
+- Under Outpost, Sous follows the theme picked for the Outpost portal:
+  its colours, fonts and corners, in light and dark. Without Outpost it
+  looks as it always has.
+
 ## [0.6.0] - 2026-11-25
 
 ### Added

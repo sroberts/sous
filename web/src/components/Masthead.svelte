@@ -263,7 +263,7 @@
   nav a {
     white-space: nowrap;
     padding: 7px 12px;
-    border-radius: 3px;
+    border-radius: var(--radius);
     font-size: var(--ui);
     font-weight: 600;
     color: var(--ink-2);
@@ -288,7 +288,7 @@
     height: 40px;
     padding: 0 var(--space-3);
     border: 2px solid var(--ink);
-    border-radius: 3px;
+    border-radius: var(--radius);
     background: var(--ticket);
     color: var(--ink-2);
   }
@@ -318,7 +318,7 @@
     font: 600 0.75rem var(--sans);
     color: var(--ink-3);
     border: 1px solid var(--perf);
-    border-radius: 3px;
+    border-radius: var(--radius);
     padding: 1px 5px;
   }
   .add {
@@ -381,7 +381,7 @@
     padding: var(--space-1) 0;
     background: var(--ticket);
     border: 2px solid var(--ink);
-    border-radius: 3px;
+    border-radius: var(--radius);
   }
   .menu button,
   .menu a {

@@ -254,7 +254,7 @@
     height: 44px;
     padding: 0;
     border: 0;
-    border-radius: 3px;
+    border-radius: var(--radius);
     background: none;
     color: var(--ink-3);
   }

@@ -10,6 +10,10 @@
     <!-- Stamped at build; the service worker checks it so it never caches a
          login page or another build's shell as this one (web/build/pwa.js). -->
     <meta name="sous-build" content="%SOUS_BUILD%" />
+    <!-- Outpost's theme, as --op-* properties Sous's own tokens take
+         (src/styles/tokens.css). It 404s without Outpost, and the fallbacks
+         stand. Linked ahead of the build's CSS, and left out of the bundle. -->
+    <link rel="stylesheet" href="/.outpost/theme.css" vite-ignore />
     <!-- With credentials, so the Outpost gateway lets the manifest through. -->
     <link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials" />
     <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />

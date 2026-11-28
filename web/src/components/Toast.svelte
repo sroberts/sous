@@ -44,7 +44,7 @@
     padding: var(--space-3) var(--space-3) var(--space-3) var(--space-5);
     background: var(--ink);
     color: var(--ticket);
-    border-radius: 3px;
+    border-radius: var(--radius);
     animation: rise 320ms var(--ease-out);
   }
   p {

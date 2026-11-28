@@ -468,7 +468,7 @@
     place-items: center;
     width: 52px;
     height: 52px;
-    border-radius: 3px;
+    border-radius: var(--radius);
     color: var(--ink);
   }
   .icon-btn:hover {
@@ -506,7 +506,7 @@
     min-height: 52px;
     padding: 0 var(--space-3);
     border: 2px solid var(--ink);
-    border-radius: 3px;
+    border-radius: var(--radius);
     background: none;
     align-self: center;
     align-items: center;
@@ -739,7 +739,7 @@
     min-height: 44px;
     padding: 0 var(--space-2);
     margin-left: calc(var(--space-2) * -1);
-    border-radius: 3px;
+    border-radius: var(--radius);
     font-size: var(--ui);
     font-weight: 600;
     color: var(--ink-2);

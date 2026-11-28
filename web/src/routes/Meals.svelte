@@ -206,10 +206,10 @@
     border-bottom-color: var(--red);
   }
   input[aria-invalid='true'] {
-    border-bottom-color: var(--red);
+    border-bottom-color: var(--danger);
   }
   .field-error {
-    color: var(--red);
+    color: var(--danger);
     font-size: 0.875rem;
     font-weight: 600;
   }

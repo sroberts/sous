@@ -320,7 +320,7 @@
     min-width: 12rem;
     padding: 0 calc(var(--space-3) + 24px) 0 var(--space-3);
     border: 2px solid var(--ink);
-    border-radius: 3px;
+    border-radius: var(--radius);
     background: var(--ticket);
     cursor: pointer;
   }
@@ -453,7 +453,7 @@
   }
   pre {
     margin: 0;
-    font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    font-family: var(--mono);
     font-size: 0.8125rem;
     line-height: 1.5;
     white-space: pre;

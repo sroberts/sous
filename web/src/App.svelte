@@ -123,7 +123,7 @@
     flex: none;
     background: var(--red);
     border-color: var(--red);
-    color: var(--ticket);
+    color: var(--on-red);
   }
   .signed-out .btn:hover {
     background: var(--red-press);

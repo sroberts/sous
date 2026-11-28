@@ -114,7 +114,7 @@
     border-bottom-color: var(--red);
   }
   .error {
-    color: var(--red);
+    color: var(--danger);
     font-weight: 600;
   }
   .cancel {

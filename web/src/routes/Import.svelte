@@ -336,7 +336,7 @@
     text-decoration-color: var(--red);
   }
   .field-error {
-    color: var(--red);
+    color: var(--danger);
     font-size: 0.875rem;
     font-weight: 600;
   }

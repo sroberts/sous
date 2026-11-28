@@ -298,7 +298,7 @@
   }
   .problem {
     font-weight: 700;
-    color: var(--red);
+    color: var(--danger);
   }
   .compact .btn {
     min-height: 56px;

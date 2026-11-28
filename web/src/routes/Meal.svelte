@@ -679,7 +679,7 @@
     min-width: 1.75rem;
     padding: 1px var(--space-1);
     border: 1.5px solid var(--ink-3);
-    border-radius: 3px;
+    border-radius: var(--radius);
     font-family: inherit;
     font-size: 0.875rem;
     font-weight: 700;
@@ -833,7 +833,7 @@
     height: 44px;
     padding: 0;
     border: 0;
-    border-radius: 3px;
+    border-radius: var(--radius);
     background: none;
     color: var(--ink-3);
   }
@@ -909,7 +909,7 @@
     font-weight: 600;
     background: var(--ticket);
     border: 2px solid var(--ink);
-    border-radius: 3px;
+    border-radius: var(--radius);
     padding: 0 var(--space-2);
   }
   .it-note {
@@ -960,7 +960,7 @@
     text-align: left;
     padding: 0 var(--space-2);
     border: 0;
-    border-radius: 3px;
+    border-radius: var(--radius);
     background: none;
     font-weight: 600;
   }
@@ -1038,7 +1038,7 @@
     min-height: 44px;
     padding: var(--space-2) var(--space-1);
     border: 0;
-    border-radius: 3px;
+    border-radius: var(--radius);
     background: none;
     text-align: left;
     font-size: var(--ui);
@@ -1327,7 +1327,7 @@
     min-height: 44px;
     padding: 0 var(--space-2);
     border: 0;
-    border-radius: 3px;
+    border-radius: var(--radius);
     background: none;
     font-size: 0.875rem;
     font-weight: 700;

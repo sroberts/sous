@@ -1,24 +1,41 @@
 /* Sous: the pass in a working kitchen. Thermal-white tickets on a cool grey
    pass, printed in black with one red second ink. Red marks only what is
-   live, selected or actionable. */
+   live, selected or actionable.
+
+   Under Outpost, /.outpost/theme.css (linked first, in index.html) defines
+   the operator's theme as --op-* properties, and each colour, font and
+   corner here takes its token, so Sous wears the same theme as the portal.
+   Without it each var() falls back to Sous's own value, unchanged. Where
+   Outpost has no token, a value is mixed from the ones it has: the mix
+   names an --op-* property with no fallback, so with the theme absent it is
+   invalid and the plain value after it is used. */
 :root {
-  --pass: #dfe3e6; /* the counter tickets sit on */
-  --pass-deep: #d0d6da; /* hover on the pass, wells, empty photo */
-  --ticket: #fafbfc; /* thermal paper */
-  --ticket-press: #eef1f3; /* hover and pressed on a ticket */
-  --ink: #141516;
-  --ink-2: #404447; /* secondary text: 7.6:1 on pass */
-  --ink-3: #5f6367; /* tertiary text: 5.9:1 on ticket, 4.7:1 on pass */
-  --perf: #adb4ba; /* perforations and hairlines; never text or a field's edge */
-  --field: #787e84; /* a field's edge: 4.0:1 on ticket, 3.2:1 on pass */
+  --pass: var(--op-bg, #dfe3e6); /* the counter tickets sit on */
+  --pass-deep: var(--themed-pass-deep, #d0d6da); /* hover on the pass, wells, empty photo */
+  --ticket: var(--op-surface, #fafbfc); /* thermal paper */
+  --ticket-press: var(--op-surface-raised, #eef1f3); /* hover and pressed on a ticket */
+  --ink: var(--op-text, #141516);
+  --ink-2: var(--op-text-dim, #404447); /* secondary text: 7.6:1 on pass */
+  --ink-3: var(--op-text-dim, #5f6367); /* tertiary text: 5.9:1 on ticket, 4.7:1 on pass */
+  --perf: var(--op-rule, #adb4ba); /* perforations and hairlines; never text or a field's edge */
+  --field: var(--op-field-edge, #787e84); /* a field's edge: 4.0:1 on ticket, 3.2:1 on pass */
   --steel-hi: #d2d6d9;
   --steel: #959ba0;
   --steel-lo: #5d6368;
-  --red: #bb1c14; /* 6.2:1 on ticket, 5.0:1 on pass */
-  --red-press: #981610;
-  --red-wash: #fbe5e2;
+  --red: var(--op-accent, #bb1c14); /* 6.2:1 on ticket, 5.0:1 on pass */
+  --red-press: var(--themed-red-press, #981610);
+  --red-wash: var(--themed-red-wash, #fbe5e2);
+  --on-red: var(--op-on-accent, #fafbfc); /* a label on a red fill */
+  --focus: var(--op-focus, #bb1c14); /* the focus ring and the caret */
+  --danger: var(--op-danger-ink, #bb1c14); /* an error's text and a bad field's edge */
+  /* The derived ones, valid only while the theme is there (see above). */
+  --themed-pass-deep: color-mix(in srgb, var(--op-text) 8%, var(--op-surface-raised));
+  --themed-red-press: color-mix(in srgb, var(--op-accent) 80%, var(--op-text));
+  --themed-red-wash: color-mix(in srgb, var(--op-accent) 16%, var(--op-bg));
 
-  --sans: 'Archivo Variable', 'Archivo', system-ui, sans-serif;
+  --sans: var(--op-font-sans, 'Archivo Variable', 'Archivo', system-ui, sans-serif);
+  --mono: var(--op-font-mono, ui-monospace, 'SF Mono', Menlo, Consolas, monospace);
+  --radius: var(--op-radius, 3px); /* controls, fields, panels; tickets stay square */
 
   /* One reading size does the work for recipe text. */
   --read: 1.0625rem; /* 17px */

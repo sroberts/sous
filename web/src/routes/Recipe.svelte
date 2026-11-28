@@ -1629,7 +1629,7 @@
     min-width: 1.75rem;
     padding: 1px var(--space-1);
     border: 1.5px solid var(--ink-3);
-    border-radius: 3px;
+    border-radius: var(--radius);
     font-family: inherit;
     font-size: 0.875rem;
     font-weight: 700;

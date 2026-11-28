@@ -101,7 +101,7 @@ button {
 }
 
 :focus-visible {
-  outline: 2px solid var(--red);
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
 
@@ -113,7 +113,7 @@ h1[tabindex='-1']:focus {
 
 input,
 textarea {
-  caret-color: var(--red);
+  caret-color: var(--focus);
 }
 
 ::placeholder {
@@ -178,7 +178,7 @@ img {
   min-height: 44px;
   padding: 0 var(--space-4);
   border: 2px solid var(--ink);
-  border-radius: 3px;
+  border-radius: var(--radius);
   background: var(--ticket);
   font-size: var(--ui);
   font-weight: 700;
@@ -207,7 +207,7 @@ img {
 .btn.primary {
   background: var(--red);
   border-color: var(--red);
-  color: var(--ticket);
+  color: var(--on-red);
 }
 
 @media (hover: hover) {
