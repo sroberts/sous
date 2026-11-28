@@ -60,20 +60,40 @@ func (s *Service) SetUpgrader(u *Upgrader) {
 	s.job = make(chan struct{}, 1)
 }
 
-// Review thresholds: a label below its field's goes to review.
-// Scheduling-critical fields need more certainty.
-const (
-	criticalThreshold = 0.85
-	otherThreshold    = 0.65
-)
+// Review thresholds: which labels a person is asked about, and below what
+// confidence. Set from the decision model's measured accuracy on the gate
+// recipes (internal/ollama/classify_live_test.go): attention and equipment
+// were right 86% and 94% of the time at 0.7 or more, and about 55-65%
+// below. Every hold the model proposes is asked about, as it mostly
+// invents them; implied actions always are. The other fields (action,
+// duration, timing anchor, check interval) are kept as the model's best
+// answer with its confidence, not asked: a plan depends on them less, and
+// asking about every label came to 50-90 questions a recipe.
+var reviewThresholds = map[string]float64{
+	"attention": 0.7,
+	"equipment": 0.7,
+	"hold":      0.95,
+}
 
+// criticalFields are those that decide when things happen, which review
+// takes first.
 var criticalFields = []string{"attention", "hold", "timing_anchor", "equipment"}
 
-func threshold(field string) float64 {
-	if slices.Contains(criticalFields, field) {
-		return criticalThreshold
-	}
-	return otherThreshold
+// threshold is the confidence under which a field's label is asked about;
+// 0 for a field that isn't.
+func threshold(field string) float64 { return reviewThresholds[field] }
+
+// minHold is the least confidence at which a hold the decision model
+// proposes is kept at all: below it, it was almost never right (3 of 45),
+// and no hold (use at once) is the safe default.
+const minHold = 0.6
+
+// wordsAgree is how far the recipe's own words agreeing with the decision
+// model raises its confidence: halfway to certain, as a second, independent
+// reading (the spec's "a v1 value that matches raises confidence").
+func wordsAgree(p *float64) {
+	v := round3(*p + (1-*p)/2)
+	*p = v
 }
 
 // StructureDraft is a step graph's structure without its labels: what a
@@ -530,6 +550,10 @@ func (u *Upgrader) classify(ctx context.Context, r Recipe, k KitchenProfile, g *
 		}
 		n.Action = decided(rank(act["action"]), func(s string) (string, bool) { return s, slices.Contains(graphActions, s) })
 		n.Attention = decided(rank(ans["attention"]), func(s string) (string, bool) { return s, slices.Contains(graphAttention, s) })
+		heard := SuggestTimings([]string{cmpOr(n.Source.Quote, n.Text)})[0]
+		if heard.HandsOn != nil && !*heard.HandsOn && n.Attention.Value == AttentionPassive {
+			wordsAgree(n.Attention.Confidence)
+		}
 		if n.Attention.Value == AttentionIntermittent {
 			c := decided(rank(ans["check"]), asInt)
 			n.CheckInterval = &c
@@ -573,6 +597,9 @@ func (u *Upgrader) classify(ctx context.Context, r Recipe, k KitchenProfile, g *
 			return []EquipmentClaim{c}
 		}
 		eq := Label[[]EquipmentClaim]{Value: claim(e.Value), Source: "jev", Confidence: e.Confidence}
+		if wordRes := equipFromWords(cmpOr(n.Source.Quote, n.Text)); wordRes != "" && wordRes == e.Value {
+			wordsAgree(eq.Confidence)
+		}
 		for _, alt := range e.Alternatives {
 			eq.Alternatives = append(eq.Alternatives, Alternative[[]EquipmentClaim]{Value: claim(alt.Value), Probability: alt.Probability})
 		}
@@ -592,7 +619,7 @@ func (u *Upgrader) classify(ctx context.Context, r Recipe, k KitchenProfile, g *
 		}
 		if n.Hold == nil {
 			h := rank(ans["hold"])
-			if top, ok := asInt(h[0].label); ok && top > 0 {
+			if top, ok := asInt(h[0].label); ok && top > 0 && h[0].p >= minHold {
 				p := round3(min(h[0].p, *where.Confidence))
 				hl := Label[Hold]{Value: Hold{MaxMin: top, Where: where.Value}, Source: "jev", Confidence: &p}
 				for _, alt := range h[1:min(len(h), 3)] {
@@ -605,6 +632,23 @@ func (u *Upgrader) classify(ctx context.Context, r Recipe, k KitchenProfile, g *
 		}
 	}
 	return nil
+}
+
+// equipFromWords is the resource an action's own words name (an oven
+// verb or "oven", a stovetop verb, an appliance), or "" when they name none.
+func equipFromWords(text string) string {
+	for _, a := range appls {
+		if a.re.MatchString(text) {
+			return resAppliance + a.name
+		}
+	}
+	switch {
+	case ovenRE.MatchString(text) && !notOven.MatchString(text):
+		return ResOven
+	case stoveRE.MatchString(text):
+		return ResBurner
+	}
+	return ""
 }
 
 // bucketRange widens a duration bucket to the buckets either side of it.
@@ -677,4 +721,15 @@ func needsReview(n ActionNode, l labelRow) bool {
 		conf = **l.conf
 	}
 	return conf < threshold(l.field) || (n.Implied && l.field == "action")
+}
+
+// reviewSQL is needsReview as SQL over graph_labels l and graph_nodes n.
+func reviewSQL() string {
+	var cases strings.Builder
+	for _, f := range labelFields {
+		if t := reviewThresholds[f]; t > 0 {
+			fmt.Fprintf(&cases, " WHEN '%s' THEN %v", f, t)
+		}
+	}
+	return `l.reviewed_at IS NULL AND (l.confidence < CASE l.field` + cases.String() + ` ELSE 0 END OR (n.implied AND l.field = 'action'))`
 }

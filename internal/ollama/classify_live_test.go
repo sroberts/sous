@@ -53,6 +53,12 @@ func TestLiveClassify(t *testing.T) {
 		tallies[f] = &tally{}
 	}
 	confusion := map[string]int{}
+	// Right and total by field and confidence band (tenths).
+	type cell struct{ right, n int }
+	bands := map[string]*[10]cell{}
+	for _, f := range fields {
+		bands[f] = &[10]cell{}
+	}
 	files, _ := filepath.Glob(filepath.Join("..", "recipes", "testdata", "graphs", "*.json"))
 	for _, file := range files {
 		var fx struct {
@@ -121,6 +127,7 @@ func TestLiveClassify(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", fx.Sample, err)
 		}
+		t.Logf("%-24s review count %d (%d actions)", fx.Sample, res.Graph.ReviewCount, len(res.Graph.Graph.Nodes))
 		got := map[string]recipes.ActionNode{}
 		for _, n := range res.Graph.Graph.Nodes {
 			got[n.ID] = n
@@ -130,6 +137,13 @@ func TestLiveClassify(t *testing.T) {
 			score := func(field, want, have string, conf *float64) {
 				tl := tallies[field]
 				ok := want == have
+				if conf != nil {
+					b := min(int(*conf*10), 9)
+					bands[field][b].n++
+					if ok {
+						bands[field][b].right++
+					}
+				}
 				sure := conf != nil && *conf >= thresholdFor(field)
 				if sure {
 					tl.sure++
@@ -173,6 +187,15 @@ func TestLiveClassify(t *testing.T) {
 		t.Logf("%-14s all %s   sure (≥%.2f): %s   unsure: %s", f, frac(tl.sureRight+tl.unsureRight, tl.sure+tl.unsure),
 			thresholdFor(f), frac(tl.sureRight, tl.sure), frac(tl.unsureRight, tl.unsure))
 	}
+	for _, f := range fields {
+		line := ""
+		for b, c := range bands[f] {
+			if c.n > 0 {
+				line += fmt.Sprintf("  %.1f+: %d/%d", float64(b)/10, c.right, c.n)
+			}
+		}
+		t.Logf("%-14s by confidence:%s", f, line)
+	}
 	var keys []string
 	for k := range confusion {
 		keys = append(keys, k)
@@ -183,11 +206,15 @@ func TestLiveClassify(t *testing.T) {
 	}
 }
 
+// thresholdFor mirrors the review thresholds, for the sure/unsure split.
 func thresholdFor(f string) float64 {
-	if f == "action" || f == "interruptible" {
-		return 0.65
+	switch f {
+	case "attention", "equipment":
+		return 0.7
+	case "hold":
+		return 0.95
 	}
-	return 0.85
+	return 0.65
 }
 
 func cmpText(a, b string) string {

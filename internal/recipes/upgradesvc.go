@@ -700,8 +700,7 @@ type ReviewPage struct {
 }
 
 // reviewWhere is the SQL for a label that needs review.
-var reviewWhere = fmt.Sprintf(`l.reviewed_at IS NULL AND (l.confidence < CASE WHEN l.field IN ('attention', 'hold', 'timing_anchor', 'equipment')
-	THEN %v ELSE %v END OR (n.implied AND l.field = 'action'))`, criticalThreshold, otherThreshold)
+var reviewWhere = reviewSQL()
 
 // ReviewItems lists labels to review across recipes, most consequential
 // first: dishes on meals still to come, then the caller's favourites, then
@@ -768,7 +767,7 @@ func (s *Service) ReviewItems(ctx context.Context, c identity.Caller, q ReviewQu
 				rows.Close()
 				return err
 			}
-			it.Critical = threshold(it.Field) == criticalThreshold
+			it.Critical = slices.Contains(criticalFields, it.Field)
 			_ = json.Unmarshal([]byte(value), &it.Value)
 			if alts != nil {
 				_ = json.Unmarshal([]byte(*alts), &it.Alternatives)
