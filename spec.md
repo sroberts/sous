@@ -1306,9 +1306,9 @@ recipes with steps and no graph), and what this Sous can do (`labels`,
 `graph_model`, `auto_verify`). `/graphs` counts recipes by status, says how
 the rest get drafted (Draft all, a background job, when there's a graph
 model; otherwise the Assistants page's Draft step graphs), and shows the
-review queue (`GET /v1/review`, 100 at a time) grouped by recipe, with each
-answer a tap and Accept the likely answers confirming those 80% sure or
-more after a six-second Undo. `/r/{id}/graph` shows a recipe's graph step
+review queue (`GET /v1/review`, 100 at a time) grouped by recipe, each
+answer a tap. (The spec's batch "accept all at 80% or higher" isn't here:
+under the review thresholds nothing asked about is that sure.) `/r/{id}/graph` shows a recipe's graph step
 by step, the words each action quotes marked, with a question for each
 label to review and Accept as verified. Choosing Use at once for a hold
 removes it (`value: null`). The recipe page links to its graph; a meal's

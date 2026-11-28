@@ -30,8 +30,9 @@ include breaking changes, and they're called out here.
   `SOUS_DECISION_MODEL` and `SOUS_AUTO_VERIFY`.
 - Step graphs in the app: **Step graphs** (from Meals) counts recipes by
   status, explains how to get the rest drafted, and lists what Sous wasn't
-  sure of across the library, by recipe, with Accept the likely answers
-  (80% sure or more, with Undo). Each recipe's graph (linked at the end of
+  sure of across the library, by recipe: only what a plan depends on
+  (how much of the cook an action needs, what it uses, whether it can
+  wait), about two questions an action. Each recipe's graph (linked at the end of
   its method) shows its steps beside their actions, the words each action
   came from marked, and asks only the unsure labels, one tap each, with
   Something else for any other answer; then Accept as verified. A meal's

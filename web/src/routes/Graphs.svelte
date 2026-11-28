@@ -2,9 +2,9 @@
   import { ChevronRight } from '@lucide/svelte';
   import { api } from '../lib/api.js';
   import { link } from '../lib/router.svelte.js';
-  import { asPerson, toast } from '../lib/session.svelte.js';
+  import { asPerson } from '../lib/session.svelte.js';
   import { isOffline } from '../lib/net.svelte.js';
-  import { STATUS, pct } from '../lib/graphs.js';
+  import { STATUS } from '../lib/graphs.js';
   import LabelChoice from '../components/LabelChoice.svelte';
 
   let overview = $state(null);
@@ -14,7 +14,6 @@
   let problem = $state('');
   let chosen = $state({}); // "recipe|node|field" → value
   let busy = $state(null); // the recipe being saved
-  let held = $state({}); // recipe → timer for a batch accept that can still be undone
   let job = $state(null);
 
   async function load() {
@@ -45,7 +44,6 @@
   const key = (it) => `${it.recipe_id}|${it.node_id}|${it.field}`;
   // A recipe's whole count, not just the part of it in this page.
   const reviewCountOf = (g) => overview?.items.find((r) => r.recipe_id === g.id)?.review_count ?? g.items.length;
-  const likely = (g) => g.items.filter((it) => it.confidence >= 0.8 && !(it.implied && it.field === 'action'));
   const answeredIn = (g) => g.items.filter((it) => key(it) in chosen);
 
   async function resolve(g, items) {
@@ -69,25 +67,6 @@
       g,
       answeredIn(g).map((it) => ({ ...it, value: chosen[key(it)] })),
     );
-  }
-
-  // Accepting the likely answers waits a moment so it can be undone.
-  function acceptLikely(g) {
-    const items = likely(g);
-    const t = setTimeout(() => {
-      const { [g.id]: _, ...rest } = held;
-      held = rest;
-      resolve(g, items);
-    }, 6000);
-    held = { ...held, [g.id]: t };
-    toast(`Confirming ${items.length === 1 ? '1 answer' : `${items.length} answers`} for ${g.title}.`, {
-      label: 'Undo',
-      run: () => {
-        clearTimeout(held[g.id]);
-        const { [g.id]: _, ...rest } = held;
-        held = rest;
-      },
-    });
   }
 
   async function upgradeAll() {
@@ -154,7 +133,7 @@
         <h2 id="q-h" class="label sect">To review{#if remaining > queue.length}{` · the first ${queue.length} of ${remaining}`}{/if}</h2>
         <ol class="queue">
           {#each groups as g (g.id)}
-            <li class="group" class:held={g.id in held}>
+            <li class="group">
               <div class="g-head">
                 <a href="/r/{g.id}/graph" use:link><span class="t">{g.title}</span><span class="sub">{reviewCountOf(g)} to review</span><ChevronRight size={18} aria-hidden="true" /></a>
               </div>
@@ -167,11 +146,6 @@
                 {/each}
               </ul>
               <div class="g-foot">
-                {#if likely(g).length}
-                  <button class="btn" onclick={() => acceptLikely(g)} disabled={busy === g.id || g.id in held || isOffline()}>
-                    Accept the likely answers ({likely(g).length}, {pct(0.8)} sure or more)
-                  </button>
-                {/if}
                 <button class="btn" class:primary={answeredIn(g).length > 0} onclick={() => save(g)} disabled={!answeredIn(g).length || busy === g.id || isOffline()}>
                   Save {answeredIn(g).length || ''} {answeredIn(g).length === 1 ? 'answer' : 'answers'}
                 </button>
@@ -276,10 +250,6 @@
   .group {
     background: var(--ticket);
     border-top: 3px solid var(--ink);
-    transition: opacity 200ms ease-out;
-  }
-  .group.held {
-    opacity: 0.55;
   }
   .g-head a,
   .list a {
@@ -367,11 +337,6 @@
     }
     .g-foot .btn {
       flex: 1 1 100%;
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .group {
-      transition: none;
     }
   }
 </style>
