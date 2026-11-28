@@ -28,7 +28,15 @@
       upgrades = o.upgrades;
       try {
         view = await api.recipeGraph(id);
-        review = (await api.reviewItems({ recipe_id: id, limit: 100 })).items;
+        // Every question about this recipe, a page at a time.
+        const all = [];
+        for (let cursor = ''; ; ) {
+          const page = await api.reviewItems(cursor ? { recipe_id: id, limit: 100, cursor } : { recipe_id: id, limit: 100 });
+          all.push(...page.items);
+          if (!page.next_cursor) break;
+          cursor = page.next_cursor;
+        }
+        review = all;
       } catch (err) {
         if (err.status !== 404) throw err;
         view = null;
@@ -165,7 +173,7 @@
     {#if view.graph.status !== 'verified' || review.length}
       <div class="bar">
         <p>{#if review.length}{answered} of {review.length} answered{:else}Nothing left to answer{/if}</p>
-        {#if review.length}<button class="btn" onclick={() => save(false)} disabled={saving || !answered || isOffline()}>Save answers</button>{/if}
+        {#if review.length}<button class="btn" onclick={() => save(false)} disabled={saving || !answered || stale || isOffline()}>Save answers</button>{/if}
         <button class="btn" class:primary={canAccept} onclick={() => save(true)} disabled={saving || !canAccept || isOffline()}>Accept as verified</button>
       </div>
     {/if}

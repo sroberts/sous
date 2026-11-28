@@ -750,6 +750,11 @@ func (s *Service) ReviewItems(ctx context.Context, c identity.Caller, q ReviewQu
 		where = append(where, "l.field = ?")
 		args = append(args, q.Field)
 	}
+	// A graph whose words have changed can't be reviewed until it's
+	// drafted again, so its questions are left out.
+	where = append(where, `NOT EXISTS (SELECT 1 FROM graph_nodes sn LEFT JOIN recipe_steps st ON st.recipe_id = sn.recipe_id AND st.position = sn.step - 1
+		WHERE sn.recipe_id = g.recipe_id AND sn.recipe_version = g.recipe_version
+		AND (st.text IS NULL OR substr(st.text, sn.span_start + 1, sn.span_end - sn.span_start) IS NOT sn.quote))`)
 	from := `FROM graph_labels l
 		JOIN recipe_graphs g ON g.recipe_id = l.recipe_id AND g.recipe_version = l.recipe_version AND g.deleted_at IS NULL
 		JOIN graph_nodes n ON n.recipe_id = l.recipe_id AND n.recipe_version = l.recipe_version AND n.id = l.node_id

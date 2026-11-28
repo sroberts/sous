@@ -1,4 +1,5 @@
 <script>
+  import { onDestroy } from 'svelte';
   import { ChevronRight } from '@lucide/svelte';
   import { api } from '../lib/api.js';
   import { link } from '../lib/router.svelte.js';
@@ -15,6 +16,8 @@
   let chosen = $state({}); // "recipe|node|field" → value
   let busy = $state(null); // the recipe being saved
   let job = $state(null);
+  let gone = false; // the page has been left: stop following the job
+  onDestroy(() => (gone = true));
 
   async function load() {
     try {
@@ -78,7 +81,7 @@
     }
   }
   async function follow() {
-    while (job && (job.status === 'queued' || job.status === 'running')) {
+    while (!gone && job && (job.status === 'queued' || job.status === 'running')) {
       await new Promise((r) => setTimeout(r, 5000));
       try {
         job = await api.upgradeJob(job.id);
@@ -86,7 +89,7 @@
         return;
       }
     }
-    load();
+    if (!gone) load();
   }
   const done = $derived(job ? job.items.length - (job.counts.pending ?? 0) - (job.counts.running ?? 0) : 0);
 
