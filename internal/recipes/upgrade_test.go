@@ -391,7 +391,7 @@ func TestUpgradeJobs(t *testing.T) {
 func TestReviewQueue(t *testing.T) {
 	gen := &fakeGen{drafts: []StructureDraft{toastDraft()}}
 	answers := toastAnswers()
-	answers["butter it"]["hold"] = ranked{"15", 0.5}
+	answers["butter it"]["hold"] = ranked{"15", 0.7}
 	s := upgradeService(t, gen, &fakeDec{answers: answers})
 	ann := person(t, s, "Ann")
 	r := tinyRecipe(t, s, ann)
@@ -406,11 +406,12 @@ func TestReviewQueue(t *testing.T) {
 	if page.Remaining != 2 || len(page.Items) != 2 {
 		t.Fatalf("queue: %s", dump(page))
 	}
-	// Least sure critical field first: butter's hold at 0.5, then toast's attention at 0.55.
-	if it := page.Items[0]; it.NodeID != "butter" || it.Field != "hold" || !it.Critical || it.GraphVersion != res.Graph.Graph.Version {
+	// Least sure first: toast's attention at 0.55, then butter's hold at 0.7
+	// (every hold the model proposes is asked about).
+	if it := page.Items[0]; it.NodeID != "toast" || it.Field != "attention" || it.Value != "intermittent" || it.Alternatives == nil {
 		t.Errorf("first: %s", dump(it))
 	}
-	if it := page.Items[1]; it.NodeID != "toast" || it.Field != "attention" || it.Value != "intermittent" || it.Alternatives == nil {
+	if it := page.Items[1]; it.NodeID != "butter" || it.Field != "hold" || !it.Critical || it.GraphVersion != res.Graph.Graph.Version {
 		t.Errorf("second: %s", dump(it))
 	}
 	p1, err := s.ReviewItems(ctx, ann, ReviewQuery{Limit: 1})
@@ -418,7 +419,7 @@ func TestReviewQueue(t *testing.T) {
 		t.Fatalf("page 1: %v %s", err, dump(p1))
 	}
 	p2, err := s.ReviewItems(ctx, ann, ReviewQuery{Limit: 1, Cursor: *p1.NextCursor})
-	if err != nil || len(p2.Items) != 1 || p2.NextCursor != nil || p2.Items[0].NodeID != "toast" {
+	if err != nil || len(p2.Items) != 1 || p2.NextCursor != nil || p2.Items[0].NodeID != "butter" {
 		t.Errorf("page 2: %v %s", err, dump(p2))
 	}
 	if _, err := s.ReviewItems(ctx, ann, ReviewQuery{Field: "attention", Limit: 101}); !isCode(err, CodeInvalid) {
@@ -448,7 +449,7 @@ func TestReviewQueue(t *testing.T) {
 				t.Errorf("corrected attention: %s", dump(n.Attention))
 			}
 		case "butter":
-			if n.Hold.Source != "jev" || *n.Hold.Confidence != 0.5 || n.Hold.ReviewedBy == nil || *n.Hold.ReviewedBy != "ann" {
+			if n.Hold.Source != "jev" || *n.Hold.Confidence != 0.7 || n.Hold.ReviewedBy == nil || *n.Hold.ReviewedBy != "ann" {
 				t.Errorf("confirmed hold: %s", dump(n.Hold))
 			}
 		}
@@ -500,6 +501,47 @@ func TestReviewQueue(t *testing.T) {
 	}
 	if page, _ := s.ReviewItems(ctx, ann, ReviewQuery{}); page.Remaining != 0 {
 		t.Errorf("left after accepting: %s", dump(page))
+	}
+}
+
+// Only attention and equipment under 0.7, every proposed hold and implied
+// actions are asked about; a weak hold is dropped, and words that agree
+// with the model raise its confidence.
+func TestReviewPolicy(t *testing.T) {
+	answers := toastAnswers()
+	answers["Toast the"]["attention"] = ranked{"passive", 0.6} // "toast" isn't in the words' passive list: asked
+	answers["Toast the"]["equipment"] = ranked{"oven", 0.6}    // nor is "toast" an oven word: asked
+	answers["Heat the oven"]["equipment"] = ranked{"oven", 0.6} // the words say oven: raised to 0.8, not asked
+	answers["butter it"]["hold"] = ranked{"60", 0.5}            // too weak: dropped
+	answers["butter it"]["action"] = ranked{"assemble", 0.3}    // unsure, but action isn't asked
+	s := upgradeService(t, &fakeGen{drafts: []StructureDraft{toastDraft()}}, &fakeDec{answers: answers})
+	ann := person(t, s, "Ann")
+	r := tinyRecipe(t, s, ann)
+	res, err := s.UpgradeRecipe(ctx, ann, UpgradeRequest{ID: r.ID})
+	if err != nil {
+		t.Fatal(err)
+	}
+	byID := map[string]ActionNode{}
+	for _, n := range res.Graph.Graph.Nodes {
+		byID[n.ID] = n
+	}
+	if c := *byID["preheat"].Equipment.Confidence; c != 0.8 {
+		t.Errorf("agreeing words: confidence %v, want 0.8", c)
+	}
+	if byID["butter"].Hold != nil {
+		t.Errorf("weak hold kept: %s", dump(byID["butter"].Hold))
+	}
+	page, err := s.ReviewItems(ctx, ann, ReviewQuery{RecipeID: r.ID})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := []string{}
+	for _, it := range page.Items {
+		got = append(got, it.NodeID+"."+it.Field)
+	}
+	slices.Sort(got)
+	if !slices.Equal(got, []string{"toast.attention", "toast.equipment"}) || res.Graph.ReviewCount != 2 {
+		t.Errorf("asked about %v (count %d)", got, res.Graph.ReviewCount)
 	}
 }
 

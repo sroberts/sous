@@ -1233,9 +1233,21 @@ and background jobs write the structure too. Either way the steps are:
    `needs_review`, or `verified` when `SOUS_AUTO_VERIFY=true`, it has no
    errors and nothing needs review.
 
-A label **needs review** when nobody has reviewed it and its confidence is
-under 0.85 for attention, hold, timing anchor and equipment, or under 0.65
-for the rest; an implied action's action label always does.
+A label **needs review** when nobody has reviewed it and it's one a plan
+depends on that the decision model wasn't sure of: attention or equipment
+under 0.7, or any hold it proposed under 0.95 (that is, every one); an
+implied action's action label always does. The thresholds come from the
+model's measured accuracy on the gate recipes: attention and equipment were
+right 87% and 90% of the time at 0.7 or more, about 50-60% below. Action,
+duration, timing anchor and check interval keep the model's best answer and
+confidence but aren't asked about (asking about every label came to 50-90
+questions a recipe; this comes to 20-33 on the gate recipes, about two per
+action). A hold the model proposes under 0.6 is dropped, not asked about: it
+was almost never right (3 of 45), and no hold (use at once) is the safe
+default. When the action's own words agree with the model (oven, stovetop
+and appliance words for equipment; resting, chilling and baking words for a
+passive action) its confidence rises halfway to certain, as a second,
+independent reading.
 
 The save checks the recipe and graph haven't changed while the models
 worked (412 for the recipe, 409 for a graph saved meanwhile). An upgrade of
