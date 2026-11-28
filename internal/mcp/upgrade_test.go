@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
+
 	"github.com/sroberts/sous/internal/recipes"
 )
 
@@ -97,5 +99,55 @@ func TestUpgradeOff(t *testing.T) {
 	r := ok[recipes.Recipe](t, alice, "create_recipe", map[string]any{"title": "Toast", "steps": []string{"Toast."}})
 	if msg := fails(t, alice, "upgrade_recipe", map[string]any{"id": r.ID}, "unavailable"); !strings.Contains(msg, "off") {
 		t.Errorf("off: %q", msg)
+	}
+}
+
+// Without a graph model, an assistant drafts the structure and Sous
+// labels it.
+func TestDraftTools(t *testing.T) {
+	svc := newService(t)
+	svc.SetUpgrader(&recipes.Upgrader{Dec: stubDec{}})
+	url := serve(t, standIn(New(svc, slog.New(slog.DiscardHandler), "test")))
+	alice := as(t, url, "alice")
+	r := ok[recipes.Recipe](t, alice, "create_recipe", map[string]any{
+		"title": "Toast", "ingredients": []string{"2 slices bread"}, "steps": []string{"Toast the bread for 5 minutes."},
+	})
+	todo := ok[recipes.GraphTodos](t, alice, "list_recipes_without_graph", map[string]any{})
+	if todo.Remaining != 1 || todo.Items[0].ID != r.ID {
+		t.Fatalf("todo = %+v", todo)
+	}
+	if msg := fails(t, alice, "upgrade_recipe", map[string]any{"id": r.ID}, "unavailable"); !strings.Contains(msg, "draft_recipe_graph") {
+		t.Errorf("upgrade without a graph model: %q", msg)
+	}
+	draft := map[string]any{
+		"id": r.ID, "recipe_version": r.Version, "serve": "toast",
+		"items": []any{
+			map[string]any{"id": "bread", "kind": "ingredient", "label": "bread", "line": 1},
+			map[string]any{"id": "toast", "kind": "final", "label": "toast"},
+		},
+		"nodes": []any{map[string]any{"id": "toast", "step": 1, "quote": "Grill the bread", "text": "Toast the bread",
+			"inputs": []string{"bread"}, "outputs": []string{"toast"}, "implied": false}},
+	}
+	if msg := fails(t, alice, "draft_recipe_graph", draft, "invalid"); !strings.Contains(msg, "quote isn't in step 1") {
+		t.Errorf("bad draft: %q", msg)
+	}
+	draft["nodes"].([]any)[0].(map[string]any)["quote"] = "Toast the bread for 5 minutes."
+	res := ok[recipes.UpgradeResult](t, alice, "draft_recipe_graph", draft)
+	if res.Graph.Graph.Status != "draft" || res.Graph.ReviewCount != 1 || res.Graph.Graph.Nodes[0].Action.Source != "jev" {
+		t.Errorf("draft = %+v", res)
+	}
+
+	cs := as(t, url, "alice")
+	p, err := cs.GetPrompt(context.Background(), &sdk.GetPromptParams{Name: "upgrade_step_graphs", Arguments: map[string]string{"meal": "Thanksgiving"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := p.Messages[0].Content.(*sdk.TextContent).Text
+	if !strings.Contains(text, `the meal "Thanksgiving"`) || !strings.Contains(text, "draft_recipe_graph") || !strings.Contains(text, "plan_meal and tell me") {
+		t.Errorf("prompt: %s", text)
+	}
+	p, err = cs.GetPrompt(context.Background(), &sdk.GetPromptParams{Name: "upgrade_step_graphs"})
+	if err != nil || strings.Contains(p.Messages[0].Content.(*sdk.TextContent).Text, "plan_meal and tell me") {
+		t.Errorf("library prompt: %v", err)
 	}
 }

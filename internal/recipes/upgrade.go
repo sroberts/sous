@@ -44,10 +44,12 @@ type Choice struct{ Label, Means string }
 // Answer is a Decider's probability for each choice, by label.
 type Answer struct{ Probabilities map[string]float64 }
 
-// Upgrader is what upgrades need: the two models, and whether an upgrade
-// sure of every label may save itself as verified.
+// Upgrader is what upgrades need: a decision model, optionally a graph
+// model (without one, an assistant drafts each graph's structure with
+// DraftRecipeGraph), and whether an upgrade sure of every label may save
+// itself as verified.
 type Upgrader struct {
-	Gen        Generator
+	Gen        Generator // nil: no local graph model
 	Dec        Decider
 	AutoVerify bool
 }
@@ -74,28 +76,31 @@ func threshold(field string) float64 {
 	return otherThreshold
 }
 
-// The draft a Generator writes.
-type draftGraph struct {
-	Items []draftItem `json:"items"`
-	Nodes []draftNode `json:"nodes"`
-	Serve string      `json:"serve"`
+// StructureDraft is a step graph's structure without its labels: what a
+// graph model or an assistant writes, and Sous classifies.
+type StructureDraft struct {
+	Items []DraftItem `json:"items" jsonschema:"every ingredient line as an ingredient item with its line; things made along the way as intermediates; the dish that's served as the one final item"`
+	Nodes []DraftNode `json:"nodes" jsonschema:"the single actions, in the order they're written"`
+	Serve string      `json:"serve" jsonschema:"the id of the final item that goes to the table"`
 }
 
-type draftItem struct {
-	ID    string `json:"id"`
-	Kind  string `json:"kind"`
-	Label string `json:"label"`
-	Line  int    `json:"line,omitempty"`
+// DraftItem is one item of a draft.
+type DraftItem struct {
+	ID    string `json:"id" jsonschema:"short lowercase words joined with -"`
+	Kind  string `json:"kind" jsonschema:"ingredient, intermediate or final"`
+	Label string `json:"label" jsonschema:"what it is: butter, the dough, reserved pasta water"`
+	Line  int    `json:"line,omitempty" jsonschema:"for an ingredient, its line of the ingredient list, from 1"`
 }
 
-type draftNode struct {
-	ID      string   `json:"id"`
-	Step    int      `json:"step"`
-	Quote   string   `json:"quote"`
-	Text    string   `json:"text"`
-	Inputs  []string `json:"inputs"`
-	Outputs []string `json:"outputs"`
-	Implied bool     `json:"implied"`
+// DraftNode is one action of a draft.
+type DraftNode struct {
+	ID      string   `json:"id" jsonschema:"short lowercase words joined with -"`
+	Step    int      `json:"step" jsonschema:"the step it comes from (or, implied, serves), from 1"`
+	Quote   string   `json:"quote" jsonschema:"the step's words for this action, copied exactly; empty for an implied action"`
+	Text    string   `json:"text" jsonschema:"the action on its own, a few words"`
+	Inputs  []string `json:"inputs" jsonschema:"ids of the items it uses"`
+	Outputs []string `json:"outputs" jsonschema:"ids of the items it makes"`
+	Implied bool     `json:"implied" jsonschema:"true for an action the words assume but never state: a preheat, boiling water, chopping what the list says is chopped"`
 }
 
 var draftSchema = map[string]any{
@@ -162,7 +167,7 @@ func oneLine(s string, most int) string {
 
 // generate asks for a draft; with problems from a previous attempt, it
 // shows that attempt and asks for it fixed.
-func (u *Upgrader) generate(ctx context.Context, r Recipe, prev *draftGraph, problems []GraphProblem) (draftGraph, error) {
+func (u *Upgrader) generate(ctx context.Context, r Recipe, prev *StructureDraft, problems []GraphProblem) (StructureDraft, error) {
 	prompt := recipePrompt(r)
 	if prev != nil && len(problems) > 0 {
 		b, _ := json.Marshal(prev)
@@ -174,11 +179,11 @@ func (u *Upgrader) generate(ctx context.Context, r Recipe, prev *draftGraph, pro
 	}
 	out, err := u.Gen.Generate(ctx, prompt, draftSchema)
 	if err != nil {
-		return draftGraph{}, err
+		return StructureDraft{}, err
 	}
-	var d draftGraph
+	var d StructureDraft
 	if err := json.Unmarshal(out, &d); err != nil {
-		return draftGraph{}, fmt.Errorf("the graph model's answer wasn't the JSON asked for: %w", err)
+		return StructureDraft{}, fmt.Errorf("the graph model's answer wasn't the JSON asked for: %w", err)
 	}
 	return d, nil
 }
@@ -210,8 +215,8 @@ func graphSlug(s string) string {
 // ids made valid and unique, quotes found in their steps (an exact match,
 // then ignoring case and spacing, then the whole step), items a node names
 // but the draft forgot added as intermediates. Labels are left for
-// classify. It reports how many quotes it couldn't find.
-func assemble(d draftGraph, r Recipe) (GraphInput, int) {
+// classify. It reports the actions whose quotes it couldn't find.
+func assemble(d StructureDraft, r Recipe) (GraphInput, []string) {
 	g := GraphInput{Status: GraphDraft}
 	itemIDs := map[string]string{} // draft id -> id
 	used := map[string]bool{}
@@ -265,7 +270,7 @@ func assemble(d draftGraph, r Recipe) (GraphInput, int) {
 	}
 
 	nodeUsed := map[string]bool{}
-	missed := 0
+	var missed []string
 	for _, dn := range d.Nodes {
 		if len(g.Nodes) >= maxGraphNodes || len(r.Steps) == 0 {
 			break
@@ -291,7 +296,7 @@ func assemble(d draftGraph, r Recipe) (GraphInput, int) {
 				}
 			}
 			if !ok {
-				missed++
+				missed = append(missed, id)
 				start, end = 0, len([]rune(r.Steps[step-1].Text))
 			}
 		}

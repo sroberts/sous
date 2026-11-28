@@ -86,7 +86,7 @@ well-known path, and nothing prompts.
 | Log level | `SOUS_LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error`. |
 | Sample recipes | `SOUS_SAMPLES` | `true` | `false` skips adding the sample recipes (§3) on this start; it removes nothing. Any other value → exit 1. |
 | Ollama | `SOUS_OLLAMA_URL` | `http://127.0.0.1:11434` | Where the step graph models run (§16). `off` turns upgrades off. Unreachable isn't an error: upgrades answer 503 until it's back. |
-| Graph model | `SOUS_GRAPH_MODEL` | `gemma4:e4b` | The generative model that writes a step graph's structure. |
+| Graph model | `SOUS_GRAPH_MODEL` | unset | A local generative model to write a step graph's structure itself. Unset: assistants draft it (`draft_recipe_graph`) and Sous only classifies. |
 | Decision model | `SOUS_DECISION_MODEL` | `laya` | The decision model that classifies each action with a probability per answer. |
 | Auto-verify | `SOUS_AUTO_VERIFY` | `false` | `true` lets an upgrade sure of every label save its graph as verified without review. |
 
@@ -1181,15 +1181,20 @@ the saved one).
 
 ### Upgrades (phase 2)
 
-Sous writes step graphs itself, with two local models on Ollama: a
-generative model (`SOUS_GRAPH_MODEL`) for structure, and a decision model
-(`SOUS_DECISION_MODEL`, Laya: Ollama's `POST /v1/systemone`, typed
-questions answered with a probability per choice) for classification. An
-upgrade of one recipe:
+A step graph's **structure** (actions, their words, the items joining them,
+implied actions) is written by a connected **assistant**, which reads the
+recipe and sends it with `draft_recipe_graph`; Sous **classifies** it with a
+local decision model on Ollama (`SOUS_DECISION_MODEL`, Laya: Ollama's
+`POST /v1/systemone`, typed questions answered with a probability per
+choice). Small local generative models were tried for the structure
+(gemma4:e4b, lfm2.5, lfm3, qwen3 4B, on the five gate recipes) and none
+wrote a graph that passed the checks, even with a repair round, so a local
+graph model (`SOUS_GRAPH_MODEL`) is optional: with one, `upgrade_recipe`
+and background jobs write the structure too. Either way the steps are:
 
-1. **Draft.** The generative model gets the title, numbered ingredient
-   lines and numbered steps, and returns JSON (schema-constrained): items
-   (ingredients with their line), actions with their step, a quote of their
+1. **Draft.** The assistant, or the graph model (given the title, numbered
+   ingredient lines and numbered steps, JSON schema-constrained), writes
+   items (ingredients with their line), actions with their step, a quote of their
    words, inputs and outputs, implied actions (preheats, boiling water,
    chopping what the list says is chopped), and the served item. Recipe
    text is framed as data, not instructions.
@@ -1198,9 +1203,12 @@ upgrade of one recipe:
    quote is found in its step: exactly, then ignoring case, outer
    punctuation and spacing, then in another step; failing that, the action
    points at its whole step (`unplaced_quotes` counts these).
-3. **Structure check, one repair.** The deterministic checks run with
-   stand-in labels; errors go back to the generative model once with its
-   draft. A graph still in error is saved anyway, for review.
+3. **Structure check.** The deterministic checks run with stand-in labels.
+   An assistant's draft with any problem (or a quote not found in any step)
+   is refused (400) with every problem listed, to fix and resend, and its
+   `recipe_version` must be the recipe's current one (412 otherwise). A
+   graph model's errors go back to it once; a graph still in error is
+   saved anyway, for review.
 4. **Classify.** One decision call per action, nine questions: action,
    attention, check interval, interruptible, timing anchor, hold (none, 15
    minutes, an hour, a few hours, a day, a few days), where it waits,
@@ -1224,9 +1232,16 @@ for the rest; an implied action's action label always does.
 The save checks the recipe and graph haven't changed while the models
 worked (412 for the recipe, 409 for a graph saved meanwhile). An upgrade of
 a recipe with a graph needs `force`. Without an upgrader configured, or with
-Ollama unreachable or missing a model, upgrades are 503 `unavailable`.
+Ollama unreachable, missing a model or short of memory for it, upgrades
+are 503 `unavailable` (a background job waits and retries); a model too slow
+to answer fails that recipe. Without a graph model, `upgrade_recipe` and
+background jobs are 503, pointing at `draft_recipe_graph`.
 
-**Jobs.** `upgrade_jobs` and `upgrade_job_items` (migration 0005) hold
+**Without a graph.** `list_recipes_without_graph` (REST
+`GET /v1/graphs/todo`, `meal_id`, `limit` up to 100) lists recipes with
+steps and no graph, by title, with how many remain.
+
+**Jobs** (with a graph model). `upgrade_jobs` and `upgrade_job_items` (migration 0005) hold
 background upgrades, chosen by ids, tag or meal, by default only recipes
 without a graph (at most 1000). One worker in the process takes one recipe
 at a time, oldest job first, acting as the person who queued it. Recipes it
@@ -1246,14 +1261,16 @@ value) to learn from and re-test thresholds against. `accept` saves the
 graph verified, refused while anything is left to review. A graph whose
 words changed under it must be upgraded again before review.
 
-REST: `POST /v1/recipes/{id}/graph/upgrade` (`mode`, `force`),
+REST: `POST /v1/recipes/{id}/graph/draft` (`recipe_version`, `mode`,
+`force` and the structure), `POST /v1/recipes/{id}/graph/upgrade` (`mode`, `force`),
 `POST /v1/upgrades`, `GET /v1/upgrades/{id}`, `POST /v1/upgrades/{id}/cancel`,
 `GET /v1/review` (`recipe_id`, `meal_id`, `field`, `limit`, `cursor`) and
-`POST /v1/review`. MCP: `upgrade_recipe`, `upgrade_recipes`,
-`get_upgrade_job`, `cancel_upgrade_job`, `list_review_items` and
-`resolve_review_items`, with the prompts `upgrade_meal` (a meal's dishes,
-reviewed with the person, then planned) and `review_session` (the queue ten
-at a time). `GET /v1/recipes/{id}/graph` adds `review_count`.
+`POST /v1/review`. MCP: `draft_recipe_graph`, `list_recipes_without_graph`,
+`upgrade_recipe`, `upgrade_recipes`, `get_upgrade_job`,
+`cancel_upgrade_job`, `list_review_items` and `resolve_review_items`, with
+the prompts `upgrade_step_graphs` (the library or one meal's dishes:
+drafted, reviewed with the person, and for a meal then planned) and
+`review_session` (the queue ten at a time). `GET /v1/recipes/{id}/graph` adds `review_count`.
 
 Not yet: an `edit_recipe_graph` tool for structural edits (split, merge,
 relink; `set_recipe_graph` replaces a whole graph meanwhile), seeding

@@ -108,3 +108,28 @@ func TestUpgradeAPIOff(t *testing.T) {
 	h.want(h.do("POST", "/v1/recipes/"+rec["id"].(string)+"/graph/upgrade", map[string]any{}, ann...), 503, "unavailable")
 	h.want(h.do("POST", "/v1/upgrades", map[string]any{}, ann...), 503, "unavailable")
 }
+
+func TestDraftAPI(t *testing.T) {
+	h := upgradeHarness(t)
+	ann := h.person("Ann")
+	rec := h.create(ann, map[string]any{"title": "Toast", "ingredients": []string{"bread"}, "steps": []string{"Toast the bread."}})
+	id := rec["id"].(string)
+	r := h.do("GET", "/v1/graphs/todo", nil)
+	h.want(r, 200, "")
+	if r.json(t)["remaining"] != 1.0 {
+		t.Fatalf("todo = %s", r.body)
+	}
+	body := map[string]any{"recipe_version": rec["version"], "serve": "toast",
+		"items": []any{map[string]any{"id": "bread", "kind": "ingredient", "label": "bread", "line": 1},
+			map[string]any{"id": "toast", "kind": "final", "label": "toast"}},
+		"nodes": []any{map[string]any{"id": "toast", "step": 1, "quote": "Toast the bread.", "text": "Toast",
+			"inputs": []string{"bread"}, "outputs": []string{"toast"}, "implied": false}}}
+	h.want(h.do("POST", "/v1/recipes/"+id+"/graph/draft", body), 401, "who_are_you")
+	r = h.do("POST", "/v1/recipes/"+id+"/graph/draft", body, ann...)
+	h.want(r, 200, "")
+	if g := r.json(t)["graph"].(map[string]any)["graph"].(map[string]any); g["status"] != "draft" {
+		t.Errorf("draft = %s", r.body)
+	}
+	h.want(h.do("GET", "/v1/graphs/todo?limit=0", nil), 200, "")
+	h.want(h.do("POST", "/v1/recipes/"+id+"/graph/draft", body, ann...), 409, "exists")
+}

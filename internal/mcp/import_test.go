@@ -69,8 +69,8 @@ func TestImportRecipeTool(t *testing.T) {
 			}
 		}
 	}
-	if !tool || len(res.Tools) != 33 {
-		t.Fatalf("got %d tools, import_recipe present = %v; want 33 with it", len(res.Tools), tool)
+	if !tool || len(res.Tools) != 35 {
+		t.Fatalf("got %d tools, import_recipe present = %v; want 35 with it", len(res.Tools), tool)
 	}
 
 	out := ok[recipes.ImportResult](t, alice, "import_recipe", map[string]any{"url": site + "/stew"})

@@ -17,7 +17,7 @@ import (
 // prompts it was given.
 type fakeGen struct {
 	mu      sync.Mutex
-	drafts  []draftGraph
+	drafts  []StructureDraft
 	prompts []string
 	err     error
 	during  func() // runs inside Generate, to change things mid-upgrade
@@ -80,14 +80,14 @@ func (f *fakeDec) Decide(ctx context.Context, state string, qs []Question) (map[
 
 // toastDraft is a good draft of tinyRecipe's graph, as a model writes it:
 // loose ids, a quote with different spacing, an item it forgot to list.
-func toastDraft() draftGraph {
-	return draftGraph{Serve: "Buttered Toast",
-		Items: []draftItem{
+func toastDraft() StructureDraft {
+	return StructureDraft{Serve: "Buttered Toast",
+		Items: []DraftItem{
 			{ID: "Bread", Kind: "ingredient", Label: "bread", Line: 1},
 			{ID: "butter", Kind: "ingredient", Label: "butter", Line: 2},
 			{ID: "Buttered Toast", Kind: "final", Label: "buttered toast"},
 		},
-		Nodes: []draftNode{
+		Nodes: []DraftNode{
 			{ID: "Preheat", Step: 1, Quote: "Heat the oven to 400°F.", Text: "Heat the oven", Outputs: []string{"hot oven"}},
 			{ID: "toast", Step: 2, Quote: "toast the bread  for 5 minutes", Text: "Toast the bread", Inputs: []string{"Bread", "hot oven"}, Outputs: []string{"toasted"}},
 			{ID: "butter", Step: 2, Quote: "then butter it.", Text: "Butter it", Inputs: []string{"toasted", "butter"}, Outputs: []string{"Buttered Toast"}},
@@ -112,7 +112,7 @@ func upgradeService(t *testing.T, gen *fakeGen, dec *fakeDec) *Service {
 }
 
 func TestUpgradeRecipe(t *testing.T) {
-	gen := &fakeGen{drafts: []draftGraph{toastDraft()}}
+	gen := &fakeGen{drafts: []StructureDraft{toastDraft()}}
 	dec := &fakeDec{answers: toastAnswers()}
 	s := upgradeService(t, gen, dec)
 	ann := person(t, s, "Ann")
@@ -178,7 +178,7 @@ func TestUpgradeRecipe(t *testing.T) {
 func TestUpgradeAutoVerify(t *testing.T) {
 	sure := toastAnswers()
 	sure["Toast the"]["attention"] = ranked{"passive", 0.97}
-	gen := &fakeGen{drafts: []draftGraph{toastDraft()}}
+	gen := &fakeGen{drafts: []StructureDraft{toastDraft()}}
 	s := upgradeService(t, gen, &fakeDec{answers: sure})
 	s.up.AutoVerify = true
 	ann := person(t, s, "Ann")
@@ -197,7 +197,7 @@ func TestUpgradeAutoVerify(t *testing.T) {
 func TestUpgradeRepairs(t *testing.T) {
 	bad := toastDraft()
 	bad.Nodes[1].Outputs = []string{"toast-bits"} // butter's "toasted" is now made by nothing
-	gen := &fakeGen{drafts: []draftGraph{bad, toastDraft()}}
+	gen := &fakeGen{drafts: []StructureDraft{bad, toastDraft()}}
 	s := upgradeService(t, gen, &fakeDec{answers: toastAnswers()})
 	ann := person(t, s, "Ann")
 	r := tinyRecipe(t, s, ann)
@@ -214,7 +214,7 @@ func TestUpgradeRepairs(t *testing.T) {
 
 	// Still broken after the repair: saved anyway, with its errors, for a
 	// person to sort out.
-	gen2 := &fakeGen{drafts: []draftGraph{bad}}
+	gen2 := &fakeGen{drafts: []StructureDraft{bad}}
 	s2 := upgradeService(t, gen2, &fakeDec{answers: toastAnswers()})
 	bob := person(t, s2, "Bob")
 	r2 := tinyRecipe(t, s2, bob)
@@ -235,7 +235,7 @@ func TestUpgradeRefusals(t *testing.T) {
 		t.Errorf("no upgrader, queue: %v", err)
 	}
 
-	gen := &fakeGen{drafts: []draftGraph{toastDraft()}}
+	gen := &fakeGen{drafts: []StructureDraft{toastDraft()}}
 	dec := &fakeDec{answers: toastAnswers(), err: fmt.Errorf("%w: connection refused", ErrModelsUnavailable)}
 	s.SetUpgrader(&Upgrader{Gen: gen, Dec: dec})
 	if _, err := s.UpgradeRecipe(ctx, ann, UpgradeRequest{ID: r.ID}); !isCode(err, CodeUnavailable) {
@@ -271,7 +271,7 @@ var nobody = identity.Caller{}
 func waitABit() { time.Sleep(10 * time.Millisecond) }
 
 func TestUpgradeJobs(t *testing.T) {
-	gen := &fakeGen{drafts: []draftGraph{toastDraft()}}
+	gen := &fakeGen{drafts: []StructureDraft{toastDraft()}}
 	dec := &fakeDec{answers: toastAnswers()}
 	s := upgradeService(t, gen, dec)
 	ann := person(t, s, "Ann")
@@ -378,7 +378,7 @@ func TestUpgradeJobs(t *testing.T) {
 }
 
 func TestReviewQueue(t *testing.T) {
-	gen := &fakeGen{drafts: []draftGraph{toastDraft()}}
+	gen := &fakeGen{drafts: []StructureDraft{toastDraft()}}
 	answers := toastAnswers()
 	answers["butter it"]["hold"] = ranked{"15", 0.5}
 	s := upgradeService(t, gen, &fakeDec{answers: answers})
@@ -483,18 +483,18 @@ func TestReviewQueue(t *testing.T) {
 func TestAssemble(t *testing.T) {
 	r := Recipe{Title: "Purée", Ingredients: []Ingredient{{Raw: "1 lb carrots"}},
 		Steps: []Step{{Text: "Boil the carrots\nuntil soft, 20 to 25 minutes."}, {Text: "Purée with a stick blender."}}}
-	d := draftGraph{Serve: "Purée",
-		Items: []draftItem{{ID: "Carrots", Kind: "ingredient", Label: "carrots", Line: 1}, {ID: "carrots", Kind: "spice", Label: ""},
+	d := StructureDraft{Serve: "Purée",
+		Items: []DraftItem{{ID: "Carrots", Kind: "ingredient", Label: "carrots", Line: 1}, {ID: "carrots", Kind: "spice", Label: ""},
 			{ID: "x", Kind: "ingredient", Line: 7}},
-		Nodes: []draftNode{
+		Nodes: []DraftNode{
 			{ID: "boil", Step: 1, Quote: "boil the carrots until soft, 20 to 25 minutes", Inputs: []string{"Carrots"}, Outputs: []string{"soft carrots"}},
 			{ID: "boil", Step: 1, Quote: "Purée with a stick blender.", Inputs: []string{"soft carrots"}, Outputs: []string{"Purée"}},
 			{ID: "water", Step: 9, Implied: true, Quote: "anything", Text: "Boil water", Outputs: []string{"boiling water"}},
 			{ID: "lost", Step: 2, Quote: "words that aren't there", Outputs: []string{"mystery"}},
 		}}
 	g, missed := assemble(d, r)
-	if missed != 1 || g.ServeItemID != "puree" {
-		t.Fatalf("missed %d, serve %s", missed, g.ServeItemID)
+	if len(missed) != 1 || missed[0] != "lost" || g.ServeItemID != "puree" {
+		t.Fatalf("missed %v, serve %s", missed, g.ServeItemID)
 	}
 	n := g.Nodes
 	if n[0].Source != (SourceSpan{Step: 1, Start: 0, End: 45}) {
@@ -527,14 +527,14 @@ func TestAssemble(t *testing.T) {
 // A temperature an oven can't be ("cool to 105°F") is never an oven's, and
 // doesn't carry to later steps.
 func TestUpgradeIgnoresNonOvenTemps(t *testing.T) {
-	d := draftGraph{Serve: "rolls",
-		Items: []draftItem{{ID: "milk", Kind: "ingredient", Line: 1}, {ID: "rolls", Kind: "final"}},
-		Nodes: []draftNode{
+	d := StructureDraft{Serve: "rolls",
+		Items: []DraftItem{{ID: "milk", Kind: "ingredient", Line: 1}, {ID: "rolls", Kind: "final"}},
+		Nodes: []DraftNode{
 			{ID: "cool", Step: 1, Quote: "Cool the milk to 105°F.", Text: "Cool the milk", Inputs: []string{"milk"}, Outputs: []string{"warm"}},
 			{ID: "bake", Step: 2, Quote: "Bake the rolls.", Text: "Bake the rolls", Inputs: []string{"warm"}, Outputs: []string{"rolls"}},
 		}}
 	answers := map[string]map[string]ranked{"Cool the milk": {"equipment": {"oven", 0.9}}, "Bake the": {"equipment": {"oven", 0.9}}}
-	s := upgradeService(t, &fakeGen{drafts: []draftGraph{d}}, &fakeDec{answers: answers})
+	s := upgradeService(t, &fakeGen{drafts: []StructureDraft{d}}, &fakeDec{answers: answers})
 	ann := person(t, s, "Ann")
 	r := create(t, s, ann, RecipeInput{Title: "Rolls", Ingredients: []string{"1 cup milk"}, Steps: []string{"Cool the milk to 105°F.", "Bake the rolls."}})
 	res, err := s.UpgradeRecipe(ctx, ann, UpgradeRequest{ID: r.ID})
@@ -567,5 +567,79 @@ func TestStatedDuration(t *testing.T) {
 		if got != tc.want || ok != tc.ok {
 			t.Errorf("%q: got %v %v, want %v %v", tc.text, got, ok, tc.want, tc.ok)
 		}
+	}
+}
+
+// An assistant drafts the structure; Sous checks it, classifies it and
+// saves it. Problems come back listed, to fix and resend.
+func TestDraftRecipeGraph(t *testing.T) {
+	s := newTestService(t)
+	s.SetUpgrader(&Upgrader{Dec: &fakeDec{answers: toastAnswers()}}) // no graph model of its own
+	ann := person(t, s, "Ann")
+	r := tinyRecipe(t, s, ann)
+
+	if _, err := s.UpgradeRecipe(ctx, ann, UpgradeRequest{ID: r.ID}); !isCode(err, CodeUnavailable) || !strings.Contains(err.Error(), "draft_recipe_graph") {
+		t.Errorf("upgrade without a graph model: %v", err)
+	}
+	if _, err := s.QueueUpgrades(ctx, ann, UpgradeJobRequest{}); !isCode(err, CodeUnavailable) {
+		t.Errorf("queue without a graph model: %v", err)
+	}
+
+	bad := toastDraft()
+	bad.Nodes[1].Quote = "Grill the bread"
+	bad.Nodes[2].Inputs = []string{"jam", "butter"}
+	_, err := s.DraftRecipeGraph(ctx, ann, DraftRequest{ID: r.ID, RecipeVersion: r.Version, StructureDraft: bad})
+	if !isCode(err, CodeInvalid) || !strings.Contains(err.Error(), "toast: its quote isn't in step 2") || !strings.Contains(err.Error(), "jam") {
+		t.Fatalf("bad draft: %v", err)
+	}
+	if _, err := s.RecipeGraph(ctx, ann, r.ID); !isCode(err, CodeNotFound) {
+		t.Errorf("a bad draft was saved: %v", err)
+	}
+	if _, err := s.DraftRecipeGraph(ctx, ann, DraftRequest{ID: r.ID, StructureDraft: toastDraft()}); !isCode(err, CodeInvalid) {
+		t.Errorf("no recipe version: %v", err)
+	}
+	if _, err := s.DraftRecipeGraph(ctx, ann, DraftRequest{ID: r.ID, RecipeVersion: r.Version + 1, StructureDraft: toastDraft()}); !isCode(err, CodeStale) {
+		t.Errorf("wrong recipe version: %v", err)
+	}
+
+	res, err := s.DraftRecipeGraph(ctx, ann, DraftRequest{ID: r.ID, RecipeVersion: r.Version, Mode: UpgradeApply, StructureDraft: toastDraft()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Graph.Graph.Status != GraphNeedsReview || !res.Graph.Check.Valid || res.Graph.ReviewCount != 1 {
+		t.Errorf("draft saved: %s, valid %v, %d to review", res.Graph.Graph.Status, res.Graph.Check.Valid, res.Graph.ReviewCount)
+	}
+	if _, err := s.DraftRecipeGraph(ctx, ann, DraftRequest{ID: r.ID, RecipeVersion: r.Version, StructureDraft: toastDraft()}); !isCode(err, CodeExists) {
+		t.Errorf("again without force: %v", err)
+	}
+	s.up = nil
+	if _, err := s.DraftRecipeGraph(ctx, ann, DraftRequest{ID: r.ID, RecipeVersion: r.Version, StructureDraft: toastDraft()}); !isCode(err, CodeUnavailable) {
+		t.Errorf("upgrades off: %v", err)
+	}
+}
+
+func TestRecipesWithoutGraph(t *testing.T) {
+	s := newTestService(t)
+	s.SetUpgrader(&Upgrader{Dec: &fakeDec{answers: toastAnswers()}})
+	ann := person(t, s, "Ann")
+	a := tinyRecipe(t, s, ann)
+	b := create(t, s, ann, RecipeInput{Title: "Apple", Steps: []string{"Eat it."}})
+	create(t, s, ann, RecipeInput{Title: "Nothing to do"})
+	got, err := s.RecipesWithoutGraph(ctx, ann, GraphTodoQuery{})
+	if err != nil || got.Remaining != 2 || got.Items[0].ID != b.ID || got.Items[1].Steps != 2 {
+		t.Fatalf("todo: %v %s", err, dump(got))
+	}
+	if _, err := s.DraftRecipeGraph(ctx, ann, DraftRequest{ID: a.ID, RecipeVersion: a.Version, StructureDraft: toastDraft()}); err != nil {
+		t.Fatal(err)
+	}
+	got, _ = s.RecipesWithoutGraph(ctx, ann, GraphTodoQuery{Limit: 1})
+	if got.Remaining != 1 || len(got.Items) != 1 || got.Items[0].ID != b.ID {
+		t.Errorf("after one: %s", dump(got))
+	}
+	if _, err := s.RecipesWithoutGraph(ctx, ann, GraphTodoQuery{Limit: 101}); !isCode(err, CodeInvalid) {
+		t.Errorf("limit: %v", err)
+	}
+	if _, err := s.RecipesWithoutGraph(ctx, ann, GraphTodoQuery{MealID: "nope"}); !isCode(err, CodeNotFound) {
+		t.Errorf("unknown meal: %v", err)
 	}
 }

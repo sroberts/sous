@@ -13,7 +13,7 @@ import (
 // how sure it is.
 type Upgrade struct {
 	OllamaURL     string // SOUS_OLLAMA_URL, default http://127.0.0.1:11434; empty when "off"
-	GraphModel    string // SOUS_GRAPH_MODEL
+	GraphModel    string // SOUS_GRAPH_MODEL; empty: no local graph model, assistants draft structure
 	DecisionModel string // SOUS_DECISION_MODEL
 	AutoVerify    bool   // SOUS_AUTO_VERIFY=true: an upgrade sure of every label saves it as verified
 }
@@ -21,7 +21,6 @@ type Upgrade struct {
 // Defaults for step graph upgrades.
 const (
 	DefaultOllamaURL     = "http://127.0.0.1:11434"
-	DefaultGraphModel    = "gemma4:e4b"
 	DefaultDecisionModel = "laya"
 )
 
@@ -44,7 +43,9 @@ func LoadUpgrade(getenv func(string) string) (Upgrade, error) {
 		}
 		u.OllamaURL = strings.TrimRight(v, "/")
 	}
-	u.GraphModel = cmp.Or(strings.TrimSpace(getenv("SOUS_GRAPH_MODEL")), DefaultGraphModel)
+	// No graph model by default: the small local models tried didn't write
+	// sound structure, so an assistant drafts it and Sous classifies.
+	u.GraphModel = strings.TrimSpace(getenv("SOUS_GRAPH_MODEL"))
 	u.DecisionModel = cmp.Or(strings.TrimSpace(getenv("SOUS_DECISION_MODEL")), DefaultDecisionModel)
 	switch v := getenv("SOUS_AUTO_VERIFY"); v {
 	case "", "false":

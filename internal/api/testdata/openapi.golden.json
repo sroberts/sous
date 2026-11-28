@@ -112,6 +112,98 @@
         }
       }
     },
+    "/v1/graphs/todo": {
+      "get": {
+        "operationId": "listRecipesWithoutGraph",
+        "summary": "Recipes with steps and no step graph, by title, with how many remain",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Person"
+          },
+          {
+            "$ref": "#/components/parameters/Via"
+          },
+          {
+            "name": "meal_id",
+            "in": "query",
+            "description": "only the dishes on this meal",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "default 20, at most 100",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphTodos"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid, invalid_cursor or unknown_image; the message says what is wrong",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "who_are_you (a write from nobody), unknown_person, invalid_identity or gateway_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "starting, or identity_unavailable: the gateway's keys cannot be fetched",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/images": {
       "post": {
         "operationId": "uploadImage",
@@ -3079,6 +3171,141 @@
         }
       }
     },
+    "/v1/recipes/{id}/graph/draft": {
+      "post": {
+        "operationId": "draftRecipeGraph",
+        "summary": "Send a step graph's structure for Sous to check, classify with its decision model and save; a draft with problems is 400 with them listed",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Person"
+          },
+          {
+            "$ref": "#/components/parameters/Via"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "recipe ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/draftBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpgradeResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid, invalid_cursor or unknown_image; the message says what is wrong",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "who_are_you (a write from nobody), unknown_person, invalid_identity or gateway_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "cross_origin: a browser request from another site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "exists, or deleted: the recipe is in the trash",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "stale: the recipe changed since the version in If-Match; current holds it as it now stands",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaleError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "too_large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "starting, or identity_unavailable: the gateway's keys cannot be fetched",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/recipes/{id}/graph/upgrade": {
       "post": {
         "operationId": "upgradeRecipe",
@@ -5226,6 +5453,53 @@
         "required": [
           "code",
           "message"
+        ],
+        "additionalProperties": false
+      },
+      "GraphTodo": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer"
+          },
+          "steps": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "version",
+          "steps"
+        ],
+        "additionalProperties": false
+      },
+      "GraphTodos": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/GraphTodo"
+            }
+          },
+          "remaining": {
+            "type": "integer",
+            "description": "recipes without a step graph in all, this batch included"
+          }
+        },
+        "required": [
+          "items",
+          "remaining"
         ],
         "additionalProperties": false
       },
@@ -8257,6 +8531,130 @@
         "required": [
           "name",
           "count"
+        ],
+        "additionalProperties": false
+      },
+      "draftBody": {
+        "type": "object",
+        "properties": {
+          "recipe_version": {
+            "type": "integer",
+            "description": "the recipe's version the quotes were read from"
+          },
+          "mode": {
+            "type": "string",
+            "description": "draft (unset) or apply"
+          },
+          "force": {
+            "type": "boolean",
+            "description": "replace the recipe's step graph if it has one"
+          },
+          "items": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "short lowercase words joined with -"
+                },
+                "kind": {
+                  "type": "string",
+                  "description": "ingredient, intermediate or final"
+                },
+                "label": {
+                  "type": "string",
+                  "description": "what it is: butter, the dough, reserved pasta water"
+                },
+                "line": {
+                  "type": "integer",
+                  "description": "for an ingredient, its line of the ingredient list, from 1"
+                }
+              },
+              "required": [
+                "id",
+                "kind",
+                "label"
+              ],
+              "additionalProperties": false
+            },
+            "description": "every ingredient line as an ingredient item with its line; things made along the way as intermediates; the dish that's served as the one final item"
+          },
+          "nodes": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "short lowercase words joined with -"
+                },
+                "step": {
+                  "type": "integer",
+                  "description": "the step it comes from (or, implied, serves), from 1"
+                },
+                "quote": {
+                  "type": "string",
+                  "description": "the step's words for this action, copied exactly; empty for an implied action"
+                },
+                "text": {
+                  "type": "string",
+                  "description": "the action on its own, a few words"
+                },
+                "inputs": {
+                  "type": [
+                    "null",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "ids of the items it uses"
+                },
+                "outputs": {
+                  "type": [
+                    "null",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "ids of the items it makes"
+                },
+                "implied": {
+                  "type": "boolean",
+                  "description": "true for an action the words assume but never state: a preheat, boiling water, chopping what the list says is chopped"
+                }
+              },
+              "required": [
+                "id",
+                "step",
+                "quote",
+                "text",
+                "inputs",
+                "outputs",
+                "implied"
+              ],
+              "additionalProperties": false
+            },
+            "description": "the single actions, in the order they're written"
+          },
+          "serve": {
+            "type": "string",
+            "description": "the id of the final item that goes to the table"
+          }
+        },
+        "required": [
+          "recipe_version",
+          "items",
+          "nodes",
+          "serve"
         ],
         "additionalProperties": false
       },

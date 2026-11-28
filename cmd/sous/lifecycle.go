@@ -103,7 +103,11 @@ func run(args []string, getenv func(string) string, stdout io.Writer) int {
 		svc := recipes.New(st, log)
 		if upCfg.On() {
 			oc := ollama.New(upCfg.OllamaURL, upCfg.GraphModel, upCfg.DecisionModel)
-			svc.SetUpgrader(&recipes.Upgrader{Gen: oc, Dec: oc, AutoVerify: upCfg.AutoVerify})
+			up := &recipes.Upgrader{Dec: oc, AutoVerify: upCfg.AutoVerify}
+			if upCfg.GraphModel != "" {
+				up.Gen = oc
+			}
+			svc.SetUpgrader(up)
 		}
 		if !cfg.NoSamples {
 			// The samples are a welcome, not data anyone relies on, so

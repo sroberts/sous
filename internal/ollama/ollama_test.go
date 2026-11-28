@@ -59,6 +59,15 @@ func TestFailures(t *testing.T) {
 		t.Errorf("missing model: %v", err)
 	}
 
+	full := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error":"model requires 16.9 GiB but only 11.3 GiB are available (after 512.0 MiB overhead)"}`))
+	}))
+	defer full.Close()
+	if _, err := New(full.URL, "g", "d").Generate(context.Background(), "p", nil); !errors.Is(err, recipes.ErrModelsUnavailable) {
+		t.Errorf("out of memory: %v", err)
+	}
+
 	bad := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"boom"}`, http.StatusInternalServerError)
 	}))

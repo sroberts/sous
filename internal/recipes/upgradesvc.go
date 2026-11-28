@@ -69,7 +69,27 @@ func (s *Service) UpgradeRecipe(ctx context.Context, c identity.Caller, in Upgra
 	return res, unavailable(err)
 }
 
+// noGraphModel is why Sous can't write a graph's structure itself.
+const noGraphModel = "Sous has no graph model of its own (SOUS_GRAPH_MODEL); draft the graph's structure with draft_recipe_graph instead"
+
 func (s *Service) upgrade(ctx context.Context, c identity.Caller, in UpgradeRequest) (UpgradeResult, error) {
+	if s.up.Gen == nil {
+		return UpgradeResult{}, Errorf(CodeUnavailable, noGraphModel)
+	}
+	return s.upgradeWith(ctx, c, in, 0, func(r Recipe, k KitchenProfile) (GraphInput, int, int, error) {
+		return s.up.run(ctx, r, k)
+	})
+}
+
+// structureFn makes a classified graph for a recipe: attempts and quotes
+// it couldn't place come back with it.
+type structureFn func(r Recipe, k KitchenProfile) (g GraphInput, attempts, unplaced int, err error)
+
+// upgradeWith reads the recipe, has produce make its graph, routes it and
+// saves it, refusing if the recipe or its graph changed meanwhile.
+// recipeVersion, when not 0, is the version the structure was written
+// against.
+func (s *Service) upgradeWith(ctx context.Context, c identity.Caller, in UpgradeRequest, recipeVersion int, produce structureFn) (UpgradeResult, error) {
 	var r Recipe
 	var k Kitchen
 	var prev *RecipeGraph
@@ -96,8 +116,13 @@ func (s *Service) upgrade(ctx context.Context, c identity.Caller, in UpgradeRequ
 	if len(r.Steps) == 0 {
 		return UpgradeResult{}, Errorf(CodeInvalid, "this recipe has no steps to upgrade")
 	}
+	if recipeVersion != 0 && recipeVersion != r.Version {
+		e := Errorf(CodeStale, "the recipe changed since you read it (it's at version %d, not %d); read it again and redraft", r.Version, recipeVersion)
+		e.Current = &r
+		return UpgradeResult{}, e
+	}
 
-	g, attempts, missed, err := s.up.run(ctx, r, k.KitchenProfile)
+	g, attempts, missed, err := produce(r, k.KitchenProfile)
 	if err != nil {
 		return UpgradeResult{}, err
 	}
@@ -145,7 +170,7 @@ func (s *Service) upgrade(ctx context.Context, c identity.Caller, in UpgradeRequ
 func (u *Upgrader) run(ctx context.Context, r Recipe, k KitchenProfile) (GraphInput, int, int, error) {
 	var g GraphInput
 	var missed int
-	var prev *draftGraph
+	var prev *StructureDraft
 	var problems []GraphProblem
 	attempts := 0
 	for attempts < 2 {
@@ -154,7 +179,9 @@ func (u *Upgrader) run(ctx context.Context, r Recipe, k KitchenProfile) (GraphIn
 		if err != nil {
 			return GraphInput{}, attempts, 0, err
 		}
-		g, missed = assemble(d, r)
+		var unplaced []string
+		g, unplaced = assemble(d, r)
+		missed = len(unplaced)
 		if len(g.Nodes) == 0 {
 			problems = []GraphProblem{{Code: "no_nodes", Message: "the graph has no actions"}}
 			prev = &d
@@ -189,6 +216,133 @@ func structureProblems(g GraphInput, r Recipe, k KitchenProfile) []GraphProblem 
 		probe.Nodes = append(probe.Nodes, n)
 	}
 	return checkGraph(&probe, r, k).Errors
+}
+
+// DraftRequest is a graph's structure written by an assistant, for Sous to
+// classify and save.
+type DraftRequest struct {
+	ID            string `json:"id" jsonschema:"recipe ID"`
+	RecipeVersion int    `json:"recipe_version" jsonschema:"the recipe's version from get_recipe; the quotes are read against its words"`
+	Mode          string `json:"mode,omitempty" jsonschema:"draft (unset): save for review whatever the labels say; apply: needs_review, or verified when the household allows it and every label is sure"`
+	Force         bool   `json:"force,omitempty" jsonschema:"replace the recipe's step graph if it has one"`
+	StructureDraft
+}
+
+// DraftRecipeGraph takes a graph's structure written by someone else (an
+// assistant), checks it, has the decision model classify every action and
+// saves it as an upgrade does. A structure with problems (a quote not in
+// its step, an input nothing makes, an output nothing uses, a cycle) is
+// refused with all of them listed, to fix and send again.
+func (s *Service) DraftRecipeGraph(ctx context.Context, c identity.Caller, in DraftRequest) (UpgradeResult, error) {
+	if _, err := author(c); err != nil {
+		return UpgradeResult{}, err
+	}
+	if s.up == nil {
+		return UpgradeResult{}, Errorf(CodeUnavailable, "upgrades are off on this Sous (SOUS_OLLAMA_URL=off)")
+	}
+	if in.Mode == "" {
+		in.Mode = UpgradeDraft
+	}
+	if in.Mode != UpgradeDraft && in.Mode != UpgradeApply {
+		return UpgradeResult{}, Errorf(CodeInvalid, "mode must be draft or apply")
+	}
+	if in.RecipeVersion < 1 {
+		return UpgradeResult{}, Errorf(CodeInvalid, "recipe_version is required: the version the quotes were read from")
+	}
+	res, err := s.upgradeWith(ctx, c, UpgradeRequest{ID: in.ID, Mode: in.Mode, Force: in.Force}, in.RecipeVersion,
+		func(r Recipe, k KitchenProfile) (GraphInput, int, int, error) {
+			g, unplaced := assemble(in.StructureDraft, r)
+			if len(g.Nodes) == 0 {
+				return GraphInput{}, 1, 0, Errorf(CodeInvalid, "the draft has no actions")
+			}
+			var msgs []string
+			for _, id := range unplaced {
+				msgs = append(msgs, fmt.Sprintf("%s: its quote isn't in step %d, or any step; copy the words exactly", id, stepOf(g, id)))
+			}
+			for _, p := range structureProblems(g, r, k) {
+				msgs = append(msgs, p.Message)
+			}
+			if len(msgs) > 0 {
+				return GraphInput{}, 1, len(unplaced), Errorf(CodeInvalid, "the draft has %d problems; fix them and send the whole draft again:\n- %s",
+					len(msgs), strings.Join(msgs[:min(len(msgs), 30)], "\n- "))
+			}
+			return g, 1, 0, s.up.classify(ctx, r, k, &g)
+		})
+	return res, unavailable(err)
+}
+
+func stepOf(g GraphInput, node string) int {
+	for _, n := range g.Nodes {
+		if n.ID == node {
+			return n.Source.Step
+		}
+	}
+	return 0
+}
+
+// GraphTodo is a recipe without a step graph.
+type GraphTodo struct {
+	ID      string `json:"id"`
+	Title   string `json:"title"`
+	Version int    `json:"version"`
+	Steps   int    `json:"steps"`
+}
+
+// GraphTodos is a batch of recipes without a step graph, and how many
+// there are in all.
+type GraphTodos struct {
+	Items     []GraphTodo `json:"items"`
+	Remaining int         `json:"remaining" jsonschema:"recipes without a step graph in all, this batch included"`
+}
+
+// GraphTodoQuery narrows RecipesWithoutGraph.
+type GraphTodoQuery struct {
+	MealID string `json:"meal_id,omitempty" jsonschema:"only the dishes on this meal"`
+	Limit  int    `json:"limit,omitempty" jsonschema:"how many to list; default 20, at most 100"`
+}
+
+// RecipesWithoutGraph lists recipes with steps and no step graph, by title.
+func (s *Service) RecipesWithoutGraph(ctx context.Context, c identity.Caller, q GraphTodoQuery) (GraphTodos, error) {
+	limit := q.Limit
+	if limit == 0 {
+		limit = 20
+	}
+	if limit < 1 || limit > 100 {
+		return GraphTodos{}, Errorf(CodeInvalid, "limit must be 1 to 100")
+	}
+	where := `r.deleted_at IS NULL AND NOT EXISTS (SELECT 1 FROM recipe_graphs g WHERE g.recipe_id = r.id AND g.deleted_at IS NULL)`
+	var args []any
+	if q.MealID != "" {
+		where += " AND r.id IN (SELECT recipe_id FROM meal_items WHERE meal_id = ?)"
+		args = append(args, q.MealID)
+	}
+	out := GraphTodos{Items: []GraphTodo{}}
+	err := s.st.Read(ctx, func(tx *sql.Tx) error {
+		if q.MealID != "" {
+			if _, err := loadMeal(ctx, tx, q.MealID); err != nil {
+				return err
+			}
+		}
+		base := `SELECT r.id, r.title, r.version, count(*) FROM recipes r JOIN recipe_steps st ON st.recipe_id = r.id
+			WHERE ` + where + ` GROUP BY r.id`
+		if err := tx.QueryRowContext(ctx, "SELECT count(*) FROM ("+base+")", args...).Scan(&out.Remaining); err != nil {
+			return err
+		}
+		rows, err := tx.QueryContext(ctx, base+" ORDER BY r.title COLLATE NOCASE, r.id LIMIT ?", append(args, limit)...)
+		if err != nil {
+			return err
+		}
+		for rows.Next() {
+			var t GraphTodo
+			if err := rows.Scan(&t.ID, &t.Title, &t.Version, &t.Steps); err != nil {
+				rows.Close()
+				return err
+			}
+			out.Items = append(out.Items, t)
+		}
+		return closeRows(rows)
+	})
+	return out, err
 }
 
 // Jobs.
@@ -237,6 +391,9 @@ func (s *Service) QueueUpgrades(ctx context.Context, c identity.Caller, in Upgra
 	}
 	if s.up == nil {
 		return UpgradeJob{}, Errorf(CodeUnavailable, "upgrades are off on this Sous (SOUS_OLLAMA_URL=off)")
+	}
+	if s.up.Gen == nil {
+		return UpgradeJob{}, Errorf(CodeUnavailable, noGraphModel)
 	}
 	if in.Mode == "" {
 		in.Mode = UpgradeDraft
@@ -398,7 +555,7 @@ func (s *Service) wake() {
 // the models can't be reached it waits and tries the same recipe again
 // rather than failing the rest.
 func (s *Service) RunUpgrades(ctx context.Context) {
-	if s.up == nil {
+	if s.up == nil || s.up.Gen == nil {
 		return
 	}
 	if err := s.st.Write(ctx, func(tx *sql.Tx) error {

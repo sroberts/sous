@@ -67,7 +67,10 @@ func (c *Client) post(ctx context.Context, path string, body, out any) error {
 		if e.Error == "" {
 			e.Error = strings.TrimSpace(string(data))
 		}
-		if resp.StatusCode == http.StatusNotFound && strings.Contains(e.Error, "not found") {
+		// A missing model, or one that doesn't fit in memory just now, is
+		// a reason to wait, not the recipe's fault.
+		if (resp.StatusCode == http.StatusNotFound && strings.Contains(e.Error, "not found")) ||
+			strings.Contains(e.Error, "requires") && strings.Contains(e.Error, "available") {
 			return fmt.Errorf("%w: %s", ErrUnreachable, e.Error)
 		}
 		return fmt.Errorf("ollama %s: %s: %s", path, resp.Status, e.Error)
@@ -146,30 +149,4 @@ func (c *Client) failed(err error) error {
 		return fmt.Errorf("the model didn't answer within %s", c.HTTP.Timeout)
 	}
 	return fmt.Errorf("ollama: %w", err)
-}
-
-// Models reports what's installed, to say clearly when a model is missing.
-func (c *Client) Models(ctx context.Context) ([]string, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+"/api/tags", nil)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := c.HTTP.Do(req)
-	if err != nil {
-		return nil, c.failed(err)
-	}
-	defer resp.Body.Close()
-	var out struct {
-		Models []struct {
-			Name string `json:"name"`
-		} `json:"models"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		return nil, err
-	}
-	names := make([]string, len(out.Models))
-	for i, m := range out.Models {
-		names[i] = m.Name
-	}
-	return names, nil
 }

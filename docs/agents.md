@@ -77,25 +77,29 @@ A graph points at the words each action comes from, so when a step's words
 change, the actions from it show as stale. Meal plans don't read step graphs
 yet; they still plan from step timing.
 
-#### Letting Sous write them
+#### Drafting them with an assistant
 
-Sous can write step graphs itself with local models, so an assistant only
-asks and reviews (see [Running Sous](running.md#step-graphs-with-local-models)
-to set the models up):
+An assistant writes a graph's structure and Sous labels it, using a small
+decision model on your own machine (see
+[Running Sous](running.md#step-graphs-with-local-models)):
 
-- `upgrade_recipe` turns one recipe into a graph, in tens of seconds. It's
-  saved as a draft for review; `mode: apply` saves it ready for review, and
-  `force` redoes a recipe that has one.
-- `upgrade_recipes` queues many (by ids, tag or meal; by default only those
-  without a graph) to run in the background; `get_upgrade_job` follows it
-  and `cancel_upgrade_job` stops it.
+- `list_recipes_without_graph` lists the recipes still to do.
+- `draft_recipe_graph` takes the structure: the actions, the words each
+  comes from, what joins them. Sous checks it (and sends back anything to
+  fix), then labels every action with how sure it is. It's saved as a draft
+  for review; `mode: apply` saves it ready for review, and `force` redoes a
+  recipe that has one.
+- If Sous has a graph model of its own, `upgrade_recipe` does the drafting
+  too, and `upgrade_recipes` queues many to run in the background
+  (`get_upgrade_job`, `cancel_upgrade_job`).
 - `list_review_items` lists what the models weren't sure of, most
   consequential first, each with the words, the value, how sure the model
   was and the other answers it weighed. `resolve_review_items` confirms or
   corrects them, and can accept a recipe's graph as verified.
 
-The `upgrade_meal` prompt does a meal's dishes and reviews them with you
-before planning; `review_session` goes through the queue ten at a time.
+The `upgrade_step_graphs` prompt drafts the library, or one meal's dishes
+(`/mcp__sous__upgrade_step_graphs Thanksgiving` in Claude Code), and reviews
+them with you; `review_session` goes through the queue ten at a time.
 Every correction is kept, to make the models' answers better over time.
 
 ## REST API
