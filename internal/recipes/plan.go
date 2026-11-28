@@ -165,24 +165,40 @@ func (s *Service) MealPlan(ctx context.Context, c identity.Caller, id string, no
 			return err
 		}
 		in.meal = m
-		steps := 0
-		for _, it := range m.Items {
-			r, err := loadRecipe(ctx, tx, it.RecipeID, "")
-			if err != nil {
-				return err
-			}
-			// Recipes can grow after they join a menu, so the bound on a
-			// plan's work is checked here too, not only when the menu is set.
-			if steps += len(r.Steps); steps > maxMealSteps {
-				return tooManySteps(steps)
-			}
-			in.recipes = append(in.recipes, r)
-		}
 		k, err := loadKitchen(ctx, tx)
 		if err != nil {
 			return err
 		}
 		in.kitchen = k.KitchenProfile
+		steps := 0
+		var why []string
+		for _, it := range m.Items {
+			r, err := loadRecipe(ctx, tx, it.RecipeID, "")
+			if err != nil {
+				return err
+			}
+			// A dish plans from its step graph when it has one a plan can
+			// use; otherwise from its steps.
+			g, err := loadGraph(ctx, tx, it.RecipeID)
+			if err != nil {
+				return err
+			}
+			use, reason := planGraph(g, r, in.kitchen)
+			// Recipes can grow after they join a menu, so the bound on a
+			// plan's work is checked here too, not only when the menu is set.
+			if n := len(r.Steps); use != nil {
+				steps += len(use.Nodes)
+			} else {
+				steps += n
+			}
+			if steps > maxMealSteps {
+				return tooManySteps(steps)
+			}
+			in.recipes = append(in.recipes, r)
+			in.graphs = append(in.graphs, use)
+			why = append(why, reason)
+		}
+		in.whyNoGraph = why
 		in.progress, err = loadProgress(ctx, tx, id)
 		return err
 	})
@@ -240,11 +256,17 @@ func lateOptions(in planInput, plan Plan) []LateOption {
 	if len(plan.LateDishes) > 0 && len(in.meal.Items) > 1 {
 		lead := plan.LateDishes[0]
 		alt := in
-		alt.meal.Items, alt.recipes = nil, nil
+		alt.meal.Items, alt.recipes, alt.graphs, alt.whyNoGraph = nil, nil, nil, nil
 		for i, it := range in.meal.Items {
 			if it.ID != lead.ItemID {
 				alt.meal.Items = append(alt.meal.Items, it)
 				alt.recipes = append(alt.recipes, in.recipes[i])
+				if i < len(in.graphs) {
+					alt.graphs = append(alt.graphs, in.graphs[i])
+				}
+				if i < len(in.whyNoGraph) {
+					alt.whyNoGraph = append(alt.whyNoGraph, in.whyNoGraph[i])
+				}
 			}
 		}
 		if p, err := buildPlan(alt); err == nil && helps(p) {
@@ -303,11 +325,15 @@ func parseStamp(s *string) *time.Time {
 
 // planInput is everything buildPlan needs; recipes[i] is meal.Items[i]'s.
 type planInput struct {
-	meal     Meal
-	recipes  []Recipe
-	kitchen  KitchenProfile
-	progress map[string]taskProgress
-	now      time.Time
+	meal    Meal
+	recipes []Recipe
+	graphs  []*RecipeGraph // a dish's step graph, when it plans from one; nil plans from its steps
+	// whyNoGraph says, for a dish planned from its steps, why its graph
+	// wasn't used, for a meal that plans other dishes from graphs.
+	whyNoGraph []string
+	kitchen    KitchenProfile
+	progress   map[string]taskProgress
+	now        time.Time
 }
 
 // ptask is a task while it is being placed. Times are minutes from the
@@ -318,7 +344,8 @@ type ptask struct {
 	step      int // index into the recipe's steps; -1 for a reheat
 	text      string
 	dur       int
-	handsOn   bool
+	handsOn   bool // active: takes a cook the whole time
+	hands     int  // tenths of a cook it takes: 10 active, a little for check-ins, 0 hands-off
 	equip     string
 	temp      int
 	space     int
@@ -326,7 +353,8 @@ type ptask struct {
 	makeAhead bool
 	holdMax   int
 	holdIn    string
-	prev      *ptask
+	prevs     []*ptask // the tasks it waits for: the step before, or a graph's makers of its inputs
+	succs     []*ptask
 	heats     *ptask // for a preheat, the oven task it heats for
 
 	fixed, pinned, late, missed bool
@@ -351,6 +379,9 @@ type planner struct {
 	work     int            // placed tasks looked at so far; see planBudget
 	warnings []PlanWarning
 	warned   map[string]bool
+	// holdMin is each dish's make-ahead allowance: how long its made-ahead
+	// part can wait (the shortest hold in it).
+	holdMin []int
 	// baseWarned is warned as it stood before the first pass: each pass
 	// starts from it, so a once-only warning dropped with the previous
 	// pass's warnings can be raised again.
@@ -415,6 +446,12 @@ func planWork(in planInput) (Plan, int, error) {
 	p.dayEnd, _ = clockMinutes(k.DayEnd)
 	if p.dayEnd <= p.dayStart {
 		p.dayStart, p.dayEnd = 8*60, 22*60
+	}
+	for _, v := range k.Vessels {
+		p.appCap[resVessel+v.Name] += v.Count
+	}
+	if k.CounterZones != nil && *k.CounterZones > 0 {
+		p.appCap[ResCounter] = *k.CounterZones
 	}
 	for _, a := range k.Appliances {
 		p.appCap[a.Name] += a.Count
@@ -503,6 +540,7 @@ func maxDeadline(d []int) int {
 func (p *planner) buildTasks(serve time.Time) (all []*ptask, dayOf, ahead [][]*ptask, deadlines []int) {
 	n := len(p.in.meal.Items)
 	dayOf, ahead, deadlines = make([][]*ptask, n), make([][]*ptask, n), make([]int, n)
+	p.holdMin = make([]int, n)
 	for i, it := range p.in.meal.Items {
 		r := p.in.recipes[i]
 		deadlines[i] = p.minutes(serve) + it.ServeOffsetMinutes
@@ -511,6 +549,12 @@ func (p *planner) buildTasks(serve time.Time) (all []*ptask, dayOf, ahead [][]*p
 		}
 		if len(r.Steps) == 0 {
 			p.warnItem("no_steps", r.Title+" has no steps, so there's nothing to plan for it.", it.ID)
+			continue
+		}
+		if g := p.graph(i); g != nil {
+			tasks, a, d := p.graphTasks(it, i, r, g)
+			ahead[i], dayOf[i] = a, d
+			all = append(all, tasks...)
 			continue
 		}
 		texts := make([]string, len(r.Steps))
@@ -539,9 +583,10 @@ func (p *planner) buildTasks(serve time.Time) (all []*ptask, dayOf, ahead [][]*p
 				r.Title, plural(guessed, "step has", "steps have"), iffs(guessed == 1, "its time is", "their times are")), it.ID)
 		}
 		for j := 1; j < len(steps); j++ {
-			steps[j].prev = steps[j-1]
+			link(steps[j-1], steps[j])
 		}
 		if hold >= 0 {
+			p.holdMin[i] = steps[hold].holdMax
 			ahead[i] = steps[:hold+1]
 			for _, t := range ahead[i] {
 				t.makeAhead = true
@@ -556,10 +601,12 @@ func (p *planner) buildTasks(serve time.Time) (all []*ptask, dayOf, ahead [][]*p
 				} else {
 					rh.text = "Bring " + r.Title + " back to temperature"
 				}
-				rh.prev = h
+				link(h, rh)
 				rh.prog = p.in.progress[rh.key]
 				if len(rest) > 0 {
-					rest[0].prev = rh
+					rest[0].prevs = nil
+					h.succs = slices.DeleteFunc(h.succs, func(u *ptask) bool { return u == rest[0] })
+					link(rh, rest[0])
 				}
 				rest = append([]*ptask{rh}, rest...)
 				all = append(all, rh)
@@ -569,6 +616,14 @@ func (p *planner) buildTasks(serve time.Time) (all []*ptask, dayOf, ahead [][]*p
 			dayOf[i] = steps
 		}
 		all = append(all, steps...)
+	}
+	// A meal planning some dishes from step graphs says which aren't.
+	if slices.ContainsFunc(p.in.graphs, func(g *RecipeGraph) bool { return g != nil }) {
+		for i, it := range p.in.meal.Items {
+			if p.graph(i) == nil && i < len(p.in.whyNoGraph) && len(p.in.recipes[i].Steps) > 0 {
+				p.warnItem("no_graph", p.in.recipes[i].Title+" is planned from its steps, one after another: "+p.in.whyNoGraph[i]+".", it.ID)
+			}
+		}
 	}
 	return all, dayOf, ahead, deadlines
 }
@@ -604,6 +659,7 @@ func (p *planner) stepTask(it MealItem, i, j int, st Step, g StepTiming) (*ptask
 	if tm.HandsOn != nil {
 		t.handsOn = *tm.HandsOn
 	}
+	t.hands = 10 * b2i(t.handsOn)
 	if tm.Equipment != nil {
 		t.equip = *tm.Equipment
 	}
@@ -672,9 +728,7 @@ func (p *planner) placeBack(t *ptask, lfMin int) {
 	// Nor before the step before it ends, when that's already placed (a
 	// make-ahead step falling back here from placeFwd): a recipe's steps
 	// run in order, so the bake never comes before the crust.
-	if t.prev != nil && t.prev.placed {
-		low = max(low, t.prev.end)
-	}
+	low = after(t, low)
 	for _, day := range p.dayPasses(t) {
 		for s := s0; s >= low && !p.spent(); s -= gridMin {
 			if oven, ok := p.fits(t, s, day); ok {
@@ -708,7 +762,7 @@ func (p *planner) placeFwd(t *ptask, ef, lfMin int) {
 
 // dayPasses: hands-on work tries the kitchen's day first, then any hour.
 func (p *planner) dayPasses(t *ptask) []bool {
-	if t.handsOn && t.dur > 0 && t.dur <= p.dayEnd-p.dayStart {
+	if t.hands > 0 && t.dur > 0 && t.dur <= p.dayEnd-p.dayStart {
 		return []bool{true, false}
 	}
 	return []bool{false}
@@ -751,11 +805,12 @@ func (p *planner) fits(t *ptask, s int, day bool) (int, bool) {
 	if t.dur <= 0 {
 		return p.firstOven(t), true
 	}
-	if day && t.handsOn && !p.inDay(s, e) {
+	if day && t.hands > 0 && !p.inDay(s, e) {
 		return -1, false
 	}
 	k := p.in.kitchen
-	if t.handsOn && load(p.placed, s, e, func(u *ptask) int { return b2i(u.handsOn) }) >= p.in.meal.Cooks {
+	// Cooks in tenths: active work takes a whole one, check-ins a little.
+	if t.hands > 0 && load(p.placed, s, e, func(u *ptask) int { return u.hands })+t.hands > 10*p.in.meal.Cooks {
 		return -1, false
 	}
 	switch t.equip {
@@ -782,7 +837,7 @@ func (p *planner) fits(t *ptask, s int, day bool) (int, bool) {
 	default:
 		capacity, known := p.appCap[t.equip]
 		if !known {
-			p.warn("unknown_appliance", fmt.Sprintf("Steps use a %s, which isn't in the kitchen; add it there to plan around it.", t.equip), nil, "appl:"+t.equip)
+			p.warn("unknown_appliance", fmt.Sprintf("Steps use a %s, which isn't in the kitchen; add it there to plan around it.", strings.TrimPrefix(t.equip, resVessel)), nil, "appl:"+t.equip)
 			return -1, true
 		}
 		need := min(t.space, capacity)
@@ -862,10 +917,9 @@ func (p *planner) pass(tasks []*ptask, dayOf, ahead [][]*ptask, deadlines []int,
 		}
 		chain := append(slices.Clone(ahead[i]), dayOf[i]...)
 		links := make([]link, len(chain))
-		rest := 0
-		for j := len(chain) - 1; j >= 0; j-- {
-			rest += chain[j].dur
-			links[j] = link{chain[j], deadlines[i] - rest}
+		rest := longest(chain)
+		for j, t := range chain {
+			links[j] = link{t, deadlines[i] - rest[t]}
 		}
 		queue = append(queue, links)
 	}
@@ -887,20 +941,34 @@ func (p *planner) pass(tasks []*ptask, dayOf, ahead [][]*ptask, deadlines []int,
 		if t.placed {
 			continue
 		}
-		ef := floor
-		if t.prev != nil && t.prev.placed {
-			ef = max(ef, t.prev.end)
-		}
-		p.placeFrom(t, ef)
+		p.placeFrom(t, after(t, floor))
 	}
 
-	// Day-of chains of the others, backwards from each dish's serving time.
+	// Day-of work of the others, backwards from each dish's serving time:
+	// a task is placed once everything after it is, finishing before the
+	// first of them starts.
 	var ready []*ptask
+	waiting := map[*ptask]int{} // its day-of successors not yet placed
 	for i, chain := range dayOf {
-		if len(chain) > 0 && !trouble[i] {
-			last := chain[len(chain)-1]
-			ready = append(ready, last)
-			p.lf[last] = deadlines[i]
+		if trouble[i] {
+			continue
+		}
+		in := map[*ptask]bool{}
+		for _, t := range chain {
+			in[t] = true
+		}
+		for _, t := range chain {
+			for _, u := range t.succs {
+				if in[u] {
+					waiting[t]++
+				}
+			}
+		}
+		for _, t := range chain {
+			if waiting[t] == 0 {
+				ready = append(ready, t)
+				p.lf[t] = deadlines[i]
+			}
 		}
 	}
 	for len(ready) > 0 {
@@ -916,9 +984,16 @@ func (p *planner) pass(tasks []*ptask, dayOf, ahead [][]*ptask, deadlines []int,
 		if !t.placed {
 			p.placeBack(t, p.lf[t])
 		}
-		if t.prev != nil && !t.prev.makeAhead {
-			p.lf[t.prev] = t.start
-			ready = append(ready, t.prev)
+		for _, u := range t.prevs {
+			if u.makeAhead {
+				continue
+			}
+			if lf, ok := p.lf[u]; !ok || t.start < lf {
+				p.lf[u] = t.start
+			}
+			if waiting[u]--; waiting[u] == 0 {
+				ready = append(ready, u)
+			}
 		}
 	}
 
@@ -929,21 +1004,30 @@ func (p *planner) pass(tasks []*ptask, dayOf, ahead [][]*ptask, deadlines []int,
 		tasks []*ptask
 		ef    int
 		due   int
+		rest  map[*ptask]int // the longest run from each task to the end of the chain
 	}
 	var chains []aheadChain
 	for i, chain := range ahead {
 		if len(chain) == 0 || trouble[i] {
 			continue
 		}
+		// Due when the first day-of task that uses it starts.
 		due := deadlines[i]
-		if d := dayOf[i]; len(d) > 0 {
-			due = d[0].start
+		made := map[*ptask]bool{}
+		for _, t := range chain {
+			made[t] = true
 		}
+		for _, t := range dayOf[i] {
+			if slices.ContainsFunc(t.prevs, func(u *ptask) bool { return made[u] }) {
+				due = min(due, t.start)
+			}
+		}
+		rest := longest(chain)
 		total := 0
 		for _, t := range chain {
-			total += t.dur
+			total = max(total, rest[t])
 		}
-		hold := chain[len(chain)-1].holdMax
+		hold := p.holdMin[i]
 		ef := max(prepMin, due-hold-total, floor)
 		// Someone has to start a make-ahead chain, even one that then looks
 		// after itself: it begins in the kitchen's hours when there's time.
@@ -952,22 +1036,19 @@ func (p *planner) pass(tasks []*ptask, dayOf, ahead [][]*ptask, deadlines []int,
 		if day := p.nextDayStart(ef); day != ef && day+total <= due {
 			ef = day
 		}
-		chains = append(chains, aheadChain{chain, ef, due})
+		chains = append(chains, aheadChain{chain, ef, due, rest})
 	}
 	slices.SortStableFunc(chains, func(a, b aheadChain) int { return cmp.Compare(a.ef, b.ef) })
 	for _, ch := range chains {
-		ef := ch.ef
-		for j, t := range ch.tasks {
-			after := 0
-			for _, u := range ch.tasks[j+1:] {
-				after += u.dur
-			}
+		hold := ch.tasks[0]
+		for _, t := range ch.tasks {
 			if !t.placed {
-				p.placeFwd(t, ef, ch.due-after)
+				p.placeFwd(t, after(t, ch.ef), ch.due-(ch.rest[t]-t.dur))
 			}
-			ef = t.end
+			if t.end > hold.end {
+				hold = t
+			}
 		}
-		hold := ch.tasks[len(ch.tasks)-1]
 		if hold.end > ch.due {
 			p.warn("conflict", fmt.Sprintf("%s can't be made ahead in time; its make-ahead part runs into the day's.",
 				p.title(hold)), hold, "")
@@ -1207,7 +1288,7 @@ func (p *planner) result(serve, prepFrom time.Time, tasks []*ptask, dayOf, ahead
 	}
 	// Most consequential first: lateness, then what won't fit, then the rest.
 	rank := map[string]int{"behind": 0, "conflict": 1, "early": 2, "in_trash": 3, "no_steps": 3, "waits": 4,
-		"dish_short": 5, "dish_unknown": 5, "no_dish": 6, "no_oven": 7, "no_burners": 7, "unknown_appliance": 7, "estimated": 8}
+		"dish_short": 5, "dish_unknown": 5, "no_dish": 6, "no_oven": 7, "no_burners": 7, "unknown_appliance": 7, "estimated": 8, "no_graph": 8}
 	slices.SortStableFunc(p.warnings, func(a, b PlanWarning) int { return cmp.Compare(rank[a.Code], rank[b.Code]) })
 	slices.SortStableFunc(out.Serving, func(a, b ServingDish) int { return cmp.Compare(a.ServeAt, b.ServeAt) })
 	out.Warnings = p.warnings

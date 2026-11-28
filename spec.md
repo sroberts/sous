@@ -1318,3 +1318,33 @@ recipe page's in-place Original/Graph toggle (the graph page stands in for
 it), structural edits (split, merge, relink), and a per-household
 threshold setting.
 
+### Planning from graphs (phase 4)
+
+The planner (§15) plans each dish from its step graph when the graph is past
+a draft, its words unchanged and without errors; otherwise from its steps.
+A meal planning any dish from a graph warns (`no_graph`) about each dish
+planned from steps, with why. Tasks now wait for a set of tasks rather than
+the one before: a step-timed dish is the same chain as ever; a graph dish's
+action waits for the actions making its inputs, so independent work
+overlaps. Its task key is `<item>:g:<action id>` (accepted by
+`PUT …/tasks/{task}`), its step the action's source step, its text the
+action's words, its minutes the typical duration. Setup actions heating the
+oven are left out, those waiting on them waiting on what they waited on,
+and the planner adds and shares preheats as for steps. Cooks are counted in
+tenths: an active action takes ten, an intermittent one 15 / its check
+interval (at least one), a passive one none; hands-on (`hands_on`) means
+active, and any attention keeps work to the kitchen's hours where it can.
+The first equipment claim the planner can hold is the task's: oven (with
+temperature and racks), burners, an appliance, a vessel (the kitchen's
+count of it), or counter space when the kitchen gives `counter_zones`; the
+fridge isn't counted. The made-ahead part is every action that leads up to
+one with a hold, and the hold allowed is the shortest among them; the
+latest such action with a reheat gets the reheat task, which what came
+after it waits for. Day-of work is placed backwards once everything after
+it is placed (finishing before the first of those starts); made-ahead work
+forwards, each action from when what it waits for ends, finishing early
+enough for the longest run of work after it. Durations come from the graph
+as labelled; review doesn't ask about them (§16), so a plan from an
+unreviewed graph rests on the decision model's estimates where the words
+stated no time.
+
