@@ -1,5 +1,5 @@
 <script>
-  import { onDestroy } from 'svelte';
+  import { onDestroy, tick } from 'svelte';
   import { ArrowLeft, TriangleAlert } from '@lucide/svelte';
   import { api } from '../lib/api.js';
   import { link } from '../lib/router.svelte.js';
@@ -94,8 +94,11 @@
 
   // J and K move between the actions still to check; focus lands on its
   // Looks right.
+  // In the page's order (by step), not the graph's.
   function nextAction(fromID, dir = 1) {
-    const ids = toCheck.filter((n) => !isChecked(n) || n.id === fromID).map((n) => n.id);
+    const ids = [...document.querySelectorAll('li.node')]
+      .filter((li) => li.classList.contains('needs') || li.id === `node-${fromID}`)
+      .map((li) => li.id.slice('node-'.length));
     const at = ids.indexOf(fromID);
     const to = ids[at < 0 ? 0 : at + dir];
     if (!to) return;
@@ -108,6 +111,7 @@
     const k = e.key.toLowerCase();
     if (k !== 'j' && k !== 'k') return;
     e.preventDefault();
+    if (!document.querySelector('li.node')) return;
     const here = document.activeElement?.closest('[data-node]')?.dataset.node ?? null;
     nextAction(here, k === 'j' ? 1 : -1);
   }
@@ -118,13 +122,21 @@
   function problemText(e) {
     return e.node ? e.message.replaceAll(e.node, `“${nodeText(e.node)}”`) : e.message;
   }
-  function goTo(nodeID) {
+  async function goTo(nodeID) {
     fixing = { ...fixing, [nodeID]: true };
+    await tick();
     const el = document.getElementById(`node-${nodeID}`);
     if (!el) return;
     el.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
     active = nodeID;
+    // On into the action, so a keyboard follows the link too.
+    el.querySelector('.opt')?.focus({ preventScroll: true });
   }
+  // A problem naming an action, in words, for the action to show.
+  const problemOf = (nodeID) => {
+    const e = errors.find((x) => x.node === nodeID);
+    return e ? problemText(e).replace(`“${nodeText(nodeID)}” `, '').replace(/^./, (c) => c.toUpperCase()) : '';
+  };
   const errors = $derived(view?.check.errors ?? []);
   const stale = $derived(view?.graph.status === 'stale');
   const canAccept = $derived(view && !stale && !errors.length && checkedCount === toCheck.length && view.graph.status !== 'verified');
@@ -170,6 +182,8 @@
     }
   }
 </script>
+
+<svelte:window onkeydown={keys} />
 
 <main class="graph" id="main">
   <a class="back" href="/r/{id}" use:link><ArrowLeft size={16} aria-hidden="true" />{recipe?.title ?? 'Recipe'}</a>
@@ -221,8 +235,7 @@
       <p class="hint">Sous was sure of every action. Read them over, then accept the graph.</p>
     {/if}
 
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-    <ol class="steps" onkeydown={keys}>
+    <ol class="steps">
       {#each steps as st (st.number)}
         <li class="step">
           {#if st.section}<h2 class="section">{st.section}</h2>{/if}
@@ -232,7 +245,7 @@
               {#each st.nodes as n (n.id)}
                 <li class="node" id="node-{n.id}" class:needs={byNode[n.id] && !isChecked(n)} class:on={active === n.id} onpointerenter={() => (active = n.id)} onpointerleave={() => (active = null)} onfocusin={() => (active = n.id)} onfocusout={() => (active = null)}>
                   <ActionReview node={n} flagged={flaggedOf(n.id)} {chosen} onchoose={choose} onlooksright={looksRight} {kitchen}
-                    bind:open={() => !!fixing[n.id], (v) => (fixing = { ...fixing, [n.id]: v })} disabled={stale} />
+                    bind:open={() => !!fixing[n.id], (v) => (fixing = { ...fixing, [n.id]: v })} disabled={stale} problem={problemOf(n.id)} />
                 </li>
               {/each}
               {#if !st.nodes.length}<li class="node none">No actions from this step.</li>{/if}
@@ -244,7 +257,7 @@
 
     {#if view.graph.status !== 'verified' || unsaved}
       <div class="bar">
-        <p>{#if toCheck.length}{checkedCount} of {toCheck.length} {toCheck.length === 1 ? 'action' : 'actions'} checked{:else}Nothing left to check{/if}{#if errors.length}{' · '}<button type="button" class="to-node" onclick={() => goTo(errors[0].node)}>fix {errors.length === 1 ? 'its problem' : `its ${errors.length} problems`} to accept</button>{/if}</p>
+        <p aria-live="polite">{#if toCheck.length}{checkedCount} of {toCheck.length} {toCheck.length === 1 ? 'action' : 'actions'} checked{:else}Nothing left to check{/if}{#if errors.length}{' · '}<button type="button" class="to-node" onclick={() => goTo(errors[0].node)}>fix {errors.length === 1 ? 'its problem' : `its ${errors.length} problems`} to accept</button>{/if}</p>
         <button class="btn" onclick={() => save(false)} disabled={saving || !unsaved || stale || isOffline()}>Save</button>
         <button class="btn" class:primary={canAccept} onclick={() => save(true)} disabled={saving || !canAccept || isOffline()}>Accept as verified</button>
       </div>

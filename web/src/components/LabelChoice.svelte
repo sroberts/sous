@@ -121,7 +121,9 @@
   <legend>{ASK[item.field] ?? item.field}</legend>
   <div class="opts">
     {#each options as o, i (i)}
-      {@const guess = confident && chosen === undefined && i === 0}
+      <!-- Sous's answer as it stands is always marked until something is
+           picked; it leads only when Sous is fairly sure. -->
+      {@const guess = chosen === undefined && same(o.value, item.value)}
       <button type="button" class="opt" class:guess aria-pressed={chosen !== undefined && same(chosen, o.value)} onclick={(e) => pick(o.value, e)} aria-keyshortcuts={String(i + 1)}
         title={o.p !== null && !confident ? `Sous thought this ${pct(o.p)} likely` : undefined}>
         <span class="v">{show(item.field, o.value)}</span>{#if guess}<span class="visually-hidden">, Sous’s guess</span>{/if}{#if o.p !== null && confident}<span class="p">{pct(o.p)}</span>{/if}

@@ -4,11 +4,13 @@
   // opens every label as a question (the unsure ones first). An action Sous
   // was sure of is the sentence and a quiet Fix. Answers live in the parent
   // (chosen, keyed "<node>|<field>") until it saves them.
-  import { Check } from '@lucide/svelte';
+  import { Check, TriangleAlert } from '@lucide/svelte';
   import { show } from '../lib/graphs.js';
   import LabelChoice from './LabelChoice.svelte';
 
-  let { node, flagged = [], chosen = {}, onchoose, onlooksright, kitchen = null, quote = false, open = $bindable(false), disabled = false } = $props();
+  // problem: a check error naming this action, in words. Such an action is
+  // never "looks right": it opens to be fixed, the problem said beside it.
+  let { node, flagged = [], chosen = {}, onchoose, onlooksright, kitchen = null, quote = false, open = $bindable(false), disabled = false, problem = '' } = $props();
 
   const key = (field) => `${node.id}|${field}`;
   const FIELD = { action: 'action', duration: 'duration', attention: 'attention', equipment: 'equipment', hold: 'hold', check_interval_min: 'check_interval_min' };
@@ -53,13 +55,14 @@
     {#if checked}<span class="ok"><Check size={16} aria-hidden="true" />Checked</span>{/if}
   </p>
   {#if quote && node.source.quote}<p class="q">“{node.source.quote}”</p>{/if}
+  {#if problem}<p class="problem"><TriangleAlert size={16} aria-hidden="true" />{problem}</p>{/if}
   <p class="sentence">
     {#each parts as p, i (p.field)}{#if i}<span aria-hidden="true">{' · '}</span>{/if}<span class:unsure={p.unsure}>{p.text}{#if p.unsure}<span aria-hidden="true">?</span><span class="visually-hidden"> (Sous isn’t sure)</span>{/if}</span>{/each}
   </p>
   {#if !open}
     <div class="acts">
-      {#if needs && !checked}<button type="button" class="btn looks" onclick={() => onlooksright(node)} {disabled}>Looks right</button>{/if}
-      <button type="button" class="fix" aria-expanded="false" onclick={() => (open = true)}>Fix</button>
+      {#if needs && !checked && !problem}<button type="button" class="btn looks" onclick={() => onlooksright(node)} {disabled}>Looks right</button>{/if}
+      <button type="button" class="fix" aria-expanded="false" onclick={() => (open = true)}>{problem ? 'Fix it' : 'Fix'}</button>
     </div>
   {:else}
     <div class="questions">
@@ -102,6 +105,18 @@
   .q {
     color: var(--ink-2);
     font-size: var(--ui);
+  }
+  .problem {
+    display: flex;
+    gap: var(--space-2);
+    align-items: baseline;
+    color: var(--ink);
+    font-weight: 600;
+    font-size: var(--ui);
+  }
+  .problem :global(svg) {
+    flex: none;
+    align-self: center;
   }
   .sentence {
     color: var(--ink-2);

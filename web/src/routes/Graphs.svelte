@@ -14,6 +14,7 @@
   let problem = $state('');
   let chosen = $state({}); // recipe → { "node|field": value }
   let graphs = $state({}); // recipe → its graph, for the actions' labels
+  let problems = $state({}); // recipe → its graph's check errors
   let busy = $state(null); // the recipe being saved
   let job = $state(null);
   let gone = false; // the page has been left: stop following the job
@@ -38,6 +39,7 @@
       const ids = [...new Set(all.map((it) => it.recipe_id))];
       const got = await Promise.all(ids.map((rid) => api.recipeGraph(rid).catch(() => null)));
       graphs = Object.fromEntries(ids.map((rid, i) => [rid, got[i]?.graph]));
+      problems = Object.fromEntries(ids.map((rid, i) => [rid, got[i]?.check.errors ?? []]));
       problem = '';
     } catch (err) {
       problem = err.code === 'offline' ? 'Step graphs need a connection to Sous.' : err.message;
@@ -62,6 +64,13 @@
   const flaggedIn = (g, nodeID) => g.items.filter((it) => it.node_id === nodeID);
   const actionsOf = (g) => [...new Set(g.items.map((it) => it.node_id))];
   const nodeOf = (g, nodeID) => graphs[g.id]?.nodes.find((n) => n.id === nodeID);
+  // A problem naming an action, in words, without its id.
+  const problemOf = (g, nodeID) => {
+    const e = (problems[g.id] ?? []).find((x) => x.node === nodeID);
+    if (!e) return '';
+    const m = e.message.startsWith(`${nodeID} `) ? e.message.slice(nodeID.length + 1) : e.message;
+    return m.replace(/^./, (c) => c.toUpperCase());
+  };
   const totalActions = $derived(groups.reduce((n, g) => n + actionsOf(g).length, 0));
   const answeredIn = (g) => Object.keys(chosen[g.id] ?? {}).length;
   const answered = $derived(groups.reduce((n, g) => n + answeredIn(g), 0));
@@ -181,7 +190,7 @@
                   {#if n}
                     <li>
                       <ActionReview node={n} flagged={flaggedIn(g, nodeID)} chosen={chosen[g.id] ?? {}} onchoose={(it, v) => choose(g, it, v)}
-                        onlooksright={(node) => looksRight(g, node)} {kitchen} quote />
+                        onlooksright={(node) => looksRight(g, node)} {kitchen} quote problem={problemOf(g, nodeID)} />
                     </li>
                   {/if}
                 {/each}
