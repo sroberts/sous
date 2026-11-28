@@ -489,7 +489,7 @@ func (u *Upgrader) classify(ctx context.Context, r Recipe, k KitchenProfile, g *
 	temps := make([]*int, len(r.Steps))
 	var last *int
 	for i, st := range r.Steps {
-		if t, ok := ovenTemp(st.Text); ok {
+		if t, ok := ovenTemp(st.Text); ok && t >= minOvenTemp && t <= maxOvenTemp {
 			last = ref(t)
 		}
 		temps[i] = last
@@ -535,7 +535,8 @@ func (u *Upgrader) classify(ctx context.Context, r Recipe, k KitchenProfile, g *
 			}
 			c := EquipmentClaim{Resource: res, Count: 1, Scope: "whole_node"}
 			if res == ResOven {
-				if t, ok := ovenTemp(n.Source.Quote); ok {
+				// Only a temperature an oven can be: "cool to 105°F" isn't one.
+				if t, ok := ovenTemp(n.Source.Quote); ok && t >= minOvenTemp && t <= maxOvenTemp {
 					c.TempF = &t
 				} else if t := temps[n.Source.Step-1]; t != nil {
 					c.TempF = ref(*t)

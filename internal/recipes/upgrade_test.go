@@ -524,6 +524,30 @@ func TestAssemble(t *testing.T) {
 	}
 }
 
+// A temperature an oven can't be ("cool to 105°F") is never an oven's, and
+// doesn't carry to later steps.
+func TestUpgradeIgnoresNonOvenTemps(t *testing.T) {
+	d := draftGraph{Serve: "rolls",
+		Items: []draftItem{{ID: "milk", Kind: "ingredient", Line: 1}, {ID: "rolls", Kind: "final"}},
+		Nodes: []draftNode{
+			{ID: "cool", Step: 1, Quote: "Cool the milk to 105°F.", Text: "Cool the milk", Inputs: []string{"milk"}, Outputs: []string{"warm"}},
+			{ID: "bake", Step: 2, Quote: "Bake the rolls.", Text: "Bake the rolls", Inputs: []string{"warm"}, Outputs: []string{"rolls"}},
+		}}
+	answers := map[string]map[string]ranked{"Cool the milk": {"equipment": {"oven", 0.9}}, "Bake the": {"equipment": {"oven", 0.9}}}
+	s := upgradeService(t, &fakeGen{drafts: []draftGraph{d}}, &fakeDec{answers: answers})
+	ann := person(t, s, "Ann")
+	r := create(t, s, ann, RecipeInput{Title: "Rolls", Ingredients: []string{"1 cup milk"}, Steps: []string{"Cool the milk to 105°F.", "Bake the rolls."}})
+	res, err := s.UpgradeRecipe(ctx, ann, UpgradeRequest{ID: r.ID})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, n := range res.Graph.Graph.Nodes {
+		if c := n.Equipment.Value; len(c) != 1 || c[0].TempF != nil {
+			t.Errorf("%s: %s", n.ID, dump(c))
+		}
+	}
+}
+
 func TestStatedDuration(t *testing.T) {
 	for _, tc := range []struct {
 		text string

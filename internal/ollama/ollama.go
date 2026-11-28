@@ -8,9 +8,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -49,7 +52,7 @@ func (c *Client) post(ctx context.Context, path string, body, out any) error {
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := c.HTTP.Do(req)
 	if err != nil {
-		return fmt.Errorf("%w at %s: %v", ErrUnreachable, c.BaseURL, err)
+		return c.failed(err)
 	}
 	defer resp.Body.Close()
 	data, err := io.ReadAll(io.LimitReader(resp.Body, 8<<20))
@@ -130,6 +133,21 @@ func (c *Client) Decide(ctx context.Context, state string, qs []recipes.Question
 	return res, nil
 }
 
+// failed sorts a request that got no answer: no connection at all is
+// ErrUnreachable (try again later), but a model that's too slow is the
+// recipe's failure, so a background job moves on rather than retrying it
+// forever.
+func (c *Client) failed(err error) error {
+	var op *net.OpError
+	if errors.As(err, &op) && op.Op == "dial" {
+		return fmt.Errorf("%w at %s: %v", ErrUnreachable, c.BaseURL, err)
+	}
+	if errors.Is(err, context.DeadlineExceeded) || os.IsTimeout(err) {
+		return fmt.Errorf("the model didn't answer within %s", c.HTTP.Timeout)
+	}
+	return fmt.Errorf("ollama: %w", err)
+}
+
 // Models reports what's installed, to say clearly when a model is missing.
 func (c *Client) Models(ctx context.Context) ([]string, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+"/api/tags", nil)
@@ -138,7 +156,7 @@ func (c *Client) Models(ctx context.Context) ([]string, error) {
 	}
 	resp, err := c.HTTP.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("%w at %s: %v", ErrUnreachable, c.BaseURL, err)
+		return nil, c.failed(err)
 	}
 	defer resp.Body.Close()
 	var out struct {
