@@ -617,13 +617,16 @@ func (s *Service) upgradeNext(ctx context.Context) (bool, time.Duration) {
 
 	c := identity.Caller{Person: &identity.Person{Username: by}, Route: identity.RouteDirect, Via: identity.Via(via)}
 	res, err := s.upgrade(ctx, c, UpgradeRequest{ID: recipeID, Mode: mode, Force: force})
+	// The result is recorded even if the worker is stopping meanwhile: the
+	// transaction and its statements must outlive ctx alike.
+	keep := context.WithoutCancel(ctx)
 	status, count := "done", (*int)(nil)
 	var msg *string
 	switch {
 	case errors.Is(err, ErrModelsUnavailable), ctx.Err() != nil:
 		// Not the recipe's fault: put it back and wait.
-		_ = s.st.Write(context.WithoutCancel(ctx), func(tx *sql.Tx) error {
-			_, err := tx.ExecContext(ctx, `UPDATE upgrade_job_items SET status = 'pending' WHERE job_id = ? AND position = ?`, jobID, pos)
+		_ = s.st.Write(keep, func(tx *sql.Tx) error {
+			_, err := tx.ExecContext(keep, `UPDATE upgrade_job_items SET status = 'pending' WHERE job_id = ? AND position = ?`, jobID, pos)
 			return err
 		})
 		if ctx.Err() == nil {
@@ -643,12 +646,12 @@ func (s *Service) upgradeNext(ctx context.Context) (bool, time.Duration) {
 		}
 	}
 	now := s.stamp()
-	err = s.st.Write(context.WithoutCancel(ctx), func(tx *sql.Tx) error {
-		if _, err := tx.ExecContext(ctx, `UPDATE upgrade_job_items SET status = ?, review_count = ?, error = ?, finished_at = ?
+	err = s.st.Write(keep, func(tx *sql.Tx) error {
+		if _, err := tx.ExecContext(keep, `UPDATE upgrade_job_items SET status = ?, review_count = ?, error = ?, finished_at = ?
 			WHERE job_id = ? AND position = ?`, status, count, msg, now, jobID, pos); err != nil {
 			return err
 		}
-		_, err := tx.ExecContext(ctx, `UPDATE upgrade_jobs SET status = 'done', finished_at = ?
+		_, err := tx.ExecContext(keep, `UPDATE upgrade_jobs SET status = 'done', finished_at = ?
 			WHERE id = ? AND status = 'running' AND NOT EXISTS (
 				SELECT 1 FROM upgrade_job_items WHERE job_id = ? AND status IN ('pending', 'running'))`, now, jobID, jobID)
 		return err

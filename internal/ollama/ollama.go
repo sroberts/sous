@@ -44,6 +44,10 @@ func NewOutpost(url, token string) *Client {
 // Granted asks Outpost which models this app may use, as its model list
 // says. Unreachable, it assumes both, so requests say what's wrong then.
 func (c *Client) Granted(ctx context.Context) (llm, system1 bool) {
+	// Asked at startup: an endpoint that hangs mustn't hold Sous back for
+	// the client's ten-minute model timeout.
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+"/openai/v1/models", nil)
 	if err != nil {
 		return true, true
