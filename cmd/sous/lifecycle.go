@@ -19,6 +19,7 @@ import (
 	"github.com/sroberts/sous/internal/identity"
 	"github.com/sroberts/sous/internal/importer"
 	"github.com/sroberts/sous/internal/mcp"
+	"github.com/sroberts/sous/internal/ollama"
 	"github.com/sroberts/sous/internal/recipes"
 	"github.com/sroberts/sous/internal/safefetch"
 	"github.com/sroberts/sous/internal/samples"
@@ -51,6 +52,11 @@ func run(args []string, getenv func(string) string, stdout io.Writer) int {
 		return 1
 	}
 	level.Set(cfg.LogLevel)
+	upCfg, err := config.LoadUpgrade(getenv)
+	if err != nil {
+		log.Error("invalid configuration", "error", err.Error())
+		return 1
+	}
 	auth := "none"
 	if cfg.Gateway() {
 		auth = "gateway"
@@ -95,6 +101,10 @@ func run(args []string, getenv func(string) string, stdout io.Writer) int {
 			return
 		}
 		svc := recipes.New(st, log)
+		if upCfg.On() {
+			oc := ollama.New(upCfg.OllamaURL, upCfg.GraphModel, upCfg.DecisionModel)
+			svc.SetUpgrader(&recipes.Upgrader{Gen: oc, Dec: oc, AutoVerify: upCfg.AutoVerify})
+		}
 		if !cfg.NoSamples {
 			// The samples are a welcome, not data anyone relies on, so
 			// failing to add them doesn't stop Sous starting. Once base is
@@ -171,6 +181,7 @@ func run(args []string, getenv func(string) string, stdout io.Writer) int {
 	app.Handle("/", ui.Handler(log))
 	s.setApp(app)
 	s.ready.Store(true)
+	go svc.RunUpgrades(base)
 	log.Info("ready", "port", cfg.Port, "storage", cfg.StorageDir, "version", version,
 		"schema_version", store.SchemaVersion(), "auth", auth)
 

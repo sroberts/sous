@@ -85,6 +85,10 @@ well-known path, and nothing prompts.
 | Require gateway | `SOUS_REQUIRE_GATEWAY` | `false` | When `true` in gateway mode, requests without a valid identity token get 401 (§5). |
 | Log level | `SOUS_LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error`. |
 | Sample recipes | `SOUS_SAMPLES` | `true` | `false` skips adding the sample recipes (§3) on this start; it removes nothing. Any other value → exit 1. |
+| Ollama | `SOUS_OLLAMA_URL` | `http://127.0.0.1:11434` | Where the step graph models run (§16). `off` turns upgrades off. Unreachable isn't an error: upgrades answer 503 until it's back. |
+| Graph model | `SOUS_GRAPH_MODEL` | `gemma4:e4b` | The generative model that writes a step graph's structure. |
+| Decision model | `SOUS_DECISION_MODEL` | `laya` | The decision model that classifies each action with a probability per answer. |
+| Auto-verify | `SOUS_AUTO_VERIFY` | `false` | `true` lets an upgrade sure of every label save its graph as verified without review. |
 
 Sous needs no secrets in the basics. If a later feature does (an API key for a
 nutrition service, say), it takes a *path* via `SOUS_<NAME>_FILE` and reads
@@ -1174,3 +1178,86 @@ or needing a person. Saves and deletes are logged as edits to the recipe
 ("Edited X: step graph"). MCP: `get_recipe_graph`, `set_recipe_graph`,
 `delete_recipe_graph` and `validate_recipe_graph` (a proposed `graph`, or
 the saved one).
+
+### Upgrades (phase 2)
+
+Sous writes step graphs itself, with two local models on Ollama: a
+generative model (`SOUS_GRAPH_MODEL`) for structure, and a decision model
+(`SOUS_DECISION_MODEL`, Laya: Ollama's `POST /v1/systemone`, typed
+questions answered with a probability per choice) for classification. An
+upgrade of one recipe:
+
+1. **Draft.** The generative model gets the title, numbered ingredient
+   lines and numbered steps, and returns JSON (schema-constrained): items
+   (ingredients with their line), actions with their step, a quote of their
+   words, inputs and outputs, implied actions (preheats, boiling water,
+   chopping what the list says is chopped), and the served item. Recipe
+   text is framed as data, not instructions.
+2. **Assemble.** Ids are made valid and unique (accents folded), items an
+   action names but the draft didn't list become intermediates, and each
+   quote is found in its step: exactly, then ignoring case, outer
+   punctuation and spacing, then in another step; failing that, the action
+   points at its whole step (`unplaced_quotes` counts these).
+3. **Structure check, one repair.** The deterministic checks run with
+   stand-in labels; errors go back to the generative model once with its
+   draft. A graph still in error is saved anyway, for review.
+4. **Classify.** One decision call per action, nine questions: action,
+   attention, check interval, interruptible, timing anchor, hold (none, 15
+   minutes, an hour, a few hours, a day, a few days), where it waits,
+   duration (1 minute to 8 hours) and equipment (none, oven, burner, fridge,
+   the kitchen's appliances and vessels). A label's confidence is its top
+   answer's probability, with the next two as `alternatives`. Source `jev`
+   marks the decision model's labels.
+5. **The words win.** A stated time ("40 to 45 minutes") is the duration,
+   as a range, source `recipe_text`; an oven claim takes the temperature
+   its step, or the latest step before, states; make-ahead wording ("keeps
+   up to 3 days") is the hold. A duration from a bucket spans the buckets
+   either side.
+6. **Route.** `draft` mode saves the graph as draft. `apply` saves it as
+   `needs_review`, or `verified` when `SOUS_AUTO_VERIFY=true`, it has no
+   errors and nothing needs review.
+
+A label **needs review** when nobody has reviewed it and its confidence is
+under 0.85 for attention, hold, timing anchor and equipment, or under 0.65
+for the rest; an implied action's action label always does.
+
+The save checks the recipe and graph haven't changed while the models
+worked (412 for the recipe, 409 for a graph saved meanwhile). An upgrade of
+a recipe with a graph needs `force`. Without an upgrader configured, or with
+Ollama unreachable or missing a model, upgrades are 503 `unavailable`.
+
+**Jobs.** `upgrade_jobs` and `upgrade_job_items` (migration 0005) hold
+background upgrades, chosen by ids, tag or meal, by default only recipes
+without a graph (at most 1000). One worker in the process takes one recipe
+at a time, oldest job first, acting as the person who queued it. Recipes it
+was working on when Sous stopped go back to pending on start; when the
+models are unreachable the recipe goes back to pending and the worker waits
+a minute. A deleted recipe, or one that gained a graph, is `skipped`;
+cancelling skips what hasn't started.
+
+**Review.** The queue lists labels needing review across live graphs:
+dishes on meals still to come first, then the caller's favourites, then the
+rest; the four critical fields first; least sure first. Resolving sets each
+chosen value as the person's (source `user`, confidence 1) or, when it's the
+value already there, keeps its source and confidence; either way it's
+stamped reviewed. A changed model label is kept in `review_corrections`
+(the action's words, field, model value and confidence, the person's
+value) to learn from and re-test thresholds against. `accept` saves the
+graph verified, refused while anything is left to review. A graph whose
+words changed under it must be upgraded again before review.
+
+REST: `POST /v1/recipes/{id}/graph/upgrade` (`mode`, `force`),
+`POST /v1/upgrades`, `GET /v1/upgrades/{id}`, `POST /v1/upgrades/{id}/cancel`,
+`GET /v1/review` (`recipe_id`, `meal_id`, `field`, `limit`, `cursor`) and
+`POST /v1/review`. MCP: `upgrade_recipe`, `upgrade_recipes`,
+`get_upgrade_job`, `cancel_upgrade_job`, `list_review_items` and
+`resolve_review_items`, with the prompts `upgrade_meal` (a meal's dishes,
+reviewed with the person, then planned) and `review_session` (the queue ten
+at a time). `GET /v1/recipes/{id}/graph` adds `review_count`.
+
+Not yet: an `edit_recipe_graph` tool for structural edits (split, merge,
+relink; `set_recipe_graph` replaces a whole graph meanwhile), seeding
+upgrades from existing step timing, using corrections as examples, and the
+calibration gate (decision-model answers at 0.85 or higher right at least
+85% of the time on 30 hand-labelled recipes) before the app's review views.
+

@@ -75,6 +75,15 @@ type Label[T any] struct {
 	Confidence *float64 `json:"confidence,omitempty" jsonschema:"0 to 1: how sure the source is. Unset is 1 for author, recipe_text and user; model and jev must say"`
 	ReviewedBy *string  `json:"reviewed_by,omitempty" jsonschema:"set by Sous: who confirmed it, by saving the graph as verified"`
 	ReviewedAt *string  `json:"reviewed_at,omitempty" jsonschema:"set by Sous"`
+	// Alternatives are the next answers a model weighed, for review to
+	// offer beside the value.
+	Alternatives []Alternative[T] `json:"alternatives,omitempty" jsonschema:"other answers the source weighed, most likely first, with their probabilities"`
+}
+
+// Alternative is an answer a model weighed and didn't pick.
+type Alternative[T any] struct {
+	Value       T       `json:"value"`
+	Probability float64 `json:"probability"`
 }
 
 // Duration is a node's time in minutes, as a range: the planner picks
@@ -185,9 +194,10 @@ type GraphCheck struct {
 // in it now, and the step timing it comes to for planners that read
 // timing by step.
 type GraphView struct {
-	Graph      RecipeGraph   `json:"graph"`
-	Check      GraphCheck    `json:"check"`
-	Projection []*StepTiming `json:"projection" jsonschema:"one entry per step (null for a step without nodes): minutes summed, hands-on when most of it is active, the longest-running oven, stovetop or appliance, and the shortest hold"`
+	Graph       RecipeGraph   `json:"graph"`
+	ReviewCount int           `json:"review_count" jsonschema:"labels to confirm or correct: those below their field's threshold, and implied actions, not yet reviewed"`
+	Check       GraphCheck    `json:"check"`
+	Projection  []*StepTiming `json:"projection" jsonschema:"one entry per step (null for a step without nodes): minutes summed, hands-on when most of it is active, the longest-running oven, stovetop or appliance, and the shortest hold"`
 }
 
 // graphLabelRef names one label of a graph: a node and a field.
@@ -468,6 +478,14 @@ func (l *Label[T]) check() error {
 	}
 	if c := *l.Confidence; c < 0 || c > 1 || c != c {
 		return fmt.Errorf("confidence must be 0 to 1")
+	}
+	if len(l.Alternatives) > 5 {
+		return fmt.Errorf("at most 5 alternatives")
+	}
+	for _, a := range l.Alternatives {
+		if a.Probability < 0 || a.Probability > 1 || a.Probability != a.Probability {
+			return fmt.Errorf("an alternative's probability must be 0 to 1")
+		}
 	}
 	return nil
 }

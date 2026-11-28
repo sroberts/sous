@@ -85,3 +85,24 @@ Delete them and they stay deleted. Sous only adds them to a library that has
 never been used, so a restore that brings recipes or history never gets them
 (restoring a never-used library can), and `SOUS_SAMPLES=false` skips them on
 that start.
+
+## Step graphs with local models
+
+Sous can turn recipes into step graphs itself (see
+[Connecting an assistant](agents.md#step-graphs)), using two models on
+[Ollama](https://ollama.com) on the same machine: one that writes a graph's
+structure and Laya, a small decision model, that classifies each action and
+says how sure it is. Nothing leaves the machine.
+
+| Setting | Default | |
+|---|---|---|
+| `SOUS_OLLAMA_URL` | `http://127.0.0.1:11434` | `off` turns upgrades off |
+| `SOUS_GRAPH_MODEL` | `gemma4:e4b` | |
+| `SOUS_DECISION_MODEL` | `laya` | |
+| `SOUS_AUTO_VERIFY` | `false` | `true` saves an upgrade that's sure of everything as verified, without review |
+
+Under Outpost, set them with `env` in the service's manifest. Sous starts
+whether or not Ollama is there; upgrades say the models can't be reached
+until they can, and a background upgrade waits for them rather than giving
+up.
+

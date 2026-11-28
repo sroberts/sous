@@ -77,6 +77,27 @@ A graph points at the words each action comes from, so when a step's words
 change, the actions from it show as stale. Meal plans don't read step graphs
 yet; they still plan from step timing.
 
+#### Letting Sous write them
+
+Sous can write step graphs itself with local models, so an assistant only
+asks and reviews (see [Running Sous](running.md#step-graphs-with-local-models)
+to set the models up):
+
+- `upgrade_recipe` turns one recipe into a graph, in tens of seconds. It's
+  saved as a draft for review; `mode: apply` saves it ready for review, and
+  `force` redoes a recipe that has one.
+- `upgrade_recipes` queues many (by ids, tag or meal; by default only those
+  without a graph) to run in the background; `get_upgrade_job` follows it
+  and `cancel_upgrade_job` stops it.
+- `list_review_items` lists what the models weren't sure of, most
+  consequential first, each with the words, the value, how sure the model
+  was and the other answers it weighed. `resolve_review_items` confirms or
+  corrects them, and can accept a recipe's graph as verified.
+
+The `upgrade_meal` prompt does a meal's dishes and reviews them with you
+before planning; `review_session` goes through the queue ten at a time.
+Every correction is kept, to make the models' answers better over time.
+
 ## REST API
 
 The REST API is described at `/v1/openapi.json` on a running Sous, and in

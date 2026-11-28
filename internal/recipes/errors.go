@@ -13,6 +13,7 @@ const (
 	CodeStale                = "stale"                  // 412: version mismatch; Current is set
 	CodeVersionRequired      = "version_required"       // 428: no If-Match
 	CodeUnsupportedMediaType = "unsupported_media_type" // 415: not jpeg, png, webp or heic
+	CodeUnavailable          = "unavailable"            // 503: the models step graph upgrades need are off or unreachable
 )
 
 // Error is a domain failure the API and MCP layers report to the client as

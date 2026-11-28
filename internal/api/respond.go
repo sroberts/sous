@@ -53,6 +53,7 @@ var statusOf = map[string]int{
 	recipes.CodeStale:                http.StatusPreconditionFailed,
 	recipes.CodeUnsupportedMediaType: http.StatusUnsupportedMediaType,
 	recipes.CodeVersionRequired:      http.StatusPreconditionRequired,
+	recipes.CodeUnavailable:          http.StatusServiceUnavailable,
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
