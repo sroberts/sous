@@ -6,6 +6,7 @@
   import { ChevronDown, Copy, Check } from '@lucide/svelte';
   import { onMount, tick } from 'svelte';
   import { session } from '../lib/session.svelte.js';
+  import { link } from '../lib/router.svelte.js';
 
   const local = ['127.0.0.1', 'localhost', '[::1]', '::1'].includes(location.hostname);
   // Under Outpost the gateway only lets in browser sign-ins, so assistants
@@ -31,6 +32,8 @@
   // rather than breaking wherever the box ends.
   const timingPrompt = '/mcp__sous__fill_step_timing\n/mcp__sous__fill_step_timing Thanksgiving';
   const timingAsk = 'Fill in the step timing for my recipes in Sous, using its fill_step_timing prompt.';
+  const graphPrompt = '/mcp__sous__upgrade_step_graphs\n/mcp__sous__upgrade_step_graphs Thanksgiving';
+  const graphAsk = 'Draft step graphs for my recipes in Sous, using its upgrade_step_graphs prompt.';
   const claudeCode = $derived(`claude mcp add --transport http sous ${sh(url)} \\\n  --header ${sh(header)}`);
   const claudeDesktop = $derived(
     JSON.stringify(
@@ -70,13 +73,14 @@
     timer = setTimeout(() => (copied = null), 2500);
   }
 
-  // Arriving at #timing (from the editor): the section waits on boot, so
-  // scroll to it once it's there.
+  // Arriving at #timing (from the editor) or #graphs (from step graphs):
+  // the section waits on boot, so scroll to it once it's there.
   onMount(async () => {
-    if (location.hash !== '#timing') return;
-    for (let n = 0; n < 20 && !document.getElementById('timing'); n++) await new Promise((r) => setTimeout(r, 100));
+    const to = location.hash.slice(1);
+    if (to !== 'timing' && to !== 'graphs') return;
+    for (let n = 0; n < 20 && !document.getElementById(to); n++) await new Promise((r) => setTimeout(r, 100));
     await tick();
-    document.getElementById('timing')?.scrollIntoView({ block: 'start' });
+    document.getElementById(to)?.scrollIntoView({ block: 'start' });
   });
 </script>
 
@@ -212,6 +216,19 @@
           <p>Any assistant can be asked in plain words instead:</p>
           {@render block('timing-ask', timingAsk, 'Fill in step timing, asked in words')}
           <p class="hint">It works through the recipes in batches and saves as it goes. Each change is signed with {username ? personName : 'the person it acts for'}’s name and shows in the recipe’s history; open a recipe’s editor to check or change what it set.</p>
+        </div>
+      </details>
+
+      <!-- Opened from the step graph pages. -->
+      <details class="way" id="graphs" open={location.hash === '#graphs'}>
+        <summary><h3>Draft step graphs</h3><span class="what">So meal plans can fit dishes around each other</span><ChevronDown class="chev" size={20} aria-hidden="true" /></summary>
+        <div class="inner">
+          <p>A step graph splits each step into single actions joined by what they make and use. An assistant reads the recipe and drafts that; Sous checks it, labels each action with a small model on this machine, and asks you only about what it wasn’t sure of, on the <a href="/graphs" use:link>Step graphs</a> page.</p>
+          <p>In Claude Code, run Sous’s prompt, for the whole library or one meal:</p>
+          {@render block('graph-prompt', graphPrompt, 'Draft step graphs, in Claude Code')}
+          <p>Any assistant can be asked in plain words instead:</p>
+          {@render block('graph-ask', graphAsk, 'Draft step graphs, asked in words')}
+          <p class="hint">Each graph is signed with {username ? personName : 'the person it acts for'}’s name and shows in the recipe’s history. A recipe’s words never change.</p>
         </div>
       </details>
 

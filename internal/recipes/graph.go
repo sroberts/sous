@@ -613,7 +613,7 @@ func checkGraph(g *RecipeGraph, r Recipe, k KitchenProfile) GraphCheck {
 					}
 				}
 				if !found {
-					p.err("no_preheat", n.ID, "", "%s bakes, but no preheat comes before it", n.ID)
+					p.err("no_preheat", n.ID, "", "%s uses the oven, but no preheat comes before it", n.ID)
 				}
 			}
 		}

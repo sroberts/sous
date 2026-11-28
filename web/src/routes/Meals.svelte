@@ -10,6 +10,10 @@
   let kitchen = $state(null);
   let problem = $state('');
 
+  // Step graphs are a row like the kitchen's, saying what's waiting.
+  let graphs = $state(null);
+  api.graphs().then((o) => (graphs = o.upgrades.labels ? o : null), () => {});
+
   Promise.all([api.meals(), api.kitchen()]).then(
     ([m, k]) => ((meals = m), (kitchen = k)),
     (err) => (problem = err.code === 'offline' ? 'Meals need a connection to Sous.' : err.message),
@@ -103,6 +107,14 @@
     <a class="kitchen-row" href="/kitchen" use:link>
       <span class="k-name">Your kitchen</span>
       <span class="k-line">{kitchenLine(kitchen)}</span>
+      <ChevronRight size={18} aria-hidden="true" />
+    </a>
+  {/if}
+  {#if graphs}
+    {@const toReview = graphs.items.reduce((n, r) => n + r.review_count, 0)}
+    <a class="kitchen-row" href="/graphs" use:link>
+      <span class="k-name">Step graphs</span>
+      <span class="k-line">{toReview ? `${toReview} to review · ` : ''}{graphs.counts.verified} verified, {graphs.counts.none} without</span>
       <ChevronRight size={18} aria-hidden="true" />
     </a>
   {/if}

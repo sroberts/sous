@@ -15,6 +15,8 @@
   import Meal from './routes/Meal.svelte';
   import MealCook from './routes/MealCook.svelte';
   import Kitchen from './routes/Kitchen.svelte';
+  import Graphs from './routes/Graphs.svelte';
+  import GraphReview from './routes/GraphReview.svelte';
 
   boot();
   registerWorker();
@@ -36,6 +38,8 @@
     assistants: 'Connect an AI assistant · Sous',
     meals: 'Meals · Sous',
     kitchen: 'Your kitchen · Sous',
+    graphs: 'Step graphs · Sous',
+    graph: 'Step graph · Sous',
   };
   $effect(() => {
     if (titles[route.name]) document.title = titles[route.name];
@@ -78,6 +82,10 @@
   <Meals />
 {:else if route.name === 'kitchen'}
   <Kitchen />
+{:else if route.name === 'graphs'}
+  <Graphs />
+{:else if route.name === 'graph'}
+  {#key route.id}<GraphReview id={route.id} />{/key}
 {:else if route.name === 'meal'}
   {#key route.id}<Meal id={route.id} />{/key}
 {:else if route.name === 'mealcook'}

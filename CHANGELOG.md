@@ -30,6 +30,15 @@ include breaking changes, and they're called out here.
   `SOUS_DECISION_MODEL` and `SOUS_AUTO_VERIFY`; under Outpost, Sous uses
   the installation's own models (`outpost ai`): the System 1 model to
   label, and the LLM, when Outpost gives it to Sous, to draft by itself.
+- Step graphs in the app: **Step graphs** (from Meals) counts recipes by
+  status, explains how to get the rest drafted, and lists what Sous wasn't
+  sure of across the library, by recipe: only what a plan depends on
+  (how much of the cook an action needs, what it uses, whether it can
+  wait), about two questions an action. Each recipe's graph (linked at the end of
+  its method) shows its steps beside their actions, the words each action
+  came from marked, and asks only the unsure labels, one tap each, with
+  Something else for any other answer; then Accept as verified. A meal's
+  menu says which dishes have graphs to review or none yet.
 - Your kitchen lists pans and containers (a Dutch oven, sheet pans) and
   counter space, for step graphs to use. An update that leaves them out
   keeps them as they are.

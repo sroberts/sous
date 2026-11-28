@@ -882,6 +882,20 @@ func (s *Service) ResolveReview(ctx context.Context, c identity.Caller, in Resol
 			if err != nil {
 				return Errorf(CodeInvalid, "%s.%s: %v", ch.NodeID, ch.Field, err)
 			}
+			// No hold: what it makes is used at once. The label goes; there's
+			// nothing left to review.
+			if ch.Field == "hold" && ch.Value == nil {
+				n.Hold = nil
+				if had && (beforeSource == "jev" || beforeSource == "model") {
+					if _, err := tx.ExecContext(ctx, `INSERT INTO review_corrections (id, at, person, recipe_id, node_id, node_text, field,
+						model_value, model_source, confidence, user_value) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'null')`,
+						uuid.NewV7().String(), now, who, r.ID, n.ID, cmpOr(n.Source.Quote, n.Text), ch.Field,
+						beforeJSON, beforeSource, beforeConf); err != nil {
+						return err
+					}
+				}
+				continue
+			}
 			if err := fillLabel(n, ch.Field, string(b), "user", 1, nil, nil, nil); err != nil {
 				return Errorf(CodeInvalid, "%s.%s: the value isn't the field's shape: %v", ch.NodeID, ch.Field, err)
 			}

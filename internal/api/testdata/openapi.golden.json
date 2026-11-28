@@ -112,6 +112,62 @@
         }
       }
     },
+    "/v1/graphs": {
+      "get": {
+        "operationId": "graphOverview",
+        "summary": "Every recipe's step graph status and review count, counts by status, and what this Sous can do with its models",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Person"
+          },
+          {
+            "$ref": "#/components/parameters/Via"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphOverview"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "who_are_you (a write from nobody), unknown_person, invalid_identity or gateway_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "starting, or identity_unavailable: the gateway's keys cannot be fetched",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/graphs/todo": {
       "get": {
         "operationId": "listRecipesWithoutGraph",
@@ -5425,6 +5481,37 @@
         ],
         "additionalProperties": false
       },
+      "GraphOverview": {
+        "type": "object",
+        "properties": {
+          "upgrades": {
+            "$ref": "#/components/schemas/GraphUpgrades"
+          },
+          "counts": {
+            "type": "object",
+            "description": "recipes with steps by graph status: none, draft, needs_review, verified, stale",
+            "additionalProperties": {
+              "type": "integer"
+            }
+          },
+          "items": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/GraphStatusRow"
+            },
+            "description": "every recipe with a step graph, by title"
+          }
+        },
+        "required": [
+          "upgrades",
+          "counts",
+          "items"
+        ],
+        "additionalProperties": false
+      },
       "GraphProblem": {
         "type": "object",
         "properties": {
@@ -5453,6 +5540,36 @@
         "required": [
           "code",
           "message"
+        ],
+        "additionalProperties": false
+      },
+      "GraphStatusRow": {
+        "type": "object",
+        "properties": {
+          "recipe_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "description": "draft, needs_review, verified or stale"
+          },
+          "version": {
+            "type": "integer",
+            "description": "the graph's version"
+          },
+          "review_count": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "recipe_id",
+          "title",
+          "status",
+          "version",
+          "review_count"
         ],
         "additionalProperties": false
       },
@@ -5500,6 +5617,28 @@
         "required": [
           "items",
           "remaining"
+        ],
+        "additionalProperties": false
+      },
+      "GraphUpgrades": {
+        "type": "object",
+        "properties": {
+          "labels": {
+            "type": "boolean",
+            "description": "a decision model is set up, so drafts can be labelled"
+          },
+          "graph_model": {
+            "type": "boolean",
+            "description": "Sous can also draft a graph's structure itself (upgrade_recipe and background jobs)"
+          },
+          "auto_verify": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "labels",
+          "graph_model",
+          "auto_verify"
         ],
         "additionalProperties": false
       },

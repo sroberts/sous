@@ -38,6 +38,9 @@ func (a *api) upgradeEndpoints() []endpoint {
 			Summary: "Send a step graph's structure for Sous to check, classify with its decision model and save; a draft with problems is 400 with them listed",
 			Body:    jsonOf[draftBody](), Resp: jsonOf[recipes.UpgradeResult](),
 			Errors: []int{404, 409, 412, 503}, Write: true, Limit: jsonLimit, Handle: a.draftRecipeGraph},
+		{Method: "GET", Path: "/v1/graphs", OpID: "graphOverview",
+			Summary: "Every recipe's step graph status and review count, counts by status, and what this Sous can do with its models",
+			Resp:    jsonOf[recipes.GraphOverview](), Handle: a.graphOverview},
 		{Method: "GET", Path: "/v1/graphs/todo", OpID: "listRecipesWithoutGraph",
 			Summary: "Recipes with steps and no step graph, by title, with how many remain",
 			Query:   reflect.TypeFor[graphTodoQuery](), Resp: jsonOf[recipes.GraphTodos](), Errors: []int{404}, Handle: a.listRecipesWithoutGraph},
@@ -155,5 +158,14 @@ func (a *api) listRecipesWithoutGraph(w http.ResponseWriter, r *http.Request, c 
 		return err
 	}
 	writeJSON(w, http.StatusOK, out)
+	return nil
+}
+
+func (a *api) graphOverview(w http.ResponseWriter, r *http.Request, c identity.Caller) error {
+	o, err := a.svc().GraphOverview(r.Context(), c)
+	if err != nil {
+		return err
+	}
+	writeJSON(w, http.StatusOK, o)
 	return nil
 }

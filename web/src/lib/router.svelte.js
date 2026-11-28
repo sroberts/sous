@@ -11,8 +11,10 @@ const ROUTES = [
   ['recipe', /^\/r\/([\w-]+)$/],
   ['cook', /^\/r\/([\w-]+)\/cook$/],
   ['edit', /^\/r\/([\w-]+)\/edit$/],
+  ['graph', /^\/r\/([\w-]+)\/graph$/],
   ['meals', /^\/meals$/],
   ['kitchen', /^\/kitchen$/],
+  ['graphs', /^\/graphs$/],
   ['meal', /^\/m\/([\w-]+)$/],
   ['mealcook', /^\/m\/([\w-]+)\/cook$/],
 ];

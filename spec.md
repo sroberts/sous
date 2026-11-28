@@ -1299,3 +1299,22 @@ upgrades from existing step timing, using corrections as examples, and the
 calibration gate (decision-model answers at 0.85 or higher right at least
 85% of the time on 30 hand-labelled recipes) before the app's review views.
 
+### UI (phase 3)
+
+`GET /v1/graphs` gives the app every recipe's graph status (stale worked
+out in SQL from the quotes) and review count, counts by status (`none` is
+recipes with steps and no graph), and what this Sous can do (`labels`,
+`graph_model`, `auto_verify`). `/graphs` counts recipes by status, says how
+the rest get drafted (Draft all, a background job, when there's a graph
+model; otherwise the Assistants page's Draft step graphs), and shows the
+review queue (`GET /v1/review`, 100 at a time) grouped by recipe, each
+answer a tap. (The spec's batch "accept all at 80% or higher" isn't here:
+under the review thresholds nothing asked about is that sure.) `/r/{id}/graph` shows a recipe's graph step
+by step, the words each action quotes marked, with a question for each
+label to review and Accept as verified. Choosing Use at once for a hold
+removes it (`value: null`). The recipe page links to its graph; a meal's
+menu notes dishes with graphs to review or none yet. Not in this phase: the
+recipe page's in-place Original/Graph toggle (the graph page stands in for
+it), structural edits (split, merge, relink), and a per-household
+threshold setting.
+

@@ -47,6 +47,18 @@
   }
   load();
 
+  // Each dish's step graph, for the menu to say which are ready. Quiet:
+  // nothing shows when step graphs aren't set up.
+  let graphs = $state(null);
+  api.graphs().then((o) => (graphs = o.upgrades.labels ? o : null), () => {});
+  const graphOf = (recipeId) => graphs?.items.find((r) => r.recipe_id === recipeId) ?? null;
+  function graphNote(recipeId) {
+    const g = graphOf(recipeId);
+    if (g?.status === 'stale') return 'Step graph · the words have changed';
+    return g?.review_count ? `Step graph · ${g.review_count} to review` : null;
+  }
+  const ungraphed = $derived(graphs && meal ? meal.items.filter((it) => !graphOf(it.recipe_id)).length : 0);
+
   const tz = $derived(meal?.timezone ?? 'UTC');
 
   // Every change saves as it's made. If someone else changed the meal in
@@ -412,9 +424,15 @@
                   {#if guessedStep.has(it.id)}
                     <a class="it-note" href="/r/{it.recipe_id}/edit?timing={guessedStep.get(it.id)}" use:link>Times guessed from the words · Set its timing<ChevronRight size={16} aria-hidden="true" /></a>
                   {/if}
+                  {#if graphNote(it.recipe_id)}
+                    <a class="it-note" href="/r/{it.recipe_id}/graph" use:link>{graphNote(it.recipe_id)}<ChevronRight size={16} aria-hidden="true" /></a>
+                  {/if}
                 </li>
               {/each}
             </ol>
+            {#if ungraphed}
+              <a class="it-note graphs-note" href="/graphs" use:link>{ungraphed === 1 ? '1 dish has' : `${ungraphed} dishes have`} no step graph yet<ChevronRight size={16} aria-hidden="true" /></a>
+            {/if}
           {:else}
             <p class="hint">Add the dishes you’re making. Each recipe’s steps are laid out in time around your kitchen.</p>
           {/if}
