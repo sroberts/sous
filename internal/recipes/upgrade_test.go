@@ -640,6 +640,9 @@ func TestStatedDuration(t *testing.T) {
 		{"simmer 10 minutes, then 5 minutes more", Duration{15, 15, 15}, true},
 		{"leave overnight", Duration{480, 720, 720}, true},
 		{"cook for half an hour", Duration{30, 30, 30}, true},
+		{"beat with a fork for about 30 seconds", Duration{1, 1, 1}, true},
+		{"leave for 10 to 15 seconds", Duration{0, 1, 1}, true},
+		{"cook 2 minutes, then 30 seconds more", Duration{3, 3, 3}, true},
 		{"keeps up to 3 days", Duration{}, false},
 		{"stir well", Duration{}, false},
 	} {

@@ -1,4 +1,5 @@
 <script>
+  import { onDestroy } from 'svelte';
   import { ArrowLeft, TriangleAlert } from '@lucide/svelte';
   import { api } from '../lib/api.js';
   import { link } from '../lib/router.svelte.js';
@@ -53,21 +54,85 @@
   load();
 
   const steps = $derived(recipe && view ? bySteps(recipe, view.graph) : []);
-  const byNode = $derived(review.reduce((m, it) => ((m[it.node_id] ??= []).push(it), m), {}));
+  // An action's questions in one order everywhere, so a habit can form.
+  const ORDER = ['action', 'duration', 'equipment', 'attention', 'check_interval_min', 'hold', 'timing_anchor', 'interruptible'];
+  const byNode = $derived(
+    review.reduce((m, it) => ((m[it.node_id] ??= []).push(it), m), Object.create(null)),
+  );
+  const ordered = (items) => [...(items ?? [])].sort((a, b) => ORDER.indexOf(a.field) - ORDER.indexOf(b.field));
   const key = (it) => `${it.node_id}|${it.field}`;
   const answered = $derived(review.filter((it) => key(it) in chosen).length);
+  // Answers given to labels Sous was sure of, changed from "Change its labels".
+  const extra = $derived(Object.keys(chosen).filter((k) => !review.some((it) => key(it) === k)).length);
+  const unsaved = $derived(answered + extra > 0);
+
+  // Answers live only on the page until saved: say so before leaving.
+  function guard(e) {
+    if (unsaved) e.preventDefault();
+  }
+  window.addEventListener('beforeunload', guard);
+  onDestroy(() => window.removeEventListener('beforeunload', guard));
+
+  // "Looks right" for one action: Sous's answers to its open questions,
+  // kept once the cook has read its words and labels.
+  function looksRight(nodeID) {
+    const next = { ...chosen };
+    for (const it of byNode[nodeID] ?? []) if (!(key(it) in next)) next[key(it)] = it.value;
+    chosen = next;
+  }
+  const openOn = (nodeID) => (byNode[nodeID] ?? []).filter((it) => !(key(it) in chosen)).length;
+
+  // The labels a reviewer may change on an action, beyond those asked
+  // about: each as a question, at its own confidence.
+  const FIELDS = ['action', 'duration', 'attention', 'equipment', 'hold'];
+  const fieldOf = { action: 'action', duration: 'duration', attention: 'attention', equipment: 'equipment', hold: 'hold' };
+  let changing = $state(new Set());
+  function labelItems(n) {
+    const asked = new Set((byNode[n.id] ?? []).map((it) => it.field));
+    return FIELDS.filter((f) => !asked.has(f)).map((f) => {
+      const l = n[fieldOf[f]];
+      return {
+        node_id: n.id, field: f, implied: false,
+        value: f === 'hold' ? (l?.value ?? null) : f === 'equipment' ? (l?.value ?? []) : l.value,
+        confidence: l?.confidence ?? 1,
+        alternatives: l?.alternatives ?? [],
+      };
+    });
+  }
+  function toggleChange(nodeID) {
+    const s = new Set(changing);
+    s.has(nodeID) ? s.delete(nodeID) : s.add(nodeID);
+    changing = s;
+  }
+
+  // A problem names an action by its words, not its id, and leads to it.
+  const nodeText = (nodeID) => view?.graph.nodes.find((n) => n.id === nodeID)?.text ?? nodeID;
+  function problemText(e) {
+    return e.node ? e.message.replaceAll(e.node, `“${nodeText(e.node)}”`) : e.message;
+  }
+  function goTo(nodeID) {
+    const el = document.getElementById(`node-${nodeID}`);
+    if (!el) return;
+    el.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    active = nodeID;
+    if (!changing.has(nodeID)) toggleChange(nodeID);
+  }
   const errors = $derived(view?.check.errors ?? []);
   const stale = $derived(view?.graph.status === 'stale');
   const canAccept = $derived(view && !stale && !errors.length && answered === review.length && view.graph.status !== 'verified');
 
   function choose(it, v) {
-    chosen = { ...chosen, [key(it)]: v };
+    const { [key(it)]: _, ...rest } = chosen;
+    chosen = v === undefined ? rest : { ...rest, [key(it)]: v };
   }
 
   async function save(accept) {
     saving = true;
     try {
-      const items = review.filter((it) => key(it) in chosen).map((it) => ({ node_id: it.node_id, field: it.field, value: chosen[key(it)] }));
+      const items = Object.entries(chosen).map(([k, value]) => {
+        const [node_id, field] = k.split('|');
+        return { node_id, field, value };
+      });
       const res = await asPerson(() => api.resolveReview({ recipe_id: id, graph_version: view.graph.version, items, accept }));
       if (!res) return;
       toast(accept ? `${recipe.title}’s step graph is verified.` : `Saved ${items.length === 1 ? '1 answer' : `${items.length} answers`}.`);
@@ -129,6 +194,9 @@
       <span class="badge" data-status={view.graph.status}>{STATUS[view.graph.status]}</span>
       {view.graph.nodes.length} actions{#if review.length}{' · '}<strong>{review.length - answered} to review</strong>{/if}
     </p>
+    {#if review.length}
+      <p class="hint">Sous labelled each action and asks about what it wasn’t sure of. Where it’s fairly sure, its guess is dashed, with how likely it thinks each answer is.<span class="keys">{' '}Keys 1–4 pick an answer and move on.</span></p>
+    {/if}
 
     {#if stale}
       <p class="notice"><TriangleAlert size={18} aria-hidden="true" />The recipe’s words have changed under some actions. Have it drafted again before reviewing.</p>
@@ -138,8 +206,12 @@
         <TriangleAlert size={18} aria-hidden="true" />
         <div>
           <p>This graph has {errors.length === 1 ? 'a problem' : `${errors.length} problems`} to fix before it can be verified:</p>
-          <ul>{#each errors as e, i (i)}<li>{e.message}</li>{/each}</ul>
-          <p>A label can cause one (an action marked as using the oven that doesn’t), so check the labels below; otherwise have it drafted again.</p>
+          <ul>
+            {#each errors as e, i (i)}
+              <li>{#if e.node}<button type="button" class="to-node" onclick={() => goTo(e.node)}>{problemText(e)}</button>{:else}{e.message}{/if}</li>
+            {/each}
+          </ul>
+          <p>Usually an action is marked as using the oven by mistake: open it and change what it uses. Otherwise have the graph drafted again.</p>
         </div>
       </div>
     {/if}
@@ -155,12 +227,20 @@
             <p class="words"><span class="n fig">{st.number}</span>{#each st.runs as r, i (i)}{#if r.node}<mark class:on={active === r.node}>{r.text}</mark>{:else}{r.text}{/if}{/each}</p>
             <ul class="nodes">
               {#each st.nodes as n (n.id)}
-                <li class="node" class:implied={n.implied} onpointerenter={() => (active = n.id)} onpointerleave={() => (active = null)} onfocusin={() => (active = n.id)} onfocusout={() => (active = null)}>
+                <li class="node" id="node-{n.id}" class:implied={n.implied} class:on={active === n.id} onpointerenter={() => (active = n.id)} onpointerleave={() => (active = null)} onfocusin={() => (active = n.id)} onfocusout={() => (active = null)}>
                   <p class="t">{n.text}{#if n.implied}<span class="added">Added by Sous</span>{/if}</p>
-                  <p class="meta">{labels(n)}</p>
-                  {#each byNode[n.id] ?? [] as it (it.field)}
+                  <p class="meta">{labels(n)}{#if !stale}{' '}<button type="button" class="change" aria-expanded={changing.has(n.id)} onclick={() => toggleChange(n.id)}>{changing.has(n.id) ? 'Done' : 'Change'}</button>{/if}</p>
+                  {#each ordered(byNode[n.id]) as it (it.field)}
                     <LabelChoice item={it} chosen={chosen[key(it)]} onchoose={(v) => choose(it, v)} {kitchen} />
                   {/each}
+                  {#if openOn(n.id) > 1 && !stale}
+                    <button type="button" class="change looks" onclick={() => looksRight(n.id)}>Looks right: keep Sous’s {openOn(n.id)} answers here</button>
+                  {/if}
+                  {#if changing.has(n.id)}
+                    {#each labelItems(n) as it (it.field)}
+                      <LabelChoice item={it} chosen={chosen[key(it)]} onchoose={(v) => choose(it, v)} {kitchen} />
+                    {/each}
+                  {/if}
                 </li>
               {/each}
               {#if !st.nodes.length}<li class="node none">No actions from this step.</li>{/if}
@@ -172,8 +252,8 @@
 
     {#if view.graph.status !== 'verified' || review.length}
       <div class="bar">
-        <p>{#if review.length}{answered} of {review.length} answered{:else}Nothing left to answer{/if}</p>
-        {#if review.length}<button class="btn" onclick={() => save(false)} disabled={saving || !answered || stale || isOffline()}>Save answers</button>{/if}
+        <p>{#if review.length}{answered} of {review.length} answered{:else}Nothing left to answer{/if}{#if extra}{` · ${extra} changed`}{/if}</p>
+        {#if review.length || extra}<button class="btn" onclick={() => save(false)} disabled={saving || !unsaved || stale || isOffline()}>Save answers</button>{/if}
         <button class="btn" class:primary={canAccept} onclick={() => save(true)} disabled={saving || !canAccept || isOffline()}>Accept as verified</button>
       </div>
     {/if}
@@ -341,6 +421,44 @@
     margin-top: calc(-1 * var(--space-2));
     color: var(--ink-2);
     font-size: var(--ui);
+  }
+  .change,
+  .to-node {
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--ink-2);
+    font: inherit;
+    text-align: left;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+  .to-node {
+    color: inherit;
+  }
+  .looks {
+    justify-self: start;
+  }
+  /* No keys to press on a phone. */
+  @media (max-width: 900px) {
+    .keys {
+      display: none;
+    }
+  }
+  .node.on {
+    background: var(--ticket-press);
+  }
+  /* The step's words stay in view while its questions scroll. */
+  @media (min-width: 901px) {
+    .pair {
+      align-items: start;
+    }
+    .words {
+      position: sticky;
+      top: calc(var(--bar-shown, 0px) + var(--space-3));
+    }
   }
   .bar {
     position: sticky;

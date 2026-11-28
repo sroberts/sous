@@ -674,6 +674,9 @@ func bucketRange(m int) Duration {
 	return Duration{Min: lo, Typical: m, Max: hi}
 }
 
+// secRE is a time in seconds, which step timing's own reading leaves out.
+var secRE = regexp.MustCompile(`(?i)\b` + numPat + `(?:\s*(?:to|-|–|or)\s*` + numPat + `)?\s*(?:seconds?|secs?)\b`)
+
 // statedDuration reads a time the words state, keeping a range as a range:
 // "40 to 45 minutes" is 40 to 45, typical 45 (finishing early is easier to
 // absorb than late). Times that add up ("10 minutes, then 5 more") sum.
@@ -701,10 +704,23 @@ func statedDuration(text string) (Duration, bool) {
 	if nightRE.MatchString(text) {
 		lo, hi, found = lo+8*60, hi+12*60, true
 	}
+	// Seconds ("beat for about 30 seconds"): a minute at least, so a quick
+	// action states its own time rather than taking the model's guess.
+	for _, m := range secRE.FindAllStringSubmatch(text, -1) {
+		a := parseNum(m[1])
+		b := a
+		if m[2] != "" {
+			b = math.Max(a, parseNum(m[2]))
+		}
+		lo, hi, found = lo+a/60, hi+b/60, true
+	}
 	if !found {
 		return Duration{}, false
 	}
-	d := Duration{Min: int(math.Round(lo)), Typical: int(math.Round(hi)), Max: int(math.Round(hi))}
+	d := Duration{Min: int(math.Round(lo)), Typical: int(math.Ceil(hi - 1e-9)), Max: int(math.Ceil(hi - 1e-9))}
+	if d.Typical < 1 {
+		d.Min, d.Typical, d.Max = max(d.Min, 0), 1, 1
+	}
 	if d.Max > maxStepMinutes || d.Max < 0 {
 		return Duration{}, false
 	}

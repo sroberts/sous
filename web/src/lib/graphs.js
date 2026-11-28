@@ -12,7 +12,7 @@ export const STATUS = {
 // The question each field answers, as review asks it.
 export const ASK = {
   action: 'What is it?',
-  attention: 'How much of the cook?',
+  attention: 'How hands-on?',
   check_interval_min: 'How often to check?',
   equipment: 'What does it use?',
   hold: 'Can it wait?',

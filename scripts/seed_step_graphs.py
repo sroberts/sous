@@ -15,6 +15,7 @@ import glob
 import json
 import os
 import sys
+import time
 import urllib.error
 import urllib.request
 
@@ -22,16 +23,28 @@ ROOT = os.path.join(os.path.dirname(__file__), "..", "internal")
 
 
 def main(base: str, person: str) -> None:
-    def req(method, path, body=None):
+    def req(method, path, body=None, named=True):
+        headers = {"Content-Type": "application/json"}
+        if named:
+            headers["X-Sous-Person"] = person
         r = urllib.request.Request(base + path, data=None if body is None else json.dumps(body).encode(), method=method,
-                                   headers={"Content-Type": "application/json", "X-Sous-Person": person})
+                                   headers=headers)
         try:
             return json.load(urllib.request.urlopen(r, timeout=600))
         except urllib.error.HTTPError as e:
             return {"error": json.loads(e.read() or b"{}").get("error", {})}
 
-    req("POST", "/v1/people", {"name": person})
-    titles = {r["title"]: r["id"] for r in req("GET", "/v1/recipes?limit=200")["items"]}
+    # A fresh Sous adds its sample recipes as it starts: wait for them. The
+    # person is made first, unnamed, as Sous refuses a name it doesn't know.
+    for _ in range(60):
+        page = req("GET", "/v1/recipes?limit=200", named=False)
+        if page.get("items"):
+            break
+        time.sleep(1)
+    else:
+        sys.exit("Sous didn't become ready with recipes")
+    req("POST", "/v1/people", {"name": person}, named=False)
+    titles = {r["title"]: r["id"] for r in page["items"]}
     for f in sorted(glob.glob(os.path.join(ROOT, "recipes", "testdata", "graphs", "*.json"))):
         fx = json.load(open(f))
         title = json.load(open(os.path.join(ROOT, "samples", "data", fx["sample"] + ".json")))["title"]

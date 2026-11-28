@@ -1,6 +1,6 @@
 <script>
   import { onDestroy } from 'svelte';
-  import { ChevronRight } from '@lucide/svelte';
+  import { ArrowLeft, ChevronRight } from '@lucide/svelte';
   import { api } from '../lib/api.js';
   import { link } from '../lib/router.svelte.js';
   import { asPerson } from '../lib/session.svelte.js';
@@ -45,31 +45,39 @@
     return out;
   });
   const key = (it) => `${it.recipe_id}|${it.node_id}|${it.field}`;
+  // A few questions a recipe here; the rest on its own page, beside its
+  // steps, where they're easier to answer.
+  const SHOWN = 3;
   // A recipe's whole count, not just the part of it in this page.
   const reviewCountOf = (g) => overview?.items.find((r) => r.recipe_id === g.id)?.review_count ?? g.items.length;
   const answeredIn = (g) => g.items.filter((it) => key(it) in chosen);
 
-  async function resolve(g, items) {
-    busy = g.id;
+  function choose(it, v) {
+    const { [key(it)]: _, ...rest } = chosen;
+    chosen = v === undefined ? rest : { ...rest, [key(it)]: v };
+  }
+  const answered = $derived(groups.reduce((n, g) => n + answeredIn(g).length, 0));
+
+  // One save for every recipe answered here, recipe by recipe.
+  async function saveAll() {
+    busy = 'all';
+    problem = '';
     try {
-      const res = await asPerson(() =>
-        api.resolveReview({ recipe_id: g.id, graph_version: g.version, items: items.map((it) => ({ node_id: it.node_id, field: it.field, value: it.value })) }),
-      );
-      if (!res) return;
+      for (const g of groups) {
+        const items = answeredIn(g).map((it) => ({ node_id: it.node_id, field: it.field, value: chosen[key(it)] }));
+        if (!items.length) continue;
+        try {
+          const res = await asPerson(() => api.resolveReview({ recipe_id: g.id, graph_version: g.version, items }));
+          if (!res) return;
+        } catch (err) {
+          problem = err.status === 412 ? `Someone changed ${g.title}’s graph meanwhile; answer its questions again.` : err.message;
+        }
+      }
+      chosen = {};
       await load();
-    } catch (err) {
-      problem = err.status === 412 ? `Someone changed ${g.title}’s graph meanwhile; it’s reloaded.` : err.message;
-      if (err.status === 412) await load();
     } finally {
       busy = null;
     }
-  }
-
-  function save(g) {
-    resolve(
-      g,
-      answeredIn(g).map((it) => ({ ...it, value: chosen[key(it)] })),
-    );
   }
 
   async function upgradeAll() {
@@ -98,19 +106,20 @@
 </script>
 
 <main class="graphs" id="main">
+  <a class="back" href="/meals" use:link><ArrowLeft size={16} aria-hidden="true" />Meals</a>
   <h1>Step graphs</h1>
   <p class="lede">A step graph splits each step into single actions joined by what they make and use, so meal plans can fit dishes around each other. Sous labels each action and asks you only about what it wasn’t sure of.</p>
 
   {#if problem}<p class="problem" role="alert">{problem}</p>{/if}
 
   {#if !overview && !problem}
-    <p class="hint" role="status">Loading…</p>
+    <p class="hint" role="status">Loading step graphs…</p>
   {:else if overview}
     <dl class="counts">
-      <div><dt class="label">To review</dt><dd class="fig">{remaining}</dd></div>
-      <div><dt class="label">Verified</dt><dd class="fig">{overview.counts.verified}</dd></div>
-      <div><dt class="label">Words changed</dt><dd class="fig">{overview.counts.stale}</dd></div>
-      <div><dt class="label">No graph yet</dt><dd class="fig">{overview.counts.none}</dd></div>
+      <div><dt class="label">To review</dt><dd><span class="fig">{overview.items.filter((r) => r.review_count > 0).length}</span><span class="of">{remaining} {remaining === 1 ? 'question' : 'questions'}</span></dd></div>
+      <div><dt class="label">Verified</dt><dd><span class="fig">{overview.counts.verified}</span></dd></div>
+      {#if overview.counts.stale}<div><dt class="label">Edited since</dt><dd><span class="fig">{overview.counts.stale}</span></dd></div>{/if}
+      <div><dt class="label">No graph yet</dt><dd><span class="fig">{overview.counts.none}</span></dd></div>
     </dl>
 
     {#if overview.counts.none}
@@ -133,7 +142,7 @@
 
     {#if groups.length}
       <section aria-labelledby="q-h">
-        <h2 id="q-h" class="label sect">To review{#if remaining > queue.length}{` · the first ${queue.length} of ${remaining}`}{/if}</h2>
+        <h2 id="q-h" class="label sect">To review · {groups.length} {groups.length === 1 ? 'recipe' : 'recipes'}, {remaining} {remaining === 1 ? 'question' : 'questions'}</h2>
         <ol class="queue">
           {#each groups as g (g.id)}
             <li class="group">
@@ -141,18 +150,18 @@
                 <a href="/r/{g.id}/graph" use:link><span class="t">{g.title}</span><span class="sub">{reviewCountOf(g)} to review</span><ChevronRight size={18} aria-hidden="true" /></a>
               </div>
               <ul class="items">
-                {#each g.items as it (key(it))}
+                {#each g.items.slice(0, SHOWN) as it (key(it))}
                   <li>
                     <p class="what">{it.node_text}{#if it.quote}<span class="q">“{it.quote}”</span>{/if}</p>
-                    <LabelChoice item={it} chosen={chosen[key(it)]} onchoose={(v) => (chosen = { ...chosen, [key(it)]: v })} {kitchen} />
+                    <LabelChoice item={it} chosen={chosen[key(it)]} onchoose={(v) => choose(it, v)} {kitchen} />
                   </li>
                 {/each}
               </ul>
-              <div class="g-foot">
-                <button class="btn" class:primary={answeredIn(g).length > 0} onclick={() => save(g)} disabled={!answeredIn(g).length || busy === g.id || isOffline()}>
-                  Save {answeredIn(g).length || ''} {answeredIn(g).length === 1 ? 'answer' : 'answers'}
-                </button>
-              </div>
+              {#if reviewCountOf(g) > SHOWN}
+                <div class="g-foot">
+                  <a class="all" href="/r/{g.id}/graph" use:link>All {reviewCountOf(g)} questions, beside its steps<ChevronRight size={16} aria-hidden="true" /></a>
+                </div>
+              {/if}
             </li>
           {/each}
         </ol>
@@ -171,6 +180,12 @@
         </ul>
       </section>
     {/if}
+  {/if}
+  {#if answered}
+    <div class="save-bar">
+      <p>{answered} {answered === 1 ? 'answer' : 'answers'} not yet saved</p>
+      <button class="btn primary" onclick={saveAll} disabled={busy !== null || isOffline()}>Save {answered === 1 ? '1 answer' : `${answered} answers`}</button>
+    </div>
   {/if}
 </main>
 
@@ -216,8 +231,30 @@
   }
   .counts dd {
     margin: 0;
+    display: grid;
+    gap: var(--space-1);
+  }
+  .counts .fig {
     font-size: 2.25rem;
-    line-height: 1;
+  }
+  .counts .of {
+    color: var(--ink-2);
+    font-size: var(--ui);
+  }
+  .back {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: 44px;
+    color: var(--ink-2);
+  }
+  .all {
+    margin-right: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    min-height: 44px;
+    color: var(--ink-2);
   }
   .panel {
     background: var(--ticket);
@@ -295,6 +332,24 @@
     color: var(--ink-2);
     font-size: var(--ui);
   }
+  .save-bar {
+    position: sticky;
+    bottom: 0;
+    margin-top: var(--space-5);
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-5);
+    background: var(--ticket);
+    border-top: 1.5px solid var(--perf);
+  }
+  .save-bar p {
+    flex: 1;
+    color: var(--ink-2);
+  }
+  .save-bar .btn {
+    min-height: 52px;
+  }
   .g-foot {
     display: flex;
     flex-wrap: wrap;
@@ -337,9 +392,6 @@
     .g-foot {
       padding-left: var(--space-4);
       padding-right: var(--space-4);
-    }
-    .g-foot .btn {
-      flex: 1 1 100%;
     }
   }
 </style>

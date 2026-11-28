@@ -1,19 +1,64 @@
 <script>
-  // One label to confirm or correct: Sous's answer and the others it
-  // weighed as buttons, most likely first, with how sure it was; one press
-  // picks. Something else opens a field for any other value.
+  // One label to confirm or correct, as answer buttons; one press (or its
+  // number key) picks, pressing it again clears it, and focus moves on to
+  // the next question. When Sous is fairly sure (60% or more) its answer
+  // leads, dashed as its guess, with how likely it thought each; when it
+  // isn't, the answers come in their natural order with no guess, so a
+  // near coin-toss doesn't steer the cook. Something else opens a field for
+  // any other answer.
   import { ASK, show, pct, same, choicesFor, HOLD_IN } from '../lib/graphs.js';
 
   let { item, chosen = undefined, onchoose, kitchen = null } = $props();
 
+  const confident = $derived(item.confidence >= 0.6);
   const options = $derived.by(() => {
     const out = [{ value: item.value, p: item.confidence }];
-    for (const a of item.alternatives ?? []) if (!out.some((o) => same(o.value, a.value))) out.push({ value: a.value, p: a.probability });
+    // Answers it gave less than a 5% chance are noise; Something else
+    // still reaches them.
+    for (const a of item.alternatives ?? []) if (a.probability >= 0.05 && !out.some((o) => same(o.value, a.value))) out.push({ value: a.value, p: a.probability });
     // "Use at once" is the commonest answer to whether something can wait,
     // so it's always offered, even when the model didn't weigh it.
     if (item.field === 'hold' && !out.some((o) => o.value === null)) out.push({ value: null, p: null });
+    // What an action uses is nearly always nothing, a burner or the oven:
+    // those three are always there, so the right one is never hidden.
+    if (item.field === 'equipment') {
+      for (const r of ['none', 'burner', 'oven']) {
+        const v = r === 'none' ? [] : [{ resource: r, count: 1, scope: 'whole_node' }];
+        if (!out.some((o) => (o.value?.[0]?.resource ?? 'none') === r)) out.push({ value: v, p: null });
+      }
+    }
+    if (!confident) out.sort((a, b) => rank(a.value) - rank(b.value));
     return out;
   });
+
+  // An answer's place in a field's natural order, for when there's no
+  // guess to lead with.
+  function rank(v) {
+    const f = item.field;
+    const fixed = choicesFor(f);
+    if (fixed) return fixed.findIndex(([k]) => k === v);
+    if (f === 'equipment') {
+      const r = v?.[0]?.resource ?? 'none';
+      return ['none', 'burner', 'oven', 'fridge', 'counter'].indexOf(r) + 1 || 9;
+    }
+    if (f === 'hold') return v ? v.max_min : 0;
+    if (f === 'duration') return v.typical;
+    return 0;
+  }
+
+  // Picking: again clears it; otherwise on to the next question.
+  function pick(v, e) {
+    if (chosen !== undefined && same(chosen, v)) {
+      onchoose(undefined);
+      return;
+    }
+    onchoose(v);
+    const all = [...document.querySelectorAll('.choice')];
+    const next = all[all.indexOf(e.currentTarget.closest('.choice')) + 1];
+    // To the middle of the screen, clear of the sticky bar, then focus.
+    next?.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    next?.querySelector('.opt')?.focus({ preventScroll: true });
+  }
   const other = $derived(chosen !== undefined && !options.some((o) => same(o.value, chosen)));
   let open = $state(false);
 
@@ -59,16 +104,27 @@
     else if (f === 'check_interval_min') onchoose(whole(check, 1));
     open = false;
   }
-  const id = $derived(`lc-${item.node_id}-${item.field}`);
+  // 1, 2, 3… pick the answers in order while focus is in the question.
+  function pickKey(e) {
+    if (e.metaKey || e.ctrlKey || e.altKey || e.target.matches('input, select')) return;
+    const n = +e.key;
+    if (n >= 1 && n <= options.length) {
+      e.preventDefault();
+      const btn = e.currentTarget.querySelectorAll('.opt')[n - 1];
+      pick(options[n - 1].value, { currentTarget: btn ?? e.currentTarget });
+    }
+  }
 </script>
 
-<fieldset class="choice" aria-describedby="{id}-sure">
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+<fieldset class="choice" onkeydown={pickKey}>
   <legend>{ASK[item.field] ?? item.field}</legend>
-  <span class="sure" id="{id}-sure">{item.implied && item.field === 'action' ? 'Added by Sous' : `${pct(item.confidence)} sure`}</span>
   <div class="opts">
     {#each options as o, i (i)}
-      <button type="button" class="opt" aria-pressed={chosen !== undefined && same(chosen, o.value)} onclick={() => onchoose(o.value)}>
-        <span class="v">{show(item.field, o.value)}</span>{#if o.p !== null}<span class="p">{pct(o.p)}</span>{/if}
+      {@const guess = confident && chosen === undefined && i === 0}
+      <button type="button" class="opt" class:guess aria-pressed={chosen !== undefined && same(chosen, o.value)} onclick={(e) => pick(o.value, e)} aria-keyshortcuts={String(i + 1)}
+        title={o.p !== null && !confident ? `Sous thought this ${pct(o.p)} likely` : undefined}>
+        <span class="v">{show(item.field, o.value)}</span>{#if guess}<span class="visually-hidden">, Sous’s guess</span>{/if}{#if o.p !== null && confident}<span class="p">{pct(o.p)}</span>{/if}
       </button>
     {/each}
     {#if other}
@@ -126,12 +182,6 @@
     font-size: var(--ui);
     padding: 0;
   }
-  .sure {
-    justify-self: end;
-    color: var(--ink-3);
-    font-size: 0.875rem;
-    font-variant-numeric: tabular-nums;
-  }
   .opts,
   .editor {
     grid-column: 1 / -1;
@@ -162,6 +212,15 @@
   .opt:hover {
     background: var(--ticket-press);
   }
+  /* Focus is an ink ring set off the button; red means chosen. */
+  .opt:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 3px;
+  }
+  /* Sous's guess, until something is picked: a dashed stroke, not red. */
+  .opt.guess {
+    border-style: dashed;
+  }
   .opt[aria-pressed='true'] {
     border-color: var(--red);
     color: var(--red);
@@ -177,6 +236,7 @@
   }
   .else {
     min-height: 44px;
+    padding: 0;
     border: 0;
     background: none;
     color: var(--ink-2);
