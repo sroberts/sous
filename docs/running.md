@@ -102,7 +102,13 @@ small models tried so far didn't do it well.
 | `SOUS_DECISION_MODEL` | `laya` | |
 | `SOUS_AUTO_VERIFY` | `false` | `true` saves an upgrade that's sure of everything as verified, without review |
 
-Under Outpost, set them with `env` in the service's manifest. Sous starts
+**Under Outpost** none of this is needed: Sous uses the models you've chosen
+for the whole installation (`outpost ai`), the System 1 model to label and,
+if Outpost gives Sous the LLM, the LLM to draft graphs by itself in the
+background. Choose them with `outpost ai set llm …` and
+`outpost ai set system1 laya`, and limit the LLM to Sous with
+`outpost ai apps llm sous` if it's a hosted one. Setting `SOUS_OLLAMA_URL`
+points Sous at an Ollama of its own instead. Sous starts
 whether or not Ollama is there; upgrades say the models can't be reached
 until they can, and a background upgrade waits for them rather than giving
 up.

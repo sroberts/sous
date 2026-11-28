@@ -27,7 +27,9 @@ include breaking changes, and they're called out here.
   can draft by itself, one recipe or many in the background
   (`upgrade_recipe`, `upgrade_recipes`, `get_upgrade_job`,
   `cancel_upgrade_job`). Set up with `SOUS_OLLAMA_URL`,
-  `SOUS_DECISION_MODEL` and `SOUS_AUTO_VERIFY`.
+  `SOUS_DECISION_MODEL` and `SOUS_AUTO_VERIFY`; under Outpost, Sous uses
+  the installation's own models (`outpost ai`): the System 1 model to
+  label, and the LLM, when Outpost gives it to Sous, to draft by itself.
 - Step graphs in the app: **Step graphs** (from Meals) counts recipes by
   status, explains how to get the rest drafted, and lists what Sous wasn't
   sure of across the library, by recipe: only what a plan depends on

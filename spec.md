@@ -85,6 +85,7 @@ well-known path, and nothing prompts.
 | Require gateway | `SOUS_REQUIRE_GATEWAY` | `false` | When `true` in gateway mode, requests without a valid identity token get 401 (§5). |
 | Log level | `SOUS_LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error`. |
 | Sample recipes | `SOUS_SAMPLES` | `true` | `false` skips adding the sample recipes (§3) on this start; it removes nothing. Any other value → exit 1. |
+| Outpost's models | `OUTPOST_AI_URL`, `OUTPOST_AI_TOKEN` | set by Outpost | Under Outpost, step graphs use the operator's models through Outpost (§16): `system1` labels, and `llm`, when Outpost gives it to Sous, drafts. The token is never logged. Unless `SOUS_OLLAMA_URL` is set. |
 | Ollama | `SOUS_OLLAMA_URL` | `http://127.0.0.1:11434` | Where the step graph models run (§16). `off` turns upgrades off. Unreachable isn't an error: upgrades answer 503 until it's back. |
 | Graph model | `SOUS_GRAPH_MODEL` | unset | A local generative model to write a step graph's structure itself. Unset: assistants draft it (`draft_recipe_graph`) and Sous only classifies. |
 | Decision model | `SOUS_DECISION_MODEL` | `laya` | The decision model that classifies each action with a probability per answer. |

@@ -1,7 +1,9 @@
-// Package ollama talks to a local Ollama server: a generative model for
-// structured JSON, and a decision model (Laya) for typed questions answered
-// with a probability per option. It implements recipes.Generator and
-// recipes.Decider.
+// Package ollama reaches the models step graphs use: a generative model
+// for structured JSON, and a decision model (Laya) for typed questions
+// answered with a probability per option. It talks to Outpost's AI
+// endpoint when Sous runs under Outpost (the operator's "llm" and
+// "system1", Outpost holding any provider's key), and to a local Ollama
+// otherwise. It implements recipes.Generator and recipes.Decider.
 package ollama
 
 import (
@@ -20,12 +22,58 @@ import (
 	"github.com/sroberts/sous/internal/recipes"
 )
 
-// Client is one Ollama server and the two models Sous uses on it.
+// Client is where the two models are and what they're called.
 type Client struct {
-	BaseURL       string // e.g. http://127.0.0.1:11434
-	GraphModel    string // writes step graphs
-	DecisionModel string // answers typed questions
-	HTTP          *http.Client
+	BaseURL       string // Ollama's, e.g. http://127.0.0.1:11434, or Outpost's AI endpoint
+	GraphModel    string // writes step graphs ("llm" under Outpost)
+	DecisionModel string // answers typed questions ("system1" under Outpost)
+	// Token is Outpost's AI token; set, the client speaks Outpost's API
+	// (OpenAI chat completions and System 1, under their prefixes).
+	Token string
+	HTTP  *http.Client
+}
+
+// NewOutpost returns a client for Outpost's AI endpoint. Outpost picks
+// the models behind "llm" and "system1"; a first request may take minutes
+// while Ollama loads one.
+func NewOutpost(url, token string) *Client {
+	return &Client{BaseURL: strings.TrimRight(url, "/"), GraphModel: "llm", DecisionModel: "system1", Token: token,
+		HTTP: &http.Client{Timeout: 10 * time.Minute}}
+}
+
+// Granted asks Outpost which models this app may use, as its model list
+// says. Unreachable, it assumes both, so requests say what's wrong then.
+func (c *Client) Granted(ctx context.Context) (llm, system1 bool) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+"/openai/v1/models", nil)
+	if err != nil {
+		return true, true
+	}
+	c.auth(req)
+	resp, err := c.HTTP.Do(req)
+	if err != nil {
+		return true, true
+	}
+	defer resp.Body.Close()
+	var out struct {
+		Data []struct {
+			ID string `json:"id"`
+		} `json:"data"`
+	}
+	if resp.StatusCode != http.StatusOK || json.NewDecoder(resp.Body).Decode(&out) != nil {
+		return true, true
+	}
+	for _, m := range out.Data {
+		llm = llm || m.ID == "llm"
+		system1 = system1 || m.ID == "system1"
+	}
+	return llm, system1
+}
+
+// auth adds Outpost's token. It's sent only to BaseURL, never logged.
+func (c *Client) auth(req *http.Request) {
+	if c.Token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.Token)
+	}
 }
 
 // New returns a client with timeouts suited to local models: a graph can
@@ -50,6 +98,7 @@ func (c *Client) post(ctx context.Context, path string, body, out any) error {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	c.auth(req)
 	resp, err := c.HTTP.Do(req)
 	if err != nil {
 		return c.failed(err)
@@ -67,10 +116,13 @@ func (c *Client) post(ctx context.Context, path string, body, out any) error {
 		if e.Error == "" {
 			e.Error = strings.TrimSpace(string(data))
 		}
-		// A missing model, or one that doesn't fit in memory just now, is
-		// a reason to wait, not the recipe's fault.
+		// A missing model, one that doesn't fit in memory just now, or
+		// (under Outpost) a model not given to Sous or not available, is a
+		// reason to wait, not the recipe's fault.
 		if (resp.StatusCode == http.StatusNotFound && strings.Contains(e.Error, "not found")) ||
-			strings.Contains(e.Error, "requires") && strings.Contains(e.Error, "available") {
+			strings.Contains(e.Error, "requires") && strings.Contains(e.Error, "available") ||
+			c.Token != "" && (resp.StatusCode == http.StatusForbidden || resp.StatusCode == http.StatusBadGateway ||
+				resp.StatusCode == http.StatusServiceUnavailable) {
 			return fmt.Errorf("%w: %s", ErrUnreachable, e.Error)
 		}
 		return fmt.Errorf("ollama %s: %s: %s", path, resp.Status, e.Error)
@@ -80,6 +132,27 @@ func (c *Client) post(ctx context.Context, path string, body, out any) error {
 
 // Generate asks the graph model for JSON matching schema.
 func (c *Client) Generate(ctx context.Context, prompt string, schema any) ([]byte, error) {
+	if c.Token != "" {
+		var out struct {
+			Choices []struct {
+				Message struct {
+					Content string `json:"content"`
+				} `json:"message"`
+			} `json:"choices"`
+		}
+		err := c.post(ctx, "/openai/v1/chat/completions", map[string]any{
+			"model": c.GraphModel, "temperature": 0, "max_tokens": 16000,
+			"response_format": map[string]any{"type": "json_schema", "json_schema": map[string]any{"name": "step_graph", "schema": schema}},
+			"messages":        []map[string]string{{"role": "user", "content": prompt + "\n\nAnswer with the JSON only."}},
+		}, &out)
+		if err != nil {
+			return nil, err
+		}
+		if len(out.Choices) == 0 {
+			return nil, fmt.Errorf("the graph model gave no answer")
+		}
+		return []byte(out.Choices[0].Message.Content), nil
+	}
 	var out struct {
 		Message struct {
 			Content string `json:"content"`
@@ -121,7 +194,11 @@ func (c *Client) Decide(ctx context.Context, state string, qs []recipes.Question
 			Probabilities map[string]float64 `json:"probabilities"`
 		} `json:"answers"`
 	}
-	if err := c.post(ctx, "/v1/systemone", body, &out); err != nil {
+	path := "/v1/systemone"
+	if c.Token != "" {
+		path = "/systemone/v1/systemone"
+	}
+	if err := c.post(ctx, path, body, &out); err != nil {
 		return nil, err
 	}
 	res := map[string]recipes.Answer{}

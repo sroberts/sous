@@ -101,7 +101,20 @@ func run(args []string, getenv func(string) string, stdout io.Writer) int {
 			return
 		}
 		svc := recipes.New(st, log)
-		if upCfg.On() {
+		switch {
+		case upCfg.Outpost():
+			// The operator's models: whichever of llm and system1 Outpost
+			// gives Sous. Labels need system1; drafting by itself, llm.
+			oc := ollama.NewOutpost(upCfg.OutpostAIURL, upCfg.OutpostAIToken)
+			if llm, system1 := oc.Granted(base); system1 {
+				up := &recipes.Upgrader{Dec: oc, AutoVerify: upCfg.AutoVerify}
+				if llm {
+					up.Gen = oc
+				}
+				svc.SetUpgrader(up)
+				log.Info("step graph models from Outpost", "llm", llm, "system1", system1)
+			}
+		case upCfg.On():
 			oc := ollama.New(upCfg.OllamaURL, upCfg.GraphModel, upCfg.DecisionModel)
 			up := &recipes.Upgrader{Dec: oc, AutoVerify: upCfg.AutoVerify}
 			if upCfg.GraphModel != "" {

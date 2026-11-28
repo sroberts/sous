@@ -509,8 +509,8 @@ func TestReviewQueue(t *testing.T) {
 // with the model raise its confidence.
 func TestReviewPolicy(t *testing.T) {
 	answers := toastAnswers()
-	answers["Toast the"]["attention"] = ranked{"passive", 0.6} // "toast" isn't in the words' passive list: asked
-	answers["Toast the"]["equipment"] = ranked{"oven", 0.6}    // nor is "toast" an oven word: asked
+	answers["Toast the"]["attention"] = ranked{"passive", 0.6}  // "toast" isn't in the words' passive list: asked
+	answers["Toast the"]["equipment"] = ranked{"oven", 0.6}     // nor is "toast" an oven word: asked
 	answers["Heat the oven"]["equipment"] = ranked{"oven", 0.6} // the words say oven: raised to 0.8, not asked
 	answers["butter it"]["hold"] = ranked{"60", 0.5}            // too weak: dropped
 	answers["butter it"]["action"] = ranked{"assemble", 0.3}    // unsure, but action isn't asked
@@ -611,6 +611,21 @@ func TestUpgradeIgnoresNonOvenTemps(t *testing.T) {
 			t.Errorf("%s: %s", n.ID, dump(c))
 		}
 	}
+}
+
+// A hosted model's JSON in a code fence is unwrapped.
+func TestGenerateFenced(t *testing.T) {
+	u := &Upgrader{Gen: fencedGen{}}
+	d, err := u.generate(ctx, Recipe{Title: "x", Steps: []Step{{Text: "a"}}}, nil, nil)
+	if err != nil || d.Serve != "toast" {
+		t.Errorf("fenced: %+v %v", d, err)
+	}
+}
+
+type fencedGen struct{}
+
+func (fencedGen) Generate(ctx context.Context, prompt string, schema any) ([]byte, error) {
+	return []byte("```json\n{\"serve\":\"toast\",\"items\":[],\"nodes\":[]}\n```"), nil
 }
 
 func TestStatedDuration(t *testing.T) {

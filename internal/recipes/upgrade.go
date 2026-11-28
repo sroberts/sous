@@ -202,6 +202,14 @@ func (u *Upgrader) generate(ctx context.Context, r Recipe, prev *StructureDraft,
 		return StructureDraft{}, err
 	}
 	var d StructureDraft
+	// A hosted model may wrap its JSON in a code fence despite being asked
+	// for the JSON alone.
+	out = []byte(strings.TrimSpace(string(out)))
+	if b, ok := strings.CutPrefix(string(out), "```"); ok {
+		b = strings.TrimPrefix(b, "json")
+		b, _ = strings.CutSuffix(strings.TrimSpace(b), "```")
+		out = []byte(b)
+	}
 	if err := json.Unmarshal(out, &d); err != nil {
 		return StructureDraft{}, fmt.Errorf("the graph model's answer wasn't the JSON asked for: %w", err)
 	}
