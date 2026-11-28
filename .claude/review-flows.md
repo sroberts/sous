@@ -157,3 +157,53 @@ the UI built: `cd web && npm run build && cd .. && go run ./cmd/sous --port
 3. Follow "or have an assistant read them".
    - `/assistants#timing` opens with Fill in step timing expanded, showing
      `/mcp__sous__fill_step_timing`.
+
+## 15. Step graphs: the household page
+
+Needs Sous's decision model (Laya on Ollama). Seed the gate graphs first:
+`uv run scripts/seed_step_graphs.py http://127.0.0.1:8099 ann` (each says
+"needs_review, N to review").
+
+1. Open Meals (`/meals`).
+   - Under Your kitchen, a "Step graphs" row: "N to review · 0 verified, 7
+     without".
+2. Follow it (`/graphs`).
+   - Counts: To review N, Verified 0, Words changed 0, No graph yet 7.
+   - "The rest of the library" says an assistant drafts each graph and
+     links "Set that up" to `/assistants#graphs`, which opens Draft step
+     graphs expanded.
+   - The review queue groups questions by recipe, each header saying how
+     many to review in all; each question is "How much of the cook?",
+     "What does it use?" or "Can it wait?" with Sous's answer and the
+     others as buttons with percentages, and Something else.
+3. In one recipe, answer two questions, then Save 2 answers.
+   - The two questions go; the recipe's count drops by two.
+
+## 16. A recipe's step graph
+
+1. Open the French omelette and scroll to the end of its method.
+   - "Step graph · N to review" links to `/r/<id>/graph`.
+2. Follow it.
+   - Each step's words beside its actions; pointing at an action washes its
+     words. Implied actions say "Added by Sous". The bar reads "0 of N
+     answered", Accept as verified disabled.
+3. Answer every question (Use at once for any "Can it wait?"), then Accept
+   as verified.
+   - "… step graph is verified." toast; the badge reads Verified; no
+     questions remain.
+4. At 390px: steps stack words over actions; the bar's two buttons share a
+   row under the count; no horizontal scroll.
+
+## 17. A meal planned from step graphs
+
+1. Plan a meal (`/meals`) with the chicken curry and the boeuf bourguignon.
+   - The menu notes "Step graph · N to review" under the curry, and "1 dish
+     has no step graph yet" at its foot (the bourguignon).
+2. Read the plan.
+   - The curry's tasks are its actions ("Boil the rice", "Simmer gently…"),
+     the rice boiling while the curry finishes; its simmered base is made
+     ahead with a reheat on the day. A warning says the bourguignon is
+     planned from its steps because it has no step graph.
+3. Open Your kitchen, add a pan "dutch oven" (1) and 2 places of counter
+   space, save, and reload.
+   - Both are kept.
