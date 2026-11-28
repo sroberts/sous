@@ -27,7 +27,9 @@ include breaking changes, and they're called out here.
   can draft by itself, one recipe or many in the background
   (`upgrade_recipe`, `upgrade_recipes`, `get_upgrade_job`,
   `cancel_upgrade_job`). Set up with `SOUS_OLLAMA_URL`,
-  `SOUS_DECISION_MODEL` and `SOUS_AUTO_VERIFY`.
+  `SOUS_DECISION_MODEL` and `SOUS_AUTO_VERIFY`; under Outpost, Sous uses
+  the installation's own models (`outpost ai`): the System 1 model to
+  label, and the LLM, when Outpost gives it to Sous, to draft by itself.
 - Your kitchen lists pans and containers (a Dutch oven, sheet pans) and
   counter space, for step graphs to use. An update that leaves them out
   keeps them as they are.

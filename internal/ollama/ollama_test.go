@@ -2,7 +2,9 @@ package ollama
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -74,5 +76,59 @@ func TestFailures(t *testing.T) {
 	defer bad.Close()
 	if _, err := New(bad.URL, "g", "d").Generate(context.Background(), "p", nil); err == nil || errors.Is(err, recipes.ErrModelsUnavailable) {
 		t.Errorf("server error: %v", err)
+	}
+}
+
+// Under Outpost: its paths, the model kinds, the token as a bearer and
+// nowhere else, and a model not given or unavailable read as "wait".
+func TestOutpost(t *testing.T) {
+	var seen []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer oai_secret" {
+			http.Error(w, `{"error":"no token"}`, http.StatusUnauthorized)
+			return
+		}
+		var body map[string]any
+		json.NewDecoder(r.Body).Decode(&body)
+		seen = append(seen, r.URL.Path+" "+fmt.Sprint(body["model"]))
+		switch r.URL.Path {
+		case "/openai/v1/models":
+			w.Write([]byte(`{"data":[{"id":"system1"}]}`))
+		case "/openai/v1/chat/completions":
+			if body["response_format"] == nil {
+				t.Error("no response_format")
+			}
+			w.Write([]byte(`{"choices":[{"message":{"content":"{\"serve\":\"x\"}"}}]}`))
+		case "/systemone/v1/systemone":
+			w.Write([]byte(`{"answers":{"q":{"probabilities":{"a":1}}}}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+	c := NewOutpost(srv.URL+"/", "oai_secret")
+	if llm, s1 := c.Granted(context.Background()); llm || !s1 {
+		t.Errorf("granted llm %v system1 %v", llm, s1)
+	}
+	if out, err := c.Generate(context.Background(), "p", map[string]any{"type": "object"}); err != nil || string(out) != `{"serve":"x"}` {
+		t.Errorf("generate: %s %v", out, err)
+	}
+	if _, err := c.Decide(context.Background(), "s", []recipes.Question{{ID: "q", Choices: []recipes.Choice{{Label: "a"}}}}); err != nil {
+		t.Errorf("decide: %v", err)
+	}
+	want := []string{"/openai/v1/models <nil>", "/openai/v1/chat/completions llm", "/systemone/v1/systemone system1"}
+	if fmt.Sprint(seen) != fmt.Sprint(want) {
+		t.Errorf("requests %v, want %v", seen, want)
+	}
+
+	for _, code := range []int{http.StatusForbidden, http.StatusBadGateway, http.StatusServiceUnavailable} {
+		bad := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			http.Error(w, `{"error":"not for you"}`, code)
+		}))
+		_, err := NewOutpost(bad.URL, "t").Generate(context.Background(), "p", nil)
+		if !errors.Is(err, recipes.ErrModelsUnavailable) {
+			t.Errorf("%d: %v", code, err)
+		}
+		bad.Close()
 	}
 }
