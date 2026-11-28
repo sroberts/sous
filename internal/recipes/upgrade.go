@@ -717,6 +717,11 @@ func statedDuration(text string) (Duration, bool) {
 	if !found {
 		return Duration{}, false
 	}
+	// Bound the minutes before they become ints: a huge stated number would
+	// otherwise overflow the conversion and be clamped into a short time.
+	if !(hi <= maxStepMinutes) || !(lo >= 0) {
+		return Duration{}, false
+	}
 	d := Duration{Min: int(math.Round(lo)), Typical: int(math.Ceil(hi - 1e-9)), Max: int(math.Ceil(hi - 1e-9))}
 	if d.Typical < 1 {
 		d.Min, d.Typical, d.Max = max(d.Min, 0), 1, 1
